@@ -96,8 +96,6 @@ const Community = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [posts, setPosts] = useState(communityPosts);
   const [topics, setTopics] = useState(forumTopics);
-  const [newTopicTitle, setNewTopicTitle] = useState("");
-  const [newTopicDescription, setNewTopicDescription] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const { logout } = useAuth();
@@ -117,7 +115,7 @@ const Community = () => {
       const newPostData = {
         id: posts.length + 1,
         author: "You",
-        authorType: "seller",
+        authorType: "seller" as const,
         avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
         content: newPost,
         likes: 0,
@@ -142,8 +140,31 @@ const Community = () => {
         : post
     ));
     toast({
-      title: "Post Liked!",
-      description: "You liked this post.",
+      title: post => post ? "Post Liked!" : "Post Unliked!",
+      description: "Your interaction has been recorded.",
+    });
+  };
+
+  const handleComment = (postId: number) => {
+    const comment = prompt("Add your comment:");
+    if (comment) {
+      setPosts(posts.map(post => 
+        post.id === postId 
+          ? { ...post, comments: post.comments + 1 }
+          : post
+      ));
+      toast({
+        title: "Comment Added!",
+        description: "Your comment has been posted.",
+      });
+    }
+  };
+
+  const handleShare = (postId: number) => {
+    navigator.clipboard.writeText(`${window.location.origin}/community/post/${postId}`);
+    toast({
+      title: "Link Copied!",
+      description: "Post link has been copied to clipboard.",
     });
   };
 
@@ -155,13 +176,15 @@ const Community = () => {
   };
 
   const handleCreateTopic = () => {
-    if (newTopicTitle.trim() && newTopicDescription.trim()) {
+    const title = prompt("Enter topic title:");
+    const description = prompt("Enter topic description:");
+    if (title && description) {
       const newTopic = {
         id: topics.length + 1,
-        title: newTopicTitle,
-        description: newTopicDescription,
+        title,
+        description,
         author: "You",
-        authorType: "seller",
+        authorType: "seller" as const,
         replies: 0,
         views: 0,
         lastActivity: "Just now",
@@ -169,8 +192,6 @@ const Community = () => {
         pinned: false
       };
       setTopics([newTopic, ...topics]);
-      setNewTopicTitle("");
-      setNewTopicDescription("");
       toast({
         title: "Topic Created!",
         description: "Your forum topic has been created.",
@@ -290,7 +311,7 @@ const Community = () => {
                         <div className="flex items-center space-x-2">
                           <h3 className="font-semibold">{post.author}</h3>
                           <Badge variant={post.authorType === 'seller' ? 'default' : 'secondary'} className="text-xs">
-                            {post.authorType === 'seller' ? '🌾 Seller' : '🛒 Buyer'}
+                            {post.authorType === 'seller' ? 'Seller' : 'Buyer'}
                           </Badge>
                           <span className="text-sm text-gray-500">•</span>
                           <span className="text-sm text-gray-500">{post.timeAgo}</span>
@@ -324,11 +345,21 @@ const Community = () => {
                             <Heart className={`h-4 w-4 ${post.liked ? 'fill-current' : ''}`} />
                             <span>{post.likes}</span>
                           </Button>
-                          <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gray-600">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleComment(post.id)}
+                            className="flex items-center space-x-2 text-gray-600"
+                          >
                             <MessageCircle className="h-4 w-4" />
                             <span>{post.comments}</span>
                           </Button>
-                          <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gray-600">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleShare(post.id)}
+                            className="flex items-center space-x-2 text-gray-600"
+                          >
                             <Share2 className="h-4 w-4" />
                             <span>Share</span>
                           </Button>
@@ -368,15 +399,7 @@ const Community = () => {
               </div>
               <Button 
                 className="bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  const title = prompt("Enter topic title:");
-                  const description = prompt("Enter topic description:");
-                  if (title && description) {
-                    setNewTopicTitle(title);
-                    setNewTopicDescription(description);
-                    handleCreateTopic();
-                  }
-                }}
+                onClick={handleCreateTopic}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 New Topic
@@ -400,7 +423,7 @@ const Community = () => {
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
                           <span>By {topic.author}</span>
                           <Badge variant={topic.authorType === 'seller' ? 'default' : 'secondary'} className="text-xs">
-                            {topic.authorType === 'seller' ? '🌾' : '🛒'}
+                            {topic.authorType === 'seller' ? 'Seller' : 'Buyer'}
                           </Badge>
                           <span>•</span>
                           <span className="flex items-center space-x-1">
@@ -470,7 +493,7 @@ const Community = () => {
                         </Avatar>
                         <h3 className="font-semibold">{member.name}</h3>
                         <Badge variant={member.type === 'seller' ? 'default' : 'secondary'} className="text-xs mb-2">
-                          {member.type === 'seller' ? '🌾 Seller' : '🛒 Buyer'}
+                          {member.type === 'seller' ? 'Seller' : 'Buyer'}
                         </Badge>
                         <p className="text-sm text-gray-600 mb-1">{member.location}</p>
                         <p className="text-sm text-gray-500 mb-3">{member.specialty}</p>

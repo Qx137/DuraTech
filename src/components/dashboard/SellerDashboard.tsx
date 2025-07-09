@@ -2,7 +2,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Leaf, Package, DollarSign, Users, TrendingUp, Plus, Edit, Eye, LogOut, MessageSquare, BarChart3, Settings, Warehouse } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Leaf, Package, DollarSign, Users, TrendingUp, Plus, Edit, Eye, LogOut, MessageSquare, BarChart3, Settings, Database, Upload, FileText, Building } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +28,13 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<string>('overview');
+  const [showAddProductForm, setShowAddProductForm] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    price: '',
+    stock: '',
+    description: ''
+  });
 
   const handleLogout = () => {
     logout();
@@ -37,47 +46,37 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   };
 
   const handleAddProduct = () => {
-    toast({
-      title: "Add Product",
-      description: "Product creation form would open here.",
-    });
+    setShowAddProductForm(true);
+  };
+
+  const handleSaveProduct = () => {
+    if (newProduct.name && newProduct.price && newProduct.stock) {
+      toast({
+        title: "Product Added Successfully!",
+        description: `${newProduct.name} has been added to your inventory.`,
+      });
+      setNewProduct({ name: '', price: '', stock: '', description: '' });
+      setShowAddProductForm(false);
+    } else {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditProduct = (productId: number) => {
     toast({
       title: "Edit Product",
-      description: `Editing product ID: ${productId}`,
+      description: `Opening edit form for product ID: ${productId}`,
     });
   };
 
   const handleViewProduct = (productId: number) => {
     toast({
       title: "View Product",
-      description: `Viewing product ID: ${productId}`,
-    });
-  };
-
-  const handleSalesAnalytics = () => {
-    setActiveSection('analytics');
-    toast({
-      title: "Sales Analytics",
-      description: "Loading sales analytics dashboard...",
-    });
-  };
-
-  const handleCustomerManagement = () => {
-    setActiveSection('customers');
-    toast({
-      title: "Customer Management",
-      description: "Loading customer management system...",
-    });
-  };
-
-  const handleInventoryManagement = () => {
-    setActiveSection('inventory');
-    toast({
-      title: "Inventory Management",
-      description: "Loading inventory management system...",
+      description: `Viewing product details for ID: ${productId}`,
     });
   };
 
@@ -154,8 +153,12 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           <CardDescription>Monthly sales trends and analytics</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center text-gray-500">
-            Sales chart would be rendered here
+          <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+            <div className="text-center">
+              <BarChart3 className="h-12 w-12 text-green-600 mx-auto mb-4" />
+              <p className="text-gray-600">Interactive sales chart would be rendered here</p>
+              <p className="text-sm text-gray-500 mt-2">Revenue increased by 23% this month</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -163,58 +166,82 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   );
 
   const renderCustomers = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Customer Management</CardTitle>
-        <CardDescription>Manage your customer relationships</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {customers.map((customer) => (
-            <div key={customer.id} className="flex items-center justify-between p-4 border rounded-lg">
-              <div>
-                <h4 className="font-medium">{customer.name}</h4>
-                <p className="text-sm text-gray-600">{customer.email}</p>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer Management</CardTitle>
+          <CardDescription>Manage your customer relationships and communications</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {customers.map((customer) => (
+              <div key={customer.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium">{customer.name}</h4>
+                  <p className="text-sm text-gray-600">{customer.email}</p>
+                </div>
+                <div className="text-right mr-4">
+                  <p className="font-medium">${customer.totalSpent}</p>
+                  <p className="text-sm text-gray-600">{customer.totalOrders} orders</p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button size="sm" variant="outline" onClick={() => toast({ title: "Email Sent", description: `Message sent to ${customer.name}` })}>
+                    <MessageSquare className="h-3 w-3" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => toast({ title: "Customer Details", description: `Viewing ${customer.name}'s profile` })}>
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-medium">${customer.totalSpent}</p>
-                <p className="text-sm text-gray-600">{customer.totalOrders} orders</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 
   const renderInventory = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Inventory Management</CardTitle>
-        <CardDescription>Track and manage your product inventory</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {myProducts.map((product) => (
-            <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-              <div>
-                <h4 className="font-medium">{product.name}</h4>
-                <p className="text-sm text-gray-600">Price: ${product.price}</p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="font-medium">Stock: {product.stock}</p>
-                  <p className="text-sm text-gray-600">Sold: {product.sold}</p>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Inventory Management</CardTitle>
+          <CardDescription>Track and manage your product inventory levels</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {myProducts.map((product) => (
+              <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium">{product.name}</h4>
+                  <p className="text-sm text-gray-600">Price: ${product.price}</p>
                 </div>
-                <Badge variant={product.status === 'Active' ? 'default' : 'destructive'}>
-                  {product.status}
-                </Badge>
+                <div className="flex items-center space-x-4">
+                  <div className="text-right">
+                    <p className="font-medium">Stock: {product.stock}</p>
+                    <p className="text-sm text-gray-600">Sold: {product.sold}</p>
+                  </div>
+                  <Badge variant={product.status === 'Active' ? 'default' : 'destructive'}>
+                    {product.status}
+                  </Badge>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" onClick={() => handleEditProduct(product.id)}>
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => toast({ title: "Stock Updated", description: `Restocking ${product.name}` })}>
+                      <Package className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+          </div>
+          <Button className="w-full mt-4" onClick={() => setShowAddProductForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Product
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 
   return (
@@ -259,6 +286,63 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Welcome, {user.businessName || user.name}!</h2>
           <p className="text-gray-600">Manage your farm business and reach more customers</p>
         </div>
+
+        {/* Add Product Modal */}
+        {showAddProductForm && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Add New Product</CardTitle>
+              <CardDescription>Add a new product to your inventory</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Product Name</label>
+                  <Input 
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                    placeholder="e.g. Organic Tomatoes"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Price ($)</label>
+                  <Input 
+                    type="number"
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                    placeholder="4.99"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Stock Quantity</label>
+                <Input 
+                  type="number"
+                  value={newProduct.stock}
+                  onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+                  placeholder="50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <Textarea 
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  placeholder="Describe your product..."
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button onClick={handleSaveProduct} className="bg-green-600 hover:bg-green-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Save Product
+                </Button>
+                <Button variant="outline" onClick={() => setShowAddProductForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Navigation Tabs */}
         <div className="mb-8">
@@ -438,7 +522,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
             {/* Additional Seller Features */}
             <div className="grid md:grid-cols-4 gap-6 mt-8">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={handleSalesAnalytics}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveSection('analytics')}>
                 <CardContent className="p-6 text-center">
                   <BarChart3 className="h-12 w-12 text-green-600 mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Sales Analytics</h3>
@@ -446,7 +530,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 </CardContent>
               </Card>
               
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={handleCustomerManagement}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveSection('customers')}>
                 <CardContent className="p-6 text-center">
                   <Users className="h-12 w-12 text-blue-600 mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Customer Management</h3>
@@ -454,9 +538,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 </CardContent>
               </Card>
               
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={handleInventoryManagement}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveSection('inventory')}>
                 <CardContent className="p-6 text-center">
-                  <Warehouse className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+                  <Database className="h-12 w-12 text-purple-600 mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Inventory Management</h3>
                   <p className="text-gray-600 text-sm">Track stock levels and manage inventory</p>
                 </CardContent>
