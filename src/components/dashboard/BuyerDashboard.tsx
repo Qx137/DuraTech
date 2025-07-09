@@ -2,9 +2,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Leaf, ShoppingCart, Star, MapPin, Package, Heart, User, LogOut } from "lucide-react";
+import { Leaf, ShoppingCart, Star, MapPin, Package, Heart, User, LogOut, MessageSquare } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface User {
   id: string;
@@ -20,10 +21,22 @@ interface BuyerDashboardProps {
 export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogout = () => {
     logout();
     navigate('/');
+    toast({
+      title: "Logged out successfully",
+      description: "You have been logged out of your account.",
+    });
+  };
+
+  const handleOrderAgain = (productName: string) => {
+    toast({
+      title: "Order Placed",
+      description: `Added ${productName} to your cart!`,
+    });
   };
 
   const recentPurchases = [
@@ -45,7 +58,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <Leaf className="h-8 w-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-800">DuraHub</h1>
+            <h1 className="text-2xl font-bold text-green-800">DuraMarket</h1>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/dashboard" className="text-green-600 font-medium">
@@ -53,6 +66,9 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
             </Link>
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
               Marketplace
+            </Link>
+            <Link to="/community" className="text-gray-700 hover:text-green-600 transition-colors">
+              Community
             </Link>
             <Link to="/ai-tools" className="text-gray-700 hover:text-green-600 transition-colors">
               AI Tools
@@ -177,7 +193,12 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                         <span>{product.rating}</span>
                       </div>
                     </div>
-                    <Button size="sm">Order Again</Button>
+                    <Button 
+                      size="sm"
+                      onClick={() => handleOrderAgain(product.name)}
+                    >
+                      Order Again
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -186,6 +207,29 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
               </Link>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid md:grid-cols-2 gap-6 mt-8">
+          <Link to="/marketplace">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-6 text-center">
+                <ShoppingCart className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">Browse Marketplace</h3>
+                <p className="text-gray-600 text-sm">Discover fresh produce from local farmers</p>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link to="/community">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-6 text-center">
+                <MessageSquare className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">Join Community</h3>
+                <p className="text-gray-600 text-sm">Connect with farmers and other buyers</p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
       </div>
     </>

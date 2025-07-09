@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, MessageSquare, Users, TrendingUp, Clock, Heart, MessageCircle, Share2, Plus, Leaf, Award } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Search, MessageSquare, Users, TrendingUp, Clock, Heart, MessageCircle, Share2, Plus, Leaf, Award, LogOut } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Sample community data
 const forumTopics = [
@@ -60,7 +61,8 @@ const communityPosts = [
     likes: 23,
     comments: 8,
     timeAgo: "3 hours ago",
-    tags: ["organic", "tomatoes", "harvest"]
+    tags: ["organic", "tomatoes", "harvest"],
+    liked: false
   },
   {
     id: 2,
@@ -71,7 +73,8 @@ const communityPosts = [
     likes: 15,
     comments: 12,
     timeAgo: "6 hours ago",
-    tags: ["leafy-greens", "california", "restaurant"]
+    tags: ["leafy-greens", "california", "restaurant"],
+    liked: false
   },
   {
     id: 3,
@@ -83,17 +86,47 @@ const communityPosts = [
     likes: 41,
     comments: 15,
     timeAgo: "1 day ago",
-    tags: ["greenhouse", "sustainability", "year-round"]
+    tags: ["greenhouse", "sustainability", "year-round"],
+    liked: false
   }
 ];
 
 const Community = () => {
   const [newPost, setNewPost] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [posts, setPosts] = useState(communityPosts);
+  const [topics, setTopics] = useState(forumTopics);
+  const [newTopicTitle, setNewTopicTitle] = useState("");
+  const [newTopicDescription, setNewTopicDescription] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    toast({
+      title: "Logged out successfully",
+      description: "You have been logged out of your account.",
+    });
+  };
 
   const handleCreatePost = () => {
     if (newPost.trim()) {
+      const newPostData = {
+        id: posts.length + 1,
+        author: "You",
+        authorType: "seller",
+        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
+        content: newPost,
+        likes: 0,
+        comments: 0,
+        timeAgo: "Just now",
+        tags: ["new"],
+        liked: false
+      };
+      setPosts([newPostData, ...posts]);
       toast({
         title: "Post Created!",
         description: "Your post has been shared with the community.",
@@ -103,6 +136,11 @@ const Community = () => {
   };
 
   const handleLike = (postId: number) => {
+    setPosts(posts.map(post => 
+      post.id === postId 
+        ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
+        : post
+    ));
     toast({
       title: "Post Liked!",
       description: "You liked this post.",
@@ -115,6 +153,42 @@ const Community = () => {
       description: "You've joined this forum topic.",
     });
   };
+
+  const handleCreateTopic = () => {
+    if (newTopicTitle.trim() && newTopicDescription.trim()) {
+      const newTopic = {
+        id: topics.length + 1,
+        title: newTopicTitle,
+        description: newTopicDescription,
+        author: "You",
+        authorType: "seller",
+        replies: 0,
+        views: 0,
+        lastActivity: "Just now",
+        category: "General",
+        pinned: false
+      };
+      setTopics([newTopic, ...topics]);
+      setNewTopicTitle("");
+      setNewTopicDescription("");
+      toast({
+        title: "Topic Created!",
+        description: "Your forum topic has been created.",
+      });
+    }
+  };
+
+  const handleConnect = (memberName: string) => {
+    toast({
+      title: "Connection Sent!",
+      description: `Connection request sent to ${memberName}`,
+    });
+  };
+
+  const filteredTopics = topics.filter(topic => 
+    (selectedCategory === "all" || topic.category.toLowerCase().includes(selectedCategory)) &&
+    (searchTerm === "" || topic.title.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
@@ -142,6 +216,10 @@ const Community = () => {
                 Dashboard
               </Button>
             </Link>
+            <Button onClick={handleLogout} variant="outline" size="sm">
+              <LogOut className="h-4 w-4 mr-1" />
+              Logout
+            </Button>
           </div>
         </div>
       </header>
@@ -200,7 +278,7 @@ const Community = () => {
 
             {/* Community Posts */}
             <div className="space-y-6">
-              {communityPosts.map(post => (
+              {posts.map(post => (
                 <Card key={post.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-4">
@@ -241,9 +319,9 @@ const Community = () => {
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleLike(post.id)}
-                            className="flex items-center space-x-2 text-gray-600 hover:text-red-600"
+                            className={`flex items-center space-x-2 ${post.liked ? 'text-red-600' : 'text-gray-600 hover:text-red-600'}`}
                           >
-                            <Heart className="h-4 w-4" />
+                            <Heart className={`h-4 w-4 ${post.liked ? 'fill-current' : ''}`} />
                             <span>{post.likes}</span>
                           </Button>
                           <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gray-600">
@@ -265,11 +343,16 @@ const Community = () => {
 
           {/* Forums */}
           <TabsContent value="forums" className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input placeholder="Search forums..." className="pl-10 w-64" />
+                  <Input 
+                    placeholder="Search forums..." 
+                    className="pl-10 w-64"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
                 <select 
                   value={selectedCategory}
@@ -283,14 +366,25 @@ const Community = () => {
                   <option value="technology">Technology</option>
                 </select>
               </div>
-              <Button className="bg-green-600 hover:bg-green-700">
+              <Button 
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  const title = prompt("Enter topic title:");
+                  const description = prompt("Enter topic description:");
+                  if (title && description) {
+                    setNewTopicTitle(title);
+                    setNewTopicDescription(description);
+                    handleCreateTopic();
+                  }
+                }}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 New Topic
               </Button>
             </div>
 
             <div className="space-y-4">
-              {forumTopics.map(topic => (
+              {filteredTopics.map(topic => (
                 <Card key={topic.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -380,7 +474,12 @@ const Community = () => {
                         </Badge>
                         <p className="text-sm text-gray-600 mb-1">{member.location}</p>
                         <p className="text-sm text-gray-500 mb-3">{member.specialty}</p>
-                        <Button size="sm" variant="outline" className="w-full">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={() => handleConnect(member.name)}
+                        >
                           Connect
                         </Button>
                       </CardContent>
