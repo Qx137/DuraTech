@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Leaf, ShoppingCart, User, Mail, Lock, Phone, MapPin, Building } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
   const [searchParams] = useSearchParams();
   const initialType = searchParams.get('type') || 'buyer';
   const [userType, setUserType] = useState(initialType);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,8 +27,10 @@ const Register = () => {
     description: ''
   });
   const { toast } = useToast();
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
@@ -38,13 +42,33 @@ const Register = () => {
       return;
     }
 
-    // Simulate registration
-    toast({
-      title: "Registration Successful!",
-      description: `Welcome to AgriMarket as a ${userType}!`,
-    });
+    setIsLoading(true);
 
-    console.log('Registration data:', { ...formData, userType });
+    try {
+      const success = await register({ ...formData, userType });
+      
+      if (success) {
+        toast({
+          title: "Registration Successful!",
+          description: `Welcome to DuraHub as a ${userType}!`,
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Registration Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -61,7 +85,7 @@ const Register = () => {
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2 mb-6 text-green-600 hover:text-green-700">
             <Leaf className="h-8 w-8" />
-            <span className="text-2xl font-bold">AgriMarket</span>
+            <span className="text-2xl font-bold">DuraHub</span>
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Create Your Account</h1>
           <p className="text-gray-600">Join the agricultural revolution</p>
@@ -118,6 +142,7 @@ const Register = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="Enter your full name"
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -133,6 +158,7 @@ const Register = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="your@email.com"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -151,6 +177,7 @@ const Register = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="Create a password"
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -166,6 +193,7 @@ const Register = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="Confirm your password"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -184,6 +212,7 @@ const Register = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="+1 (555) 123-4567"
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -199,6 +228,7 @@ const Register = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="City, State"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -219,6 +249,7 @@ const Register = () => {
                       onChange={handleInputChange}
                       required
                       placeholder="Your farm or business name"
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -230,13 +261,18 @@ const Register = () => {
                       onChange={handleInputChange}
                       placeholder="Describe what you grow, your farming methods, etc."
                       rows={3}
+                      disabled={isLoading}
                     />
                   </div>
                 </>
               )}
 
-              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-lg py-3">
-                Create Account
+              <Button 
+                type="submit" 
+                className="w-full bg-green-600 hover:bg-green-700 text-lg py-3"
+                disabled={isLoading}
+              >
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 

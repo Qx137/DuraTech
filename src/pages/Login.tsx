@@ -5,26 +5,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Leaf, Mail, Lock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    // Simulate login
-    toast({
-      title: "Login Successful!",
-      description: "Welcome back to AgriMarket!",
-    });
-
-    console.log('Login data:', formData);
+    try {
+      const success = await login(formData.email, formData.password);
+      
+      if (success) {
+        toast({
+          title: "Login Successful!",
+          description: "Welcome back to DuraHub!",
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid credentials. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Login Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +64,7 @@ const Login = () => {
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2 mb-6 text-green-600 hover:text-green-700">
             <Leaf className="h-8 w-8" />
-            <span className="text-2xl font-bold">AgriMarket</span>
+            <span className="text-2xl font-bold">DuraHub</span>
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
           <p className="text-gray-600">Sign in to your account</p>
@@ -69,6 +92,7 @@ const Login = () => {
                   onChange={handleInputChange}
                   required
                   placeholder="your@email.com"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -85,6 +109,7 @@ const Login = () => {
                   onChange={handleInputChange}
                   required
                   placeholder="Enter your password"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -98,8 +123,12 @@ const Login = () => {
                 </Link>
               </div>
 
-              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-lg py-3">
-                Sign In
+              <Button 
+                type="submit" 
+                className="w-full bg-green-600 hover:bg-green-700 text-lg py-3"
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
 
