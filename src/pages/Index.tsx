@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,41 +7,34 @@ import { Link } from "react-router-dom";
 const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
             <Leaf className="h-8 w-8 text-green-600" />
-            <span className="text-2xl font-bold text-green-800">DuraHub</span>
-          </Link>
-          <div className="hidden md:flex items-center space-x-6">
+            <h1 className="text-2xl font-bold text-green-800">DuraMarket</h1>
+          </div>
+          <nav className="hidden md:flex items-center space-x-6">
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
               Marketplace
+            </Link>
+            <Link to="/community" className="text-gray-700 hover:text-green-600 transition-colors">
+              Community
             </Link>
             <Link to="/ai-tools" className="text-gray-700 hover:text-green-600 transition-colors">
               AI Tools
             </Link>
-            <a href="#about" className="text-gray-700 hover:text-green-600 transition-colors">
-              About
-            </a>
-            <a href="#contact" className="text-gray-700 hover:text-green-600 transition-colors">
-              Contact
-            </a>
-          </div>
+          </nav>
           <div className="flex items-center space-x-3">
             <Link to="/login">
-              <Button variant="outline" size="sm">
-                Sign In
-              </Button>
+              <Button variant="outline" size="sm">Login</Button>
             </Link>
             <Link to="/register">
-              <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                Get Started
-              </Button>
+              <Button size="sm" className="bg-green-600 hover:bg-green-700">Get Started</Button>
             </Link>
           </div>
         </div>
-      </nav>
+      </header>
 
       {/* Hero Section */}
       <section className="py-20">
@@ -72,47 +64,47 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-white/50">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">
-            Why Choose DuraHub?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="text-center">
-                <Brain className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle className="text-xl">AI-Powered Insights</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-center">
-                  Get smart recommendations, price predictions, and crop insights powered by advanced AI technology.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="text-center">
-                <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle className="text-xl">Verified Quality</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-center">
-                  All farmers are verified and products are quality-checked to ensure you get the freshest produce.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="text-center">
-                <Users className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle className="text-xl">Direct Connection</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-center">
-                  Connect directly with farmers, supporting local agriculture and getting better prices.
-                </CardDescription>
-              </CardContent>
-            </Card>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose DuraMarket?</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Connecting farmers and buyers with innovative technology and sustainable practices
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShoppingCart className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Fresh Marketplace</h3>
+              <p className="text-gray-600">Direct access to farm-fresh produce with transparent pricing</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Brain className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">AI-Powered Tools</h3>
+              <p className="text-gray-600">Smart recommendations and market insights powered by AI</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Community Hub</h3>
+              <p className="text-gray-600">Connect with farmers, buyers, and agriculture enthusiasts</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-8 w-8 text-emerald-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Secure & Verified</h3>
+              <p className="text-gray-600">KYC verification and secure transactions for peace of mind</p>
+            </div>
           </div>
         </div>
       </section>
@@ -208,6 +200,7 @@ const Index = () => {
               <h4 className="font-bold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link to="/marketplace" className="hover:text-green-500 transition-colors">Marketplace</Link></li>
+                <li><Link to="/community" className="hover:text-green-500 transition-colors">Community</Link></li>
                 <li><Link to="/ai-tools" className="hover:text-green-500 transition-colors">AI Tools</Link></li>
                 <li><a href="#about" className="hover:text-green-500 transition-colors">About Us</a></li>
                 <li><a href="#contact" className="hover:text-green-500 transition-colors">Contact</a></li>

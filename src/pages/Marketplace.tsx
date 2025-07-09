@@ -130,6 +130,9 @@ const Marketplace = () => {
             <Link to="/marketplace" className="text-green-600 font-medium">
               Marketplace
             </Link>
+            <Link to="/community" className="text-gray-700 hover:text-green-600 transition-colors">
+              Community
+            </Link>
             <Link to="/ai-tools" className="text-gray-700 hover:text-green-600 transition-colors">
               AI Tools
             </Link>
