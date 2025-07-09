@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, Star, MapPin, Leaf, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
-// Sample product data
+// Sample product data with real images
 const products = [
   {
     id: 1,
@@ -18,7 +19,7 @@ const products = [
     farmer: "Green Valley Farm",
     location: "California, USA",
     rating: 4.8,
-    image: "🍅",
+    image: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=400&h=300&fit=crop",
     category: "Vegetables",
     organic: true,
     description: "Fresh, juicy organic tomatoes perfect for salads and cooking"
@@ -31,7 +32,7 @@ const products = [
     farmer: "Sunset Orchards",
     location: "Washington, USA",
     rating: 4.9,
-    image: "🍎",
+    image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=300&fit=crop",
     category: "Fruits",
     organic: false,
     description: "Crisp and sweet apples, perfect for snacking"
@@ -44,7 +45,7 @@ const products = [
     farmer: "Healthy Greens Co",
     location: "Oregon, USA",
     rating: 4.7,
-    image: "🥬",
+    image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&h=300&fit=crop",
     category: "Vegetables",
     organic: true,
     description: "Nutrient-rich organic spinach, freshly harvested"
@@ -57,7 +58,7 @@ const products = [
     farmer: "Happy Hen Farm",
     location: "Texas, USA",
     rating: 4.9,
-    image: "🥚",
+    image: "https://images.unsplash.com/photo-1518569656558-1f25e69d93d7?w=400&h=300&fit=crop",
     category: "Dairy & Eggs",
     organic: true,
     description: "Free-range organic eggs from happy hens"
@@ -70,7 +71,7 @@ const products = [
     farmer: "Corn Field Farms",
     location: "Iowa, USA",
     rating: 4.6,
-    image: "🌽",
+    image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400&h=300&fit=crop",
     category: "Vegetables",
     organic: false,
     description: "Sweet and tender corn, perfect for grilling"
@@ -83,7 +84,7 @@ const products = [
     farmer: "Berry Delicious Farm",
     location: "Florida, USA",
     rating: 4.8,
-    image: "🍓",
+    image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&h=300&fit=crop",
     category: "Fruits",
     organic: true,
     description: "Sweet, juicy organic strawberries"
@@ -94,6 +95,8 @@ const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [organicOnly, setOrganicOnly] = useState(false);
+  const [cart, setCart] = useState<number[]>([]);
+  const { toast } = useToast();
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -106,6 +109,14 @@ const Marketplace = () => {
 
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
 
+  const addToCart = (productId: number) => {
+    setCart(prev => [...prev, productId]);
+    toast({
+      title: "Added to Cart",
+      description: "Product has been added to your cart successfully!",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
       {/* Header */}
@@ -113,7 +124,7 @@ const Marketplace = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <Leaf className="h-8 w-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-800">AgriMarket</h1>
+            <h1 className="text-2xl font-bold text-green-800">DuraMarket</h1>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/marketplace" className="text-green-600 font-medium">
@@ -124,9 +135,9 @@ const Marketplace = () => {
             </Link>
           </nav>
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => toast({ title: "Cart", description: `You have ${cart.length} items in your cart` })}>
               <ShoppingCart className="h-4 w-4 mr-1" />
-              Cart (0)
+              Cart ({cart.length})
             </Button>
             <Link to="/login">
               <Button size="sm" className="bg-green-600 hover:bg-green-700">
@@ -204,20 +215,26 @@ const Marketplace = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map(product => (
             <Card key={product.id} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md overflow-hidden">
+              <div className="relative h-48 overflow-hidden">
+                <img 
+                  src={product.image} 
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                />
+                {product.organic && (
+                  <Badge className="absolute top-2 right-2 bg-green-100 text-green-800 text-xs">
+                    Organic
+                  </Badge>
+                )}
+              </div>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className="text-4xl mb-2">{product.image}</div>
-                  <div className="flex flex-col items-end space-y-1">
-                    {product.organic && (
-                      <Badge className="bg-green-100 text-green-800 text-xs">Organic</Badge>
-                    )}
-                    <div className="flex items-center space-x-1">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-600">{product.rating}</span>
-                    </div>
+                  <CardTitle className="text-lg">{product.name}</CardTitle>
+                  <div className="flex items-center space-x-1">
+                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                    <span className="text-sm text-gray-600">{product.rating}</span>
                   </div>
                 </div>
-                <CardTitle className="text-lg">{product.name}</CardTitle>
                 <CardDescription>{product.description}</CardDescription>
               </CardHeader>
               <CardContent>
@@ -232,7 +249,11 @@ const Marketplace = () => {
                       <span className="text-2xl font-bold text-green-600">${product.price}</span>
                       <span className="text-gray-500 ml-1">{product.unit}</span>
                     </div>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                    <Button 
+                      size="sm" 
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => addToCart(product.id)}
+                    >
                       <ShoppingCart className="h-4 w-4 mr-1" />
                       Add to Cart
                     </Button>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Leaf, ShoppingCart, User, Mail, Lock, Phone, MapPin, Building } from "lucide-react";
+import { Leaf, ShoppingCart, User, Mail, Lock, Phone, MapPin, Building, Upload, FileText, Shield } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,7 +24,9 @@ const Register = () => {
     phone: '',
     address: '',
     businessName: '',
-    description: ''
+    description: '',
+    kycDocument: null as File | null,
+    farmDocument: null as File | null
   });
   const { toast } = useToast();
   const { register } = useAuth();
@@ -37,6 +39,15 @@ const Register = () => {
       toast({
         title: "Password Mismatch",
         description: "Passwords do not match. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (userType === 'seller' && (!formData.kycDocument || !formData.farmDocument)) {
+      toast({
+        title: "Missing Documents",
+        description: "Please upload both KYC and farm legal documents.",
         variant: "destructive"
       });
       return;
@@ -75,6 +86,14 @@ const Register = () => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    const file = e.target.files?.[0] || null;
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: file
     }));
   };
 
@@ -263,6 +282,66 @@ const Register = () => {
                       rows={3}
                       disabled={isLoading}
                     />
+                  </div>
+
+                  {/* KYC and Document Upload Section */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 space-y-4">
+                    <div className="flex items-center space-x-2 text-blue-800">
+                      <Shield className="h-5 w-5" />
+                      <h3 className="font-semibold">Verification Documents Required</h3>
+                    </div>
+                    <p className="text-sm text-blue-700">
+                      As a seller, you need to provide the following documents for verification:
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="kycDocument" className="flex items-center space-x-2">
+                          <FileText className="h-4 w-4" />
+                          <span>KYC Document (ID/Passport)</span>
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="kycDocument"
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => handleFileChange(e, 'kycDocument')}
+                            required
+                            disabled={isLoading}
+                            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                          />
+                        </div>
+                        {formData.kycDocument && (
+                          <p className="text-xs text-green-600">✓ {formData.kycDocument.name}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="farmDocument" className="flex items-center space-x-2">
+                          <FileText className="h-4 w-4" />
+                          <span>Farm Legal Document</span>
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="farmDocument"
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => handleFileChange(e, 'farmDocument')}
+                            required
+                            disabled={isLoading}
+                            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                          />
+                        </div>
+                        {formData.farmDocument && (
+                          <p className="text-xs text-green-600">✓ {formData.farmDocument.name}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-blue-600 bg-blue-100 p-3 rounded">
+                      <strong>Note:</strong> All documents will be securely stored and used only for verification purposes. 
+                      Your account will be reviewed within 2-3 business days after submission.
+                    </div>
                   </div>
                 </>
               )}
