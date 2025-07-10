@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -134,13 +133,17 @@ const Community = () => {
   };
 
   const handleLike = (postId: number) => {
+    const post = posts.find(p => p.id === postId);
+    const wasLiked = post?.liked || false;
+    
     setPosts(posts.map(post => 
       post.id === postId 
         ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
         : post
     ));
+    
     toast({
-      title: post => post ? "Post Liked!" : "Post Unliked!",
+      title: wasLiked ? "Post Unliked!" : "Post Liked!",
       description: "Your interaction has been recorded.",
     });
   };
