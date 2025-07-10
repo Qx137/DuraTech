@@ -142,8 +142,9 @@ const Community = () => {
         : post
     ));
     
+    const toastTitle = wasLiked ? "Post Unliked!" : "Post Liked!";
     toast({
-      title: wasLiked ? "Post Unliked!" : "Post Liked!",
+      title: toastTitle,
       description: "Your interaction has been recorded.",
     });
   };
