@@ -13,6 +13,11 @@ import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
 import AITools from "./pages/AITools";
 import Community from "./pages/Community";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import DeliveryTracking from "./pages/DeliveryTracking";
+import DriverRegistration from "./pages/DriverRegistration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +38,11 @@ const App = () => (
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/ai-tools" element={<AITools />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/delivery-tracking" element={<DeliveryTracking />} />
+            <Route path="/driver-registration" element={<DriverRegistration />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

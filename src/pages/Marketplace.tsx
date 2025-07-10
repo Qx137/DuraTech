@@ -138,10 +138,12 @@ const Marketplace = () => {
             </Link>
           </nav>
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm" onClick={() => toast({ title: "Cart", description: `You have ${cart.length} items in your cart` })}>
-              <ShoppingCart className="h-4 w-4 mr-1" />
-              Cart ({cart.length})
-            </Button>
+            <Link to="/cart">
+              <Button variant="outline" size="sm">
+                <ShoppingCart className="h-4 w-4 mr-1" />
+                Cart ({cart.length})
+              </Button>
+            </Link>
             <Link to="/login">
               <Button size="sm" className="bg-green-600 hover:bg-green-700">
                 Account
