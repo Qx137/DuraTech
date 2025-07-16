@@ -24,20 +24,20 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(formData.email, formData.password);
+      const { error } = await login(formData.email, formData.password);
       
-      if (success) {
+      if (error) {
+        toast({
+          title: "Login Failed",
+          description: error,
+          variant: "destructive"
+        });
+      } else {
         toast({
           title: "Login Successful!",
           description: "Welcome back to DuraHub!",
         });
         navigate('/dashboard');
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid credentials. Please try again.",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       toast({
