@@ -2,25 +2,25 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, ShoppingCart } from "lucide-react";
+import { Star, MapPin, ShoppingBag } from "lucide-react";
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   price: number;
   unit: string;
   farmer: string;
-  location: string;
-  rating: number;
-  image: string;
+  location: string | null;
+  rating: number | null;
+  image: string | null;
   category: string;
   organic: boolean;
-  description: string;
+  description: string | null;
 }
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (productId: number) => void;
+  onAddToCart: () => void;
 }
 
 const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
@@ -28,7 +28,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
     <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md overflow-hidden">
       <div className="relative h-48 overflow-hidden">
         <img 
-          src={product.image} 
+          src={product.image || "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=400&h=300&fit=crop"} 
           alt={product.name}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
         />
@@ -43,16 +43,16 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           <CardTitle className="text-lg">{product.name}</CardTitle>
           <div className="flex items-center space-x-1">
             <Star className="h-4 w-4 text-yellow-400 fill-current" />
-            <span className="text-sm text-gray-600">{product.rating}</span>
+            <span className="text-sm text-gray-600">{product.rating?.toFixed(1) || '0.0'}</span>
           </div>
         </div>
-        <CardDescription>{product.description}</CardDescription>
+        <CardDescription>{product.description || 'Fresh, quality produce'}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           <div className="flex items-center text-sm text-gray-600">
             <MapPin className="h-4 w-4 mr-1" />
-            {product.farmer} • {product.location}
+            {product.farmer} {product.location && `• ${product.location}`}
           </div>
           
           <div className="flex items-center justify-between">
@@ -63,9 +63,9 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
             <Button 
               size="sm" 
               className="bg-green-600 hover:bg-green-700"
-              onClick={() => onAddToCart(product.id)}
+              onClick={onAddToCart}
             >
-              <ShoppingCart className="h-4 w-4 mr-1" />
+              <ShoppingBag className="h-4 w-4 mr-1" />
               Add to Cart
             </Button>
           </div>

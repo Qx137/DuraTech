@@ -1,18 +1,60 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Leaf, ShoppingCart, Users, TrendingUp, Zap, Brain, Shield, Smartphone, Heart, ArrowRight, Star } from "lucide-react";
+import { Store, ShoppingBag, Users, TrendingUp, Cpu, Database, Shield, Monitor, UserCheck, ArrowRight, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const [stats, setStats] = useState({
+    farmersCount: 0,
+    customersCount: 0,
+    productsCount: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Get seller count
+        const { count: sellersCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_type', 'seller');
+
+        // Get buyer count
+        const { count: buyersCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_type', 'buyer');
+
+        // Get products count
+        const { count: productsCount } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true });
+
+        setStats({
+          farmersCount: sellersCount || 0,
+          customersCount: buyersCount || 0,
+          productsCount: productsCount || 0
+        });
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Leaf className="h-8 w-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-800">DuraMarket</h1>
+            <Store className="h-8 w-8 text-green-600" />
+            <h1 className="text-2xl font-bold text-green-800">DuraHub</h1>
           </div>
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
@@ -49,13 +91,13 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link to="/register?type=buyer">
               <Button size="lg" className="bg-green-600 hover:bg-green-700 text-lg px-8 py-3">
-                <ShoppingCart className="mr-2 h-5 w-5" />
+                <ShoppingBag className="mr-2 h-5 w-5" />
                 Start Shopping
               </Button>
             </Link>
             <Link to="/register?type=seller">
               <Button size="lg" variant="outline" className="text-lg px-8 py-3">
-                <Leaf className="mr-2 h-5 w-5" />
+                <Store className="mr-2 h-5 w-5" />
                 Sell Your Produce
               </Button>
             </Link>
@@ -67,7 +109,7 @@ const Index = () => {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose DuraMarket?</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose DuraHub?</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Connecting farmers and buyers with innovative technology and sustainable practices
             </p>
@@ -76,7 +118,7 @@ const Index = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ShoppingCart className="h-8 w-8 text-green-600" />
+                <ShoppingBag className="h-8 w-8 text-green-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Fresh Marketplace</h3>
               <p className="text-gray-600">Direct access to farm-fresh produce with transparent pricing</p>
@@ -84,7 +126,7 @@ const Index = () => {
             
             <div className="text-center">
               <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Brain className="h-8 w-8 text-blue-600" />
+                <Cpu className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">AI-Powered Tools</h3>
               <p className="text-gray-600">Smart recommendations and market insights powered by AI</p>
@@ -103,7 +145,7 @@ const Index = () => {
                 <Shield className="h-8 w-8 text-emerald-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Secure & Verified</h3>
-              <p className="text-gray-600">KYC verification and secure transactions for peace of mind</p>
+              <p className="text-gray-600">Verified profiles and secure transactions for peace of mind</p>
             </div>
           </div>
         </div>
@@ -115,7 +157,7 @@ const Index = () => {
           <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-8 md:p-12 text-white">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
-                <Smartphone className="h-16 w-16 mb-6 opacity-90" />
+                <Monitor className="h-16 w-16 mb-6 opacity-90" />
                 <h3 className="text-3xl font-bold mb-4">Coming Soon: Mobile App</h3>
                 <p className="text-lg opacity-90 mb-6">
                   Take DuraHub with you wherever you go. Our mobile app will bring the marketplace right to your pocket.
@@ -128,7 +170,7 @@ const Index = () => {
               </div>
               <div className="text-center">
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8">
-                  <Smartphone className="h-32 w-32 mx-auto opacity-70" />
+                  <Monitor className="h-32 w-32 mx-auto opacity-70" />
                 </div>
               </div>
             </div>
@@ -141,15 +183,15 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600 mb-2">1000+</div>
+              <div className="text-3xl font-bold text-green-600 mb-2">{stats.farmersCount}+</div>
               <div className="text-gray-600">Verified Farmers</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600 mb-2">50k+</div>
+              <div className="text-3xl font-bold text-green-600 mb-2">{stats.customersCount}+</div>
               <div className="text-gray-600">Happy Customers</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600 mb-2">100+</div>
+              <div className="text-3xl font-bold text-green-600 mb-2">{stats.productsCount}+</div>
               <div className="text-gray-600">Product Varieties</div>
             </div>
             <div className="text-center">
@@ -163,7 +205,7 @@ const Index = () => {
       {/* Newsletter Section */}
       <section className="py-16">
         <div className="container mx-auto px-4 max-w-2xl text-center">
-          <Heart className="h-12 w-12 text-green-600 mx-auto mb-6" />
+          <UserCheck className="h-12 w-12 text-green-600 mx-auto mb-6" />
           <h3 className="text-2xl font-bold text-gray-800 mb-4">
             Stay Updated with DuraHub
           </h3>
@@ -189,7 +231,7 @@ const Index = () => {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <Leaf className="h-6 w-6 text-green-500" />
+                <Store className="h-6 w-6 text-green-500" />
                 <span className="text-xl font-bold">DuraHub</span>
               </div>
               <p className="text-gray-400">

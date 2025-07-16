@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Leaf, Mail, Lock } from "lucide-react";
+import { Store, Mail, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,7 +63,7 @@ const Login = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2 mb-6 text-green-600 hover:text-green-700">
-            <Leaf className="h-8 w-8" />
+            <Store className="h-8 w-8" />
             <span className="text-2xl font-bold">DuraHub</span>
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
