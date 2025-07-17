@@ -61,6 +61,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               businessName: profile.business_name || undefined,
               description: profile.description || undefined,
             });
+          } else {
+            console.error("Error fetching profile:", error);
           }
         } else {
           setUser(null);
@@ -82,17 +84,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) {
+        console.error("Login error:", error.message);
         return { error: error.message };
       }
       
+      console.log("Login successful:", data);
       return {};
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Unexpected login error:", error);
       return { error: 'An unexpected error occurred' };
     }
   };
@@ -118,7 +123,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       return {};
-    } catch (error) {
+    } catch (error: any) {
       return { error: 'An unexpected error occurred' };
     }
   };

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Store, Mail, Lock } from "lucide-react";
+import { Mail, Lock, LeafyGreen } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +24,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
+      // Login and capture the error if any
       const { error } = await login(formData.email, formData.password);
       
       if (error) {
@@ -40,6 +41,7 @@ const Login = () => {
         navigate('/dashboard');
       }
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "Login Error",
         description: "Something went wrong. Please try again.",
@@ -63,7 +65,7 @@ const Login = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2 mb-6 text-green-600 hover:text-green-700">
-            <Store className="h-8 w-8" />
+            <LeafyGreen className="h-8 w-8" />
             <span className="text-2xl font-bold">DuraHub</span>
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
