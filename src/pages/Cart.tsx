@@ -1,14 +1,17 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Minus, Plus, Trash2, ShoppingCart, Leaf, ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CartItem {
-  id: number;
+  id: string;
+  product_id: string;
   name: string;
   price: number;
   quantity: number;
@@ -20,44 +23,121 @@ interface CartItem {
 const Cart = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      name: "Organic Tomatoes",
-      price: 4.99,
-      quantity: 2,
-      farmer: "Green Valley Farm",
-      image: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=200&h=200&fit=crop",
-      organic: true
-    },
-    {
-      id: 2,
-      name: "Fresh Apples",
-      price: 3.99,
-      quantity: 1,
-      farmer: "Sunset Orchards",
-      image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200&h=200&fit=crop",
-      organic: false
-    }
-  ]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const updateQuantity = (id: number, change: number) => {
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Math.max(0, item.quantity + change) }
-          : item
-      ).filter(item => item.quantity > 0)
-    );
+  useEffect(() => {
+    if (user) {
+      fetchCartItems();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const fetchCartItems = async () => {
+    try {
+      const { data: cartData, error } = await supabase
+        .from('cart_items')
+        .select(`
+          id,
+          product_id,
+          quantity,
+          products (
+            name,
+            price,
+            image,
+            organic,
+            profiles (
+              business_name
+            )
+          )
+        `)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      const formattedItems = cartData?.map(item => ({
+        id: item.id,
+        product_id: item.product_id,
+        name: item.products?.name || '',
+        price: Number(item.products?.price) || 0,
+        quantity: item.quantity,
+        farmer: item.products?.profiles?.business_name || 'Unknown Farmer',
+        image: item.products?.image || '',
+        organic: item.products?.organic || false,
+      })) || [];
+
+      setCartItems(formattedItems);
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load cart items.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeItem = (id: number) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-    toast({
-      title: "Item Removed",
-      description: "Item has been removed from your cart.",
-    });
+  const updateQuantity = async (id: string, change: number) => {
+    const item = cartItems.find(item => item.id === id);
+    if (!item) return;
+
+    const newQuantity = Math.max(0, item.quantity + change);
+    
+    if (newQuantity === 0) {
+      removeItem(id);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('cart_items')
+        .update({ quantity: newQuantity })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setCartItems(items =>
+        items.map(item =>
+          item.id === id ? { ...item, quantity: newQuantity } : item
+        )
+      );
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update item quantity.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeItem = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setCartItems(items => items.filter(item => item.id !== id));
+      toast({
+        title: "Item Removed",
+        description: "Item has been removed from your cart.",
+      });
+    } catch (error) {
+      console.error('Error removing item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove item from cart.",
+        variant: "destructive",
+      });
+    }
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -83,7 +163,7 @@ const Cart = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <Leaf className="h-8 w-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-800">DuraMarket</h1>
+            <h1 className="text-2xl font-bold text-green-800">DuraHub</h1>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
@@ -111,7 +191,23 @@ const Cart = () => {
           <p className="text-gray-600">Review your items before checkout</p>
         </div>
 
-        {cartItems.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading your cart...</p>
+          </div>
+        ) : !user ? (
+          <div className="text-center py-12">
+            <ShoppingCart className="h-24 w-24 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">Please sign in</h3>
+            <p className="text-gray-500 mb-6">You need to sign in to view your cart</p>
+            <Link to="/login">
+              <Button className="bg-green-600 hover:bg-green-700">
+                Sign In
+              </Button>
+            </Link>
+          </div>
+        ) : cartItems.length === 0 ? (
           <div className="text-center py-12">
             <ShoppingCart className="h-24 w-24 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">Your cart is empty</h3>
