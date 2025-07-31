@@ -95,7 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       console.log("Login successful:", data);
-      return {};
+      return { error: undefined };
     } catch (error: any) {
       console.error("Unexpected login error:", error);
       return { error: 'An unexpected error occurred' };
