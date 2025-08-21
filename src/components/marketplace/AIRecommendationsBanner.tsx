@@ -11,7 +11,7 @@ const AIRecommendationsBanner = () => {
           <p className="opacity-90">Based on seasonal trends and your location, we recommend fresh corn and tomatoes!</p>
         </div>
         <Link to="/ai-tools">
-          <Button variant="outline" className="text-blue border-white hover:bg-white hover:text-purple-600">
+          <Button variant="outline" className="text-black border-white hover:bg-white hover:text-purple-600">
             View AI Tools
           </Button>
         </Link>
