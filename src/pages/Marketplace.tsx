@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import SearchFilters from "@/components/marketplace/SearchFilters";
 import AIRecommendationsBanner from "@/components/marketplace/AIRecommendationsBanner";
@@ -12,8 +14,9 @@ const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [organicOnly, setOrganicOnly] = useState(false);
-  const [cart, setCart] = useState<string[]>([]);
+  const [cartCount, setCartCount] = useState(0);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -26,18 +29,93 @@ const Marketplace = () => {
 
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
 
-  const addToCart = (productId: string) => {
-    setCart(prev => [...prev, productId]);
-    toast({
-      title: "Added to Cart",
-      description: "Product has been added to your cart successfully!",
-    });
+  useEffect(() => {
+    if (user) {
+      fetchCartCount();
+    } else {
+      setCartCount(0);
+    }
+  }, [user]);
+
+  const fetchCartCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('cart_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+      setCartCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching cart count:', error);
+    }
+  };
+
+  const addToCart = async (productId: string) => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        description: "You need to sign in to add items to your cart.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Check if item already exists in cart
+      const { data: existingItem, error: checkError } = await supabase
+        .from('cart_items')
+        .select('id, quantity')
+        .eq('user_id', user.id)
+        .eq('product_id', productId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingItem) {
+        // Update quantity if item exists
+        const { error: updateError } = await supabase
+          .from('cart_items')
+          .update({ quantity: existingItem.quantity + 1 })
+          .eq('id', existingItem.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new item if it doesn't exist
+        const { error: insertError } = await supabase
+          .from('cart_items')
+          .insert([
+            {
+              user_id: user.id,
+              product_id: productId,
+              quantity: 1
+            }
+          ]);
+
+        if (insertError) throw insertError;
+      }
+
+      await fetchCartCount();
+      toast({
+        title: "Added to Cart",
+        description: "Product has been added to your cart successfully!",
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add product to cart. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
-      <MarketplaceHeader cartCount={cart.length} />
+      <MarketplaceHeader cartCount={cartCount} />
 
       <div className="container mx-auto px-4 py-8">
         <SearchFilters
