@@ -42,43 +42,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         
         if (session?.user) {
           console.log('User authenticated, fetching profile...');
-          // Fetch user profile from our profiles table
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profile && !error) {
-            console.log('Profile loaded:', profile);
-            setUser({
-              id: profile.id,
-              name: profile.name,
-              email: profile.email,
-              userType: profile.user_type as 'buyer' | 'seller',
-              businessName: profile.business_name || undefined,
-              description: profile.description || undefined,
-            });
-          } else {
-            console.error("Error fetching profile:", error);
-            // If no profile exists, create a basic user object from auth data
-            setUser({
-              id: session.user.id,
-              name: session.user.user_metadata?.name || session.user.email || 'User',
-              email: session.user.email || '',
-              userType: 'buyer', // default type
-            });
-          }
+          // Use setTimeout to defer the async profile fetch to avoid blocking the auth state change
+          setTimeout(async () => {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile && !error) {
+              console.log('Profile loaded:', profile);
+              setUser({
+                id: profile.id,
+                name: profile.name,
+                email: profile.email,
+                userType: profile.user_type as 'buyer' | 'seller',
+                businessName: profile.business_name || undefined,
+                description: profile.description || undefined,
+              });
+            } else {
+              console.error("Error fetching profile:", error);
+              // If no profile exists, create a basic user object from auth data
+              setUser({
+                id: session.user.id,
+                name: session.user.user_metadata?.name || session.user.email || 'User',
+                email: session.user.email || '',
+                userType: 'buyer', // default type
+              });
+            }
+          }, 0);
         } else {
           console.log('No session, clearing user');
           setUser(null);
         }
+        
+        // Always set loading to false after processing auth state
         setLoading(false);
       }
     );
@@ -87,6 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('Checking for existing session...');
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Existing session:', session?.user?.id);
+      // The auth state change listener will handle the session, just ensure loading is set to false if no session
       if (!session) {
         setLoading(false);
       }
