@@ -109,7 +109,7 @@ const Index = () => {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose DuraHub?</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose DuraTech?</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Connecting farmers and buyers with innovative technology and sustainable practices
             </p>
@@ -160,7 +160,7 @@ const Index = () => {
                 <Monitor className="h-16 w-16 mb-6 opacity-90" />
                 <h3 className="text-3xl font-bold mb-4">Coming Soon: Mobile App</h3>
                 <p className="text-lg opacity-90 mb-6">
-                  Take DuraHub with you wherever you go. Our mobile app will bring the marketplace right to your pocket.
+                  Take DuraTech with you wherever you go. Our mobile app will bring the marketplace right to your pocket.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button size="lg" variant="outline" className="text-green-600 border-white bg-white hover:bg-gray-100">
@@ -207,7 +207,7 @@ const Index = () => {
         <div className="container mx-auto px-4 max-w-2xl text-center">
           <UserCheck className="h-12 w-12 text-green-600 mx-auto mb-6" />
           <h3 className="text-2xl font-bold text-gray-800 mb-4">
-            Stay Updated with DuraHub
+            Stay Updated with DuraTech
           </h3>
           <p className="text-gray-600 mb-6">
             Get the latest updates on fresh produce, seasonal offers, and agricultural insights.
