@@ -66,8 +66,14 @@ const AITools = () => {
             <h1 className="text-2xl font-bold text-green-800">AgriMarket</h1>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
+            <Link to="/dashboard" className="text-gray-700 hover:text-green-600 transition-colors">
+              Dashboard
+            </Link>
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
               Marketplace
+            </Link>
+            <Link to="/community" className="text-gray-700 hover:text-green-600 transition-colors">
+              Community
             </Link>
             <Link to="/ai-tools" className="text-green-600 font-medium">
               AI Tools

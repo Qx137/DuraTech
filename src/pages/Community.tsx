@@ -225,6 +225,9 @@ const Community = () => {
             <h1 className="text-2xl font-bold text-green-800">DuraMarket</h1>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
+            <Link to="/dashboard" className="text-gray-700 hover:text-green-600 transition-colors">
+              Dashboard
+            </Link>
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
               Marketplace
             </Link>
@@ -236,11 +239,6 @@ const Community = () => {
             </Link>
           </nav>
           <div className="flex items-center space-x-3">
-            <Link to="/dashboard">
-              <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                Dashboard
-              </Button>
-            </Link>
             <Button onClick={handleLogout} variant="outline" size="sm">
               <LogOut className="h-4 w-4 mr-1" />
               Logout
