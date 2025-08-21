@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,11 +16,21 @@ const Login = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    console.log('Login page - auth status:', { isAuthenticated, loading });
+    if (isAuthenticated && !loading) {
+      console.log('User is authenticated, redirecting to dashboard...');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login form submitted');
     setIsLoading(true);
     
     try {
@@ -28,17 +38,20 @@ const Login = () => {
       const { error } = await login(formData.email, formData.password);
       
       if (error) {
+        console.log('Login failed:', error);
         toast({
           title: "Login Failed",
           description: error,
           variant: "destructive"
         });
+        setIsLoading(false);
       } else {
+        console.log('Login successful, waiting for redirect...');
         toast({
           title: "Login Successful!",
           description: "Welcome back to DuraHub!",
         });
-        navigate('/dashboard');
+        // Don't set loading to false here, let the auth context and useEffect handle the redirect
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -47,7 +60,6 @@ const Login = () => {
         description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -58,6 +70,18 @@ const Login = () => {
       [e.target.name]: e.target.value
     }));
   };
+
+  // Show loading state while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50 flex items-center justify-center py-12">

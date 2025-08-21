@@ -38,6 +38,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Setting up auth state listener...');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -45,6 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSession(session);
         
         if (session?.user) {
+          console.log('User authenticated, fetching profile...');
           // Fetch user profile from our profiles table
           const { data: profile, error } = await supabase
             .from('profiles')
@@ -53,6 +56,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .single();
           
           if (profile && !error) {
+            console.log('Profile loaded:', profile);
             setUser({
               id: profile.id,
               name: profile.name,
@@ -63,8 +67,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
           } else {
             console.error("Error fetching profile:", error);
+            // If no profile exists, create a basic user object from auth data
+            setUser({
+              id: session.user.id,
+              name: session.user.user_metadata?.name || session.user.email || 'User',
+              email: session.user.email || '',
+              userType: 'buyer', // default type
+            });
           }
         } else {
+          console.log('No session, clearing user');
           setUser(null);
         }
         setLoading(false);
@@ -72,18 +84,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 
     // Check for existing session
+    console.log('Checking for existing session...');
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+      console.log('Existing session:', session?.user?.id);
       if (!session) {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('Attempting login for:', email);
+      setLoading(true);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -91,19 +110,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (error) {
         console.error("Login error:", error.message);
+        setLoading(false);
         return { error: error.message };
       }
       
-      console.log("Login successful:", data);
-      return { error: undefined };
+      console.log("Login successful:", data?.user?.id);
+      // Don't set loading to false here, let the auth state change handle it
+      return {};
     } catch (error: any) {
       console.error("Unexpected login error:", error);
+      setLoading(false);
       return { error: 'An unexpected error occurred' };
     }
   };
 
   const register = async (userData: any) => {
     try {
+      console.log('Attempting registration for:', userData.email);
       const { error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -119,16 +142,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (error) {
+        console.error("Registration error:", error.message);
         return { error: error.message };
       }
       
+      console.log("Registration successful");
       return {};
     } catch (error: any) {
+      console.error("Unexpected registration error:", error);
       return { error: 'An unexpected error occurred' };
     }
   };
 
   const logout = async () => {
+    console.log('Logging out...');
     await supabase.auth.signOut();
   };
 
