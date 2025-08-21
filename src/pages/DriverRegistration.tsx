@@ -72,7 +72,7 @@ const DriverRegistration = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <Leaf className="h-8 w-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-800">DuraMarket</h1>
+            <h1 className="text-2xl font-bold text-green-800">DuraTech</h1>
           </Link>
           <nav className="flex items-center space-x-6">
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
@@ -89,7 +89,7 @@ const DriverRegistration = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <Truck className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Become a DuraMarket Driver</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Become a DuraTech Market Driver</h1>
             <p className="text-gray-600">Join our team and help deliver fresh produce to customers in your area</p>
           </div>
 
