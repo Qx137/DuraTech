@@ -232,7 +232,7 @@ const Index = () => {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Store className="h-6 w-6 text-green-500" />
-                <span className="text-xl font-bold">DuraHub</span>
+                <span className="text-xl font-bold">DuraTech</span>
               </div>
               <p className="text-gray-400">
                 Connecting farmers and consumers for a sustainable agricultural future.
@@ -266,7 +266,7 @@ const Index = () => {
             </div>
           </div>
           <div className="border-t border-gray-700 pt-8 mt-8 text-center text-gray-400">
-            <p>&copy; 2024 DuraHub. All rights reserved.</p>
+            <p>&copy; 2025 DuraTech. All rights reserved.</p>
           </div>
         </div>
       </footer>
