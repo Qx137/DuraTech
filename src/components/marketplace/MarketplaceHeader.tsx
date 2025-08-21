@@ -16,6 +16,9 @@ const MarketplaceHeader = ({ cartCount }: MarketplaceHeaderProps) => {
           <h1 className="text-2xl font-bold text-green-800">DuraHub</h1>
         </Link>
         <nav className="hidden md:flex items-center space-x-6">
+          <Link to="/dashboard" className="text-gray-700 hover:text-green-600 transition-colors">
+            Dashboard
+          </Link>
           <Link to="/marketplace" className="text-green-600 font-medium">
             Marketplace
           </Link>
