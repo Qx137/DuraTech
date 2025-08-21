@@ -65,7 +65,7 @@ const Checkout = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <Leaf className="h-8 w-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-800">DuraMarket</h1>
+            <h1 className="text-2xl font-bold text-green-800">DuraTech</h1>
           </Link>
           <div className="flex items-center space-x-4">
             <Link to="/cart">
