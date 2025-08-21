@@ -49,7 +49,7 @@ const Login = () => {
         console.log('Login successful, waiting for redirect...');
         toast({
           title: "Login Successful!",
-          description: "Welcome back to DuraHub!",
+          description: "Welcome back to DuraTech!",
         });
         // Don't set loading to false here, let the auth context and useEffect handle the redirect
       }
@@ -90,7 +90,7 @@ const Login = () => {
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2 mb-6 text-green-600 hover:text-green-700">
             <LeafyGreen className="h-8 w-8" />
-            <span className="text-2xl font-bold">DuraHub</span>
+            <span className="text-2xl font-bold">DuraTech</span>
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
           <p className="text-gray-600">Sign in to your account</p>

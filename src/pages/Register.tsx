@@ -94,7 +94,7 @@ const Register = () => {
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2 mb-6 text-green-600 hover:text-green-700">
             <Leaf className="h-8 w-8" />
-            <span className="text-2xl font-bold">DuraHub</span>
+            <span className="text-2xl font-bold">DuraTech</span>
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Create Your Account</h1>
           <p className="text-gray-600">Join the agricultural revolution</p>
