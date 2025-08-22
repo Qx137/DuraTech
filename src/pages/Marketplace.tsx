@@ -8,13 +8,15 @@ import SearchFilters from "@/components/marketplace/SearchFilters";
 import AIRecommendationsBanner from "@/components/marketplace/AIRecommendationsBanner";
 import ProductCard from "@/components/marketplace/ProductCard";
 import NoProductsFound from "@/components/marketplace/NoProductsFound";
-import { products, Product } from "@/data/sampleProducts";
+import { products as sampleProducts, Product } from "@/data/sampleProducts";
 
 const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [organicOnly, setOrganicOnly] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -30,12 +32,50 @@ const Marketplace = () => {
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
 
   useEffect(() => {
+    fetchProducts();
     if (user) {
       fetchCartCount();
     } else {
       setCartCount(0);
     }
   }, [user]);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          profiles (
+            business_name
+          )
+        `);
+
+      if (error) throw error;
+
+      const formattedProducts = data?.map(product => ({
+        id: product.id,
+        name: product.name,
+        price: Number(product.price),
+        unit: product.unit,
+        farmer: product.profiles?.business_name || 'Unknown Farmer',
+        location: product.location || 'Unknown Location',
+        rating: Number(product.rating) || 0,
+        image: product.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop',
+        category: product.category,
+        organic: product.organic,
+        description: product.description || ''
+      })) || [];
+
+      setProducts(formattedProducts);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      // Use sample products as fallback
+      setProducts(sampleProducts);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCartCount = async () => {
     try {
@@ -132,18 +172,27 @@ const Marketplace = () => {
 
         <AIRecommendationsBanner />
 
-        {/* Products Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map(product => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onAddToCart={() => addToCart(product.id)}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading products...</p>
+          </div>
+        ) : (
+          <>
+            {/* Products Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map(product => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={() => addToCart(product.id)}
+                />
+              ))}
+            </div>
 
-        {filteredProducts.length === 0 && <NoProductsFound />}
+            {filteredProducts.length === 0 && <NoProductsFound />}
+          </>
+        )}
       </div>
     </div>
   );
