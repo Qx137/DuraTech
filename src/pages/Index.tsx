@@ -52,10 +52,11 @@ const Index = () => {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Store className="h-8 w-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-800">DuraTech</h1>
-          </div>
+          <img 
+            src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
+            alt="DuraTech Logo" 
+            className="h-8"
+          />
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
               Marketplace

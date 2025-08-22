@@ -92,9 +92,12 @@ const Register = () => {
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2 mb-6 text-green-600 hover:text-green-700">
-            <Leaf className="h-8 w-8" />
-            <span className="text-2xl font-bold">DuraTech</span>
+          <Link to="/" className="inline-flex items-center mb-6 text-green-600 hover:text-green-700">
+            <img 
+              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
+              alt="DuraTech Logo" 
+              className="h-8"
+            />
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Create Your Account</h1>
           <p className="text-gray-600">Join the agricultural revolution</p>

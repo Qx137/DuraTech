@@ -105,9 +105,12 @@ const DeliveryTracking = () => {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <Leaf className="h-8 w-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-800">DuraTech</h1>
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
+              alt="DuraTech Logo" 
+              className="h-8"
+            />
           </Link>
           <nav className="flex items-center space-x-6">
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
