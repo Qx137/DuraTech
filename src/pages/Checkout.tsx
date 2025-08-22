@@ -67,7 +67,7 @@ const Checkout = () => {
             <img 
               src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
               alt="DuraTech Logo" 
-              className="h-8"
+              className="h-12"
             />
           </Link>
           <div className="flex items-center space-x-4">

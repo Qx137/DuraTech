@@ -96,7 +96,7 @@ const Register = () => {
             <img 
               src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
               alt="DuraTech Logo" 
-              className="h-8"
+              className="h-12"
             />
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Create Your Account</h1>
