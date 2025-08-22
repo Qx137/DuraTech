@@ -42,6 +42,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     organic: false,
     image: ''
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,9 +60,62 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     setShowAddProductForm(true);
   };
 
+  const uploadFile = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from('product-media')
+      .upload(fileName, file);
+
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('product-media')
+      .getPublicUrl(fileName);
+    
+    return publicUrl;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file type (images and videos)
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/mov'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image (JPEG, PNG, WebP) or video (MP4, WebM, MOV)",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Check file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please upload a file smaller than 50MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setSelectedFile(file);
+    }
+  };
+
   const handleSaveProduct = async () => {
     if (newProduct.name && newProduct.price && newProduct.stock && newProduct.unit && newProduct.category) {
+      setUploading(true);
       try {
+        let mediaUrl = newProduct.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop';
+        
+        // Upload file if selected
+        if (selectedFile) {
+          mediaUrl = await uploadFile(selectedFile);
+        }
+
         const { error } = await supabase
           .from('products')
           .insert([
@@ -74,7 +129,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               description: newProduct.description,
               location: newProduct.location,
               organic: newProduct.organic,
-              image: newProduct.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop'
+              image: mediaUrl
             }
           ]);
 
@@ -95,6 +150,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           organic: false, 
           image: '' 
         });
+        setSelectedFile(null);
         setShowAddProductForm(false);
         fetchProducts(); // Refresh the products list
       } catch (error) {
@@ -104,6 +160,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           description: "Failed to add product. Please try again.",
           variant: "destructive"
         });
+      } finally {
+        setUploading(false);
       }
     } else {
       toast({
@@ -447,12 +505,35 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Image URL</label>
-                <Input 
-                  value={newProduct.image}
-                  onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
+                <label className="block text-sm font-medium mb-2">Product Media (Image or Video)</label>
+                <div className="space-y-2">
+                  <Input 
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/mov"
+                    onChange={handleFileChange}
+                    className="cursor-pointer"
+                  />
+                  {selectedFile && (
+                    <div className="text-sm text-gray-600 flex items-center space-x-2">
+                      <Upload className="h-4 w-4" />
+                      <span>Selected: {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Upload images (JPEG, PNG, WebP) or videos (MP4, WebM, MOV). Max size: 50MB
+                  </p>
+                  
+                  {/* Alternative URL input */}
+                  <div className="border-t pt-2 mt-2">
+                    <label className="block text-xs font-medium mb-1 text-gray-500">Or provide image URL</label>
+                    <Input 
+                      value={newProduct.image}
+                      onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+                      placeholder="https://example.com/image.jpg"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Description</label>
@@ -473,11 +554,28 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 <label htmlFor="organic" className="text-sm font-medium">Organic Product</label>
               </div>
               <div className="flex space-x-2">
-                <Button onClick={handleSaveProduct} className="bg-green-600 hover:bg-green-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Save Product
+                <Button 
+                  onClick={handleSaveProduct} 
+                  disabled={uploading}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Save Product
+                    </>
+                  )}
                 </Button>
-                <Button variant="outline" onClick={() => setShowAddProductForm(false)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAddProductForm(false)}
+                  disabled={uploading}
+                >
                   Cancel
                 </Button>
               </div>
