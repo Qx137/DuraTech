@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Leaf, Package, DollarSign, Users, TrendingUp, Plus, Edit, Eye, LogOut, MessageSquare, BarChart3, Settings, Database, Upload, FileText, Building } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface User {
   id: string;
@@ -32,9 +34,16 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   const [newProduct, setNewProduct] = useState({
     name: '',
     price: '',
+    unit: '',
+    category: '',
     stock: '',
-    description: ''
+    description: '',
+    location: '',
+    organic: false,
+    image: ''
   });
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const handleLogout = () => {
     logout();
@@ -49,14 +58,53 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     setShowAddProductForm(true);
   };
 
-  const handleSaveProduct = () => {
-    if (newProduct.name && newProduct.price && newProduct.stock) {
-      toast({
-        title: "Product Added Successfully!",
-        description: `${newProduct.name} has been added to your inventory.`,
-      });
-      setNewProduct({ name: '', price: '', stock: '', description: '' });
-      setShowAddProductForm(false);
+  const handleSaveProduct = async () => {
+    if (newProduct.name && newProduct.price && newProduct.stock && newProduct.unit && newProduct.category) {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .insert([
+            {
+              seller_id: user.id,
+              name: newProduct.name,
+              price: parseFloat(newProduct.price),
+              unit: newProduct.unit,
+              category: newProduct.category,
+              stock_quantity: parseInt(newProduct.stock),
+              description: newProduct.description,
+              location: newProduct.location,
+              organic: newProduct.organic,
+              image: newProduct.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop'
+            }
+          ]);
+
+        if (error) throw error;
+
+        toast({
+          title: "Product Added Successfully!",
+          description: `${newProduct.name} has been added to your inventory.`,
+        });
+        setNewProduct({ 
+          name: '', 
+          price: '', 
+          unit: '', 
+          category: '', 
+          stock: '', 
+          description: '', 
+          location: '', 
+          organic: false, 
+          image: '' 
+        });
+        setShowAddProductForm(false);
+        fetchProducts(); // Refresh the products list
+      } catch (error) {
+        console.error('Error adding product:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add product. Please try again.",
+          variant: "destructive"
+        });
+      }
     } else {
       toast({
         title: "Error",
@@ -80,11 +128,30 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     });
   };
 
-  const myProducts = [
-    { id: 1, name: "Organic Tomatoes", price: 4.99, stock: 50, sold: 25, status: "Active" },
-    { id: 2, name: "Fresh Lettuce", price: 2.99, stock: 30, sold: 15, status: "Active" },
-    { id: 3, name: "Sweet Corn", price: 1.99, stock: 0, sold: 40, status: "Out of Stock" },
-  ];
+  useEffect(() => {
+    fetchProducts();
+  }, [user.id]);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('seller_id', user.id);
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load products.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const recentOrders = [
     { id: 1, product: "Organic Tomatoes", buyer: "John Smith", quantity: 5, total: 24.95, status: "Processing" },
@@ -208,33 +275,49 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           <CardDescription>Track and manage your product inventory levels</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {myProducts.map((product) => (
-              <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-medium">{product.name}</h4>
-                  <p className="text-sm text-gray-600">Price: ${product.price}</p>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">Loading products...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {products.length === 0 ? (
+                <div className="text-center py-8">
+                  <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No products yet. Add your first product to get started!</p>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className="font-medium">Stock: {product.stock}</p>
-                    <p className="text-sm text-gray-600">Sold: {product.sold}</p>
+              ) : (
+                products.map((product) => (
+                  <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{product.name}</h4>
+                      <p className="text-sm text-gray-600">Price: ${Number(product.price).toFixed(2)} per {product.unit}</p>
+                      <p className="text-sm text-gray-500">{product.category}</p>
+                      {product.organic && <Badge variant="secondary" className="mt-1">Organic</Badge>}
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right">
+                        <p className="font-medium">Stock: {product.stock_quantity}</p>
+                        <p className="text-sm text-gray-600">Rating: {Number(product.rating).toFixed(1)}</p>
+                      </div>
+                      <Badge variant={product.stock_quantity > 0 ? 'default' : 'destructive'}>
+                        {product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                      </Badge>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEditProduct(product.id)}>
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => toast({ title: "Stock Updated", description: `Restocking ${product.name}` })}>
+                          <Package className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <Badge variant={product.status === 'Active' ? 'default' : 'destructive'}>
-                    {product.status}
-                  </Badge>
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => handleEditProduct(product.id)}>
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => toast({ title: "Stock Updated", description: `Restocking ${product.name}` })}>
-                      <Package className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                ))
+              )}
+            </div>
+          )}
           <Button className="w-full mt-4" onClick={() => setShowAddProductForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add New Product
@@ -300,7 +383,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Product Name</label>
+                  <label className="block text-sm font-medium mb-2">Product Name*</label>
                   <Input 
                     value={newProduct.name}
                     onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
@@ -308,22 +391,67 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Price ($)</label>
+                  <label className="block text-sm font-medium mb-2">Price ($)*</label>
                   <Input 
                     type="number"
+                    step="0.01"
                     value={newProduct.price}
                     onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
                     placeholder="4.99"
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Unit*</label>
+                  <Input 
+                    value={newProduct.unit}
+                    onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
+                    placeholder="e.g. lb, kg, dozen"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Category*</label>
+                  <Select value={newProduct.category} onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vegetables">Vegetables</SelectItem>
+                      <SelectItem value="fruits">Fruits</SelectItem>
+                      <SelectItem value="grains">Grains</SelectItem>
+                      <SelectItem value="herbs">Herbs</SelectItem>
+                      <SelectItem value="dairy">Dairy</SelectItem>
+                      <SelectItem value="meat">Meat</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Stock Quantity*</label>
+                  <Input 
+                    type="number"
+                    value={newProduct.stock}
+                    onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+                    placeholder="50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Location</label>
+                  <Input 
+                    value={newProduct.location}
+                    onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
+                    placeholder="e.g. San Francisco, CA"
+                  />
+                </div>
+              </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Stock Quantity</label>
+                <label className="block text-sm font-medium mb-2">Image URL</label>
                 <Input 
-                  type="number"
-                  value={newProduct.stock}
-                  onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                  placeholder="50"
+                  value={newProduct.image}
+                  onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+                  placeholder="https://example.com/image.jpg"
                 />
               </div>
               <div>
@@ -333,6 +461,16 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                   placeholder="Describe your product..."
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="organic"
+                  checked={newProduct.organic}
+                  onChange={(e) => setNewProduct({ ...newProduct, organic: e.target.checked })}
+                  className="rounded"
+                />
+                <label htmlFor="organic" className="text-sm font-medium">Organic Product</label>
               </div>
               <div className="flex space-x-2">
                 <Button onClick={handleSaveProduct} className="bg-green-600 hover:bg-green-700">
@@ -452,45 +590,39 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <Card>
                 <CardHeader>
                   <CardTitle>My Products</CardTitle>
-                  <CardDescription>Manage your product listings and inventory</CardDescription>
+                  <CardDescription>Recent products you've listed</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {myProducts.map((product) => (
-                      <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">{product.name}</h4>
-                          <p className="text-sm text-gray-600">Stock: {product.stock} | Sold: {product.sold}</p>
+                  {loading ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">Loading...</p>
+                    </div>
+                  ) : products.length === 0 ? (
+                    <div className="text-center py-4">
+                      <Package className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">No products yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {products.slice(0, 3).map((product) => (
+                        <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <h4 className="font-medium">{product.name}</h4>
+                            <p className="text-sm text-gray-600">${Number(product.price).toFixed(2)} per {product.unit}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium">Stock: {product.stock_quantity}</p>
+                            <Badge variant={product.stock_quantity > 0 ? 'default' : 'destructive'} className="text-xs">
+                              {product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={product.status === 'Active' ? 'default' : 'destructive'}>
-                            {product.status}
-                          </Badge>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleEditProduct(product.id)}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleViewProduct(product.id)}
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <Button 
-                    className="w-full mt-4" 
-                    variant="outline"
-                    onClick={handleAddProduct}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add New Product
+                      ))}
+                    </div>
+                  )}
+                  <Button variant="outline" className="w-full mt-4" onClick={() => setActiveSection('inventory')}>
+                    View All Products
                   </Button>
                 </CardContent>
               </Card>
