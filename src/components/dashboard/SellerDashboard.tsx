@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Leaf, Package, DollarSign, Users, TrendingUp, Plus, Edit, Eye, LogOut, MessageSquare, BarChart3, Settings, Database, Upload, FileText, Building } from "lucide-react";
+import { Leaf, Package, DollarSign, Users, TrendingUp, Plus, Edit, Eye, LogOut, MessageSquare, BarChart3, Settings, Database, Upload, FileText, Building, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +46,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   const [uploading, setUploading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -181,11 +183,117 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     }
   };
 
-  const handleEditProduct = (productId: number) => {
-    toast({
-      title: "Edit Product",
-      description: `Opening edit form for product ID: ${productId}`,
+  const handleEditProduct = (product: any) => {
+    setEditingProduct(product);
+    setNewProduct({
+      name: product.name,
+      price: product.price.toString(),
+      unit: product.unit,
+      category: product.category,
+      stock: product.stock_quantity.toString(),
+      description: product.description || '',
+      location: product.location || '',
+      organic: product.organic,
+      image: product.image || ''
     });
+    setSelectedFile(null);
+    setShowEditForm(true);
+  };
+
+  const handleUpdateProduct = async () => {
+    if (newProduct.name && newProduct.price && newProduct.stock && newProduct.unit && newProduct.category && editingProduct) {
+      setUploading(true);
+      try {
+        let mediaUrl = newProduct.image;
+        
+        // Upload new file if selected
+        if (selectedFile) {
+          mediaUrl = await uploadFile(selectedFile);
+        }
+
+        const { error } = await supabase
+          .from('products')
+          .update({
+            name: newProduct.name,
+            price: parseFloat(newProduct.price),
+            unit: newProduct.unit,
+            category: newProduct.category,
+            stock_quantity: parseInt(newProduct.stock),
+            description: newProduct.description,
+            location: newProduct.location,
+            organic: newProduct.organic,
+            image: mediaUrl
+          })
+          .eq('id', editingProduct.id)
+          .eq('seller_id', user.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Product Updated Successfully!",
+          description: `${newProduct.name} has been updated.`,
+        });
+        
+        setNewProduct({ 
+          name: '', 
+          price: '', 
+          unit: '', 
+          category: '', 
+          stock: '', 
+          description: '', 
+          location: '', 
+          organic: false, 
+          image: '' 
+        });
+        setSelectedFile(null);
+        setShowEditForm(false);
+        setEditingProduct(null);
+        fetchProducts(); // Refresh the products list
+      } catch (error) {
+        console.error('Error updating product:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update product. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setUploading(false);
+      }
+    } else {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteProduct = async (product: any) => {
+    if (confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', product.id)
+          .eq('seller_id', user.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Product Deleted",
+          description: `${product.name} has been removed from your inventory.`,
+        });
+        
+        fetchProducts(); // Refresh the products list
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete product. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
   const handleViewProduct = (productId: number) => {
@@ -495,11 +603,11 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                         {product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
                       </Badge>
                       <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEditProduct(product.id)}>
+                        <Button size="sm" variant="outline" onClick={() => handleEditProduct(product)} title="Edit Product">
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => toast({ title: "Stock Updated", description: `Restocking ${product.name}` })}>
-                          <Package className="h-3 w-3" />
+                        <Button size="sm" variant="outline" onClick={() => handleDeleteProduct(product)} className="hover:bg-red-50 hover:text-red-600" title="Delete Product">
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
@@ -753,6 +861,162 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 <Button 
                   variant="outline" 
                   onClick={() => setShowAddProductForm(false)}
+                  disabled={uploading}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Edit Product Modal */}
+        {showEditForm && editingProduct && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Edit Product</CardTitle>
+              <CardDescription>Update your product information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Product Name*</label>
+                  <Input 
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                    placeholder="e.g. Organic Tomatoes"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Price ($)*</label>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                    placeholder="4.99"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Unit*</label>
+                  <Input 
+                    value={newProduct.unit}
+                    onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
+                    placeholder="e.g. lb, kg, dozen"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Category*</label>
+                  <Select value={newProduct.category} onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vegetables">Vegetables</SelectItem>
+                      <SelectItem value="fruits">Fruits</SelectItem>
+                      <SelectItem value="grains">Grains</SelectItem>
+                      <SelectItem value="herbs">Herbs</SelectItem>
+                      <SelectItem value="dairy">Dairy</SelectItem>
+                      <SelectItem value="meat">Meat</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Stock Quantity*</label>
+                  <Input 
+                    type="number"
+                    value={newProduct.stock}
+                    onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+                    placeholder="50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Location</label>
+                  <Input 
+                    value={newProduct.location}
+                    onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
+                    placeholder="e.g. San Francisco, CA"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Product Media (Image or Video)</label>
+                <div className="space-y-2">
+                  <Input 
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/mov"
+                    onChange={handleFileChange}
+                    className="cursor-pointer"
+                  />
+                  {selectedFile && (
+                    <div className="text-sm text-gray-600 flex items-center space-x-2">
+                      <Upload className="h-4 w-4" />
+                      <span>Selected: {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Upload images (JPEG, PNG, WebP) or videos (MP4, WebM, MOV). Max size: 50MB
+                  </p>
+                  
+                  {/* Alternative URL input */}
+                  <div className="border-t pt-2 mt-2">
+                    <label className="block text-xs font-medium mb-1 text-gray-500">Or provide image URL</label>
+                    <Input 
+                      value={newProduct.image}
+                      onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+                      placeholder="https://example.com/image.jpg"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <Textarea 
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  placeholder="Describe your product..."
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="organic-edit"
+                  checked={newProduct.organic}
+                  onChange={(e) => setNewProduct({ ...newProduct, organic: e.target.checked })}
+                  className="rounded"
+                />
+                <label htmlFor="organic-edit" className="text-sm font-medium">Organic Product</label>
+              </div>
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleUpdateProduct} 
+                  disabled={uploading}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Update Product
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowEditForm(false);
+                    setEditingProduct(null);
+                    setSelectedFile(null);
+                  }}
                   disabled={uploading}
                 >
                   Cancel
