@@ -66,6 +66,7 @@ const Register = () => {
         toast({
           title: "Registration Successful!",
           description: "Please check your email to verify your account.",
+          duration: 8000,
         });
         navigate('/login');
       }
