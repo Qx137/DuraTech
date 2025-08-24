@@ -48,6 +48,13 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   const [loading, setLoading] = useState(true);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [stats, setStats] = useState({
+    monthlyRevenue: 0,
+    productsListed: 0,
+    totalCustomers: 0,
+    ordersThisMonth: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   const handleLogout = () => {
     logout();
@@ -191,6 +198,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   useEffect(() => {
     fetchProducts();
     fetchRecentOrders();
+    fetchStats();
   }, [user.id]);
 
   const fetchProducts = async () => {
@@ -265,6 +273,79 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
       });
     } finally {
       setOrdersLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const currentDate = new Date();
+      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const firstDayOfMonthISO = firstDayOfMonth.toISOString();
+
+      // Fetch monthly revenue from this month's orders
+      const { data: monthlyOrdersData, error: monthlyError } = await supabase
+        .from('order_items')
+        .select(`
+          price,
+          quantity,
+          orders!inner (
+            created_at
+          ),
+          products!inner (
+            seller_id
+          )
+        `)
+        .eq('products.seller_id', user.id)
+        .gte('orders.created_at', firstDayOfMonthISO);
+
+      if (monthlyError) throw monthlyError;
+
+      const monthlyRevenue = monthlyOrdersData?.reduce((sum, item) => 
+        sum + (Number(item.price) * item.quantity), 0) || 0;
+
+      // Count products listed by this seller
+      const { count: productsCount, error: productsError } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', user.id);
+
+      if (productsError) throw productsError;
+
+      // Count unique customers (users who bought from this seller)
+      const { data: customerData, error: customerError } = await supabase
+        .from('order_items')
+        .select(`
+          orders!inner (
+            user_id
+          ),
+          products!inner (
+            seller_id
+          )
+        `)
+        .eq('products.seller_id', user.id);
+
+      if (customerError) throw customerError;
+
+      const uniqueCustomers = new Set(customerData?.map(item => item.orders.user_id)).size;
+
+      // Count orders this month
+      const ordersThisMonth = monthlyOrdersData?.length || 0;
+
+      setStats({
+        monthlyRevenue,
+        productsListed: productsCount || 0,
+        totalCustomers: uniqueCustomers,
+        ordersThisMonth
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard statistics.",
+        variant: "destructive"
+      });
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -747,8 +828,17 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <div className="flex items-center space-x-2">
                     <DollarSign className="h-8 w-8 text-green-600" />
                     <div>
-                      <p className="text-2xl font-bold">$2,450</p>
-                      <p className="text-gray-600 text-sm">Monthly Revenue</p>
+                      {statsLoading ? (
+                        <div className="animate-pulse">
+                          <div className="h-6 bg-gray-200 rounded w-16 mb-1"></div>
+                          <div className="h-4 bg-gray-200 rounded w-20"></div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-2xl font-bold">${stats.monthlyRevenue.toFixed(2)}</p>
+                          <p className="text-gray-600 text-sm">Monthly Revenue</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -759,8 +849,17 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <div className="flex items-center space-x-2">
                     <Package className="h-8 w-8 text-blue-600" />
                     <div>
-                      <p className="text-2xl font-bold">23</p>
-                      <p className="text-gray-600 text-sm">Products Listed</p>
+                      {statsLoading ? (
+                        <div className="animate-pulse">
+                          <div className="h-6 bg-gray-200 rounded w-16 mb-1"></div>
+                          <div className="h-4 bg-gray-200 rounded w-20"></div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-2xl font-bold">{stats.productsListed}</p>
+                          <p className="text-gray-600 text-sm">Products Listed</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -771,8 +870,17 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <div className="flex items-center space-x-2">
                     <Users className="h-8 w-8 text-purple-600" />
                     <div>
-                      <p className="text-2xl font-bold">156</p>
-                      <p className="text-gray-600 text-sm">Total Customers</p>
+                      {statsLoading ? (
+                        <div className="animate-pulse">
+                          <div className="h-6 bg-gray-200 rounded w-16 mb-1"></div>
+                          <div className="h-4 bg-gray-200 rounded w-20"></div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-2xl font-bold">{stats.totalCustomers}</p>
+                          <p className="text-gray-600 text-sm">Total Customers</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -783,8 +891,17 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <div className="flex items-center space-x-2">
                     <TrendingUp className="h-8 w-8 text-orange-600" />
                     <div>
-                      <p className="text-2xl font-bold">89</p>
-                      <p className="text-gray-600 text-sm">Orders This Month</p>
+                      {statsLoading ? (
+                        <div className="animate-pulse">
+                          <div className="h-6 bg-gray-200 rounded w-16 mb-1"></div>
+                          <div className="h-4 bg-gray-200 rounded w-20"></div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-2xl font-bold">{stats.ordersThisMonth}</p>
+                          <p className="text-gray-600 text-sm">Orders This Month</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
