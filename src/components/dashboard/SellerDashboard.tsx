@@ -46,6 +46,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   const [uploading, setUploading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
 
   const handleLogout = () => {
     logout();
@@ -188,6 +190,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   useEffect(() => {
     fetchProducts();
+    fetchRecentOrders();
   }, [user.id]);
 
   const fetchProducts = async () => {
@@ -211,11 +214,59 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     }
   };
 
-  const recentOrders = [
-    { id: 1, product: "Organic Tomatoes", buyer: "John Smith", quantity: 5, total: 24.95, status: "Processing" },
-    { id: 2, product: "Fresh Lettuce", buyer: "Sarah Johnson", quantity: 3, total: 8.97, status: "Shipped" },
-    { id: 3, product: "Sweet Corn", buyer: "Mike Davis", quantity: 10, total: 19.90, status: "Delivered" },
-  ];
+  const fetchRecentOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          *,
+          orders!inner (
+            id,
+            user_id,
+            total,
+            status,
+            created_at,
+            profiles!inner (
+              name,
+              email
+            )
+          ),
+          products!inner (
+            name,
+            seller_id
+          )
+        `)
+        .eq('products.seller_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+
+      const formattedOrders = data?.map(item => ({
+        id: item.id,
+        product: item.products.name,
+        buyer: item.orders.profiles.name,
+        quantity: item.quantity,
+        total: item.price * item.quantity,
+        status: item.orders.status === 'pending' ? 'Processing' : 
+                item.orders.status === 'completed' ? 'Delivered' : 
+                item.orders.status === 'shipped' ? 'Shipped' : 'Processing',
+        order_id: item.orders.id,
+        created_at: item.orders.created_at
+      })) || [];
+
+      setRecentOrders(formattedOrders);
+    } catch (error) {
+      console.error('Error fetching recent orders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load recent orders.",
+        variant: "destructive"
+      });
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
 
   const customers = [
     { id: 1, name: "John Smith", email: "john@example.com", totalOrders: 15, totalSpent: 450.00 },
@@ -380,6 +431,53 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             <Plus className="h-4 w-4 mr-2" />
             Add New Product
           </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderOrders = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>All Orders</CardTitle>
+          <CardDescription>Complete history of orders for your products</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {ordersLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">Loading orders...</p>
+            </div>
+          ) : recentOrders.length === 0 ? (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No orders yet</p>
+              <p className="text-sm text-gray-400 mt-2">Orders will appear here when customers purchase your products</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{order.product}</h4>
+                    <p className="text-sm text-gray-600">Customer: {order.buyer}</p>
+                    <p className="text-sm text-gray-500">Quantity: {order.quantity}</p>
+                    <p className="text-xs text-gray-400">
+                      Ordered on {new Date(order.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-lg">${Number(order.total).toFixed(2)}</p>
+                    <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="mt-1">
+                      {order.status}
+                    </Badge>
+                    <p className="text-xs text-gray-400 mt-1">Order #{order.order_id.slice(0, 8)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -626,6 +724,16 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             >
               Inventory
             </button>
+            <button
+              onClick={() => setActiveSection('orders')}
+              className={`px-4 py-2 border-b-2 transition-colors ${
+                activeSection === 'orders' 
+                  ? 'border-green-600 text-green-600' 
+                  : 'border-transparent text-gray-600 hover:text-green-600'
+              }`}
+            >
+              Orders
+            </button>
           </div>
         </div>
 
@@ -732,23 +840,45 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <CardDescription>Latest orders from your customers</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {recentOrders.map((order) => (
-                      <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">{order.product}</h4>
-                          <p className="text-sm text-gray-600">{order.buyer} • Qty: {order.quantity}</p>
+                  {ordersLoading ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">Loading orders...</p>
+                    </div>
+                  ) : recentOrders.length === 0 ? (
+                    <div className="text-center py-4">
+                      <Package className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">No orders yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Orders will appear here when customers purchase your products</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {recentOrders.map((order) => (
+                        <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div>
+                            <h4 className="font-medium">{order.product}</h4>
+                            <p className="text-sm text-gray-600">{order.buyer} • Qty: {order.quantity}</p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">${Number(order.total).toFixed(2)}</p>
+                            <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>
+                              {order.status}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">${order.total}</p>
-                          <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>
-                            {order.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <Button className="w-full mt-4" variant="outline">View All Orders</Button>
+                      ))}
+                    </div>
+                  )}
+                  <Button 
+                    className="w-full mt-4" 
+                    variant="outline"
+                    onClick={() => setActiveSection('orders')}
+                  >
+                    View All Orders
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -795,6 +925,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         {activeSection === 'analytics' && renderAnalytics()}
         {activeSection === 'customers' && renderCustomers()}
         {activeSection === 'inventory' && renderInventory()}
+        {activeSection === 'orders' && renderOrders()}
       </div>
     </>
   );
