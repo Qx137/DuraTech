@@ -256,6 +256,8 @@ export type Database = {
           location: string | null
           name: string
           organic: boolean
+          pickup_latitude: number | null
+          pickup_longitude: number | null
           price: number
           rating: number | null
           seller_id: string
@@ -272,6 +274,8 @@ export type Database = {
           location?: string | null
           name: string
           organic?: boolean
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
           price: number
           rating?: number | null
           seller_id: string
@@ -288,6 +292,8 @@ export type Database = {
           location?: string | null
           name?: string
           organic?: boolean
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
           price?: number
           rating?: number | null
           seller_id?: string

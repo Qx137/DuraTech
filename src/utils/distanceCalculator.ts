@@ -53,18 +53,19 @@ export function calculateShippingPrice(
 }
 
 /**
- * Get seller locations for products (mock data - replace with actual seller data)
+ * Get seller location from product data
  */
-export function getSellerLocation(sellerId: string): Location {
-  // This would normally fetch from your database
-  // For now, returning mock locations
-  const mockSellerLocations: Record<string, Location> = {
-    'seller1': { lat: 40.7128, lng: -74.0060 }, // New York
-    'seller2': { lat: 34.0522, lng: -118.2437 }, // Los Angeles
-    'seller3': { lat: 41.8781, lng: -87.6298 }, // Chicago
-  };
+export function getSellerLocationFromProduct(product: any): Location {
+  // Use the pickup coordinates if available, otherwise fallback to default location
+  if (product.pickup_latitude && product.pickup_longitude) {
+    return {
+      lat: Number(product.pickup_latitude),
+      lng: Number(product.pickup_longitude)
+    };
+  }
   
-  return mockSellerLocations[sellerId] || { lat: 40.7128, lng: -74.0060 };
+  // Fallback to a default location if no coordinates are set
+  return { lat: 40.7128, lng: -74.0060 }; // New York as default
 }
 
 /**
@@ -90,7 +91,9 @@ export function calculateTotalShipping(
   
   // Calculate shipping for each seller
   sellerGroups.forEach((items, sellerId) => {
-    const sellerLocation = getSellerLocation(sellerId);
+    // Use the first product in the group to get seller location
+    const product = items[0].products;
+    const sellerLocation = getSellerLocationFromProduct(product);
     const distance = calculateDistance(sellerLocation, deliveryLocation);
     const price = calculateShippingPrice(distance);
     

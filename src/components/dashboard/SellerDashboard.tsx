@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import LocationMap from "@/components/checkout/LocationMap";
 
 interface User {
   id: string;
@@ -40,7 +41,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     description: '',
     location: '',
     organic: false,
-    image: ''
+    image: '',
+    pickup_latitude: null as number | null,
+    pickup_longitude: null as number | null
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -69,6 +72,15 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   const handleAddProduct = () => {
     setShowAddProductForm(true);
+  };
+
+  const handleLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+    setNewProduct({
+      ...newProduct,
+      pickup_latitude: location.lat,
+      pickup_longitude: location.lng,
+      location: location.address
+    });
   };
 
   const uploadFile = async (file: File): Promise<string> => {
@@ -130,18 +142,20 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         const { error } = await supabase
           .from('products')
           .insert([
-            {
-              seller_id: user.id,
-              name: newProduct.name,
-              price: parseFloat(newProduct.price),
-              unit: newProduct.unit,
-              category: newProduct.category,
-              stock_quantity: parseInt(newProduct.stock),
-              description: newProduct.description,
-              location: newProduct.location,
-              organic: newProduct.organic,
-              image: mediaUrl
-            }
+             {
+               seller_id: user.id,
+               name: newProduct.name,
+               price: parseFloat(newProduct.price),
+               unit: newProduct.unit,
+               category: newProduct.category,
+               stock_quantity: parseInt(newProduct.stock),
+               description: newProduct.description,
+               location: newProduct.location,
+               organic: newProduct.organic,
+               image: mediaUrl,
+               pickup_latitude: newProduct.pickup_latitude,
+               pickup_longitude: newProduct.pickup_longitude
+             }
           ]);
 
         if (error) throw error;
@@ -159,7 +173,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           description: '', 
           location: '', 
           organic: false, 
-          image: '' 
+          image: '',
+          pickup_latitude: null,
+          pickup_longitude: null
         });
         setSelectedFile(null);
         setShowAddProductForm(false);
@@ -194,7 +210,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
       description: product.description || '',
       location: product.location || '',
       organic: product.organic,
-      image: product.image || ''
+      image: product.image || '',
+      pickup_latitude: product.pickup_latitude || null,
+      pickup_longitude: product.pickup_longitude || null
     });
     setSelectedFile(null);
     setShowEditForm(true);
@@ -222,7 +240,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             description: newProduct.description,
             location: newProduct.location,
             organic: newProduct.organic,
-            image: mediaUrl
+            image: mediaUrl,
+            pickup_latitude: newProduct.pickup_latitude,
+            pickup_longitude: newProduct.pickup_longitude
           })
           .eq('id', editingProduct.id)
           .eq('seller_id', user.id);
@@ -243,7 +263,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           description: '', 
           location: '', 
           organic: false, 
-          image: '' 
+          image: '',
+          pickup_latitude: null,
+          pickup_longitude: null
         });
         setSelectedFile(null);
         setShowEditForm(false);
@@ -783,12 +805,28 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Location</label>
-                  <Input 
-                    value={newProduct.location}
-                    onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
-                    placeholder="e.g. San Francisco, CA"
-                  />
+                  <label className="block text-sm font-medium mb-2">Pickup Location*</label>
+                  <div className="space-y-2">
+                    <LocationMap 
+                      onLocationSelect={handleLocationSelect}
+                      selectedLocation={
+                        newProduct.pickup_latitude && newProduct.pickup_longitude 
+                          ? { 
+                              lat: newProduct.pickup_latitude, 
+                              lng: newProduct.pickup_longitude, 
+                              address: newProduct.location 
+                            }
+                          : null
+                      }
+                    />
+                    <Input 
+                      value={newProduct.location}
+                      onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
+                      placeholder="Selected location will appear here"
+                      readOnly
+                      className="text-sm text-gray-600"
+                    />
+                  </div>
                 </div>
               </div>
               <div>
@@ -935,12 +973,28 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Location</label>
-                  <Input 
-                    value={newProduct.location}
-                    onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
-                    placeholder="e.g. San Francisco, CA"
-                  />
+                  <label className="block text-sm font-medium mb-2">Pickup Location*</label>
+                  <div className="space-y-2">
+                    <LocationMap 
+                      onLocationSelect={handleLocationSelect}
+                      selectedLocation={
+                        newProduct.pickup_latitude && newProduct.pickup_longitude 
+                          ? { 
+                              lat: newProduct.pickup_latitude, 
+                              lng: newProduct.pickup_longitude, 
+                              address: newProduct.location 
+                            }
+                          : null
+                      }
+                    />
+                    <Input 
+                      value={newProduct.location}
+                      onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
+                      placeholder="Selected location will appear here"
+                      readOnly
+                      className="text-sm text-gray-600"
+                    />
+                  </div>
                 </div>
               </div>
               <div>
