@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Leaf, CreditCard, MapPin, User } from "lucide-react";
+import { Leaf, CreditCard, MapPin, User, Truck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import LocationMap from "@/components/checkout/LocationMap";
+import { calculateTotalShipping, type Location } from "@/utils/distanceCalculator";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -17,14 +19,16 @@ const Checkout = () => {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   
+  const [deliveryLocation, setDeliveryLocation] = useState<Location & { address: string } | null>(null);
+  const [shippingDetails, setShippingDetails] = useState<{
+    totalShipping: number;
+    details: Array<{ sellerId: string; distance: number; price: number; }>;
+  } | null>(null);
+  
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
     lastName: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
     phone: "",
     cardNumber: "",
     expiryDate: "",
@@ -67,9 +71,18 @@ const Checkout = () => {
 
   const calculateTotal = () => {
     const subtotal = cartItems.reduce((sum, item) => sum + (item.products.price * item.quantity), 0);
-    const shipping = 4.99;
+    const shipping = shippingDetails?.totalShipping || 0;
     const tax = subtotal * 0.1;
     return { subtotal, shipping, tax, total: subtotal + shipping + tax };
+  };
+
+  const handleLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+    setDeliveryLocation(location);
+    
+    if (cartItems.length > 0) {
+      const shippingCalc = calculateTotalShipping(cartItems, location);
+      setShippingDetails(shippingCalc);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,10 +98,10 @@ const Checkout = () => {
     }
 
     // Basic validation
-    if (!formData.email || !formData.firstName || !formData.lastName || !formData.address) {
+    if (!formData.email || !formData.firstName || !formData.lastName || !deliveryLocation) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields and select a delivery location.",
         variant: "destructive",
       });
       return;
@@ -118,10 +131,11 @@ const Checkout = () => {
           delivery_address: {
             firstName: formData.firstName,
             lastName: formData.lastName,
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            zipCode: formData.zipCode,
+            address: deliveryLocation.address,
+            coordinates: {
+              lat: deliveryLocation.lat,
+              lng: deliveryLocation.lng
+            },
             phone: formData.phone
           },
           payment_method: 'credit_card',
@@ -164,10 +178,11 @@ const Checkout = () => {
           delivery_address: {
             firstName: formData.firstName,
             lastName: formData.lastName,
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            zipCode: formData.zipCode,
+            address: deliveryLocation.address,
+            coordinates: {
+              lat: deliveryLocation.lat,
+              lng: deliveryLocation.lng
+            },
             phone: formData.phone
           },
           status: 'pending'
@@ -193,7 +208,7 @@ const Checkout = () => {
     }
   };
 
-  const { subtotal, shipping, tax, total } = cartItems.length > 0 ? calculateTotal() : { subtotal: 0, shipping: 4.99, tax: 0, total: 4.99 };
+  const { subtotal, shipping, tax, total } = cartItems.length > 0 ? calculateTotal() : { subtotal: 0, shipping: 0, tax: 0, total: 0 };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
@@ -282,59 +297,39 @@ const Checkout = () => {
                 </CardContent>
               </Card>
 
-              {/* Shipping Address */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <MapPin className="h-5 w-5" />
-                    <span>Shipping Address</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="address">Street Address *</Label>
-                    <Input
-                      id="address"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="city">City *</Label>
-                      <Input
-                        id="city"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        required
-                      />
+              {/* Delivery Location Map */}
+              <LocationMap
+                onLocationSelect={handleLocationSelect}
+                selectedLocation={deliveryLocation}
+              />
+
+              {/* Shipping Details */}
+              {shippingDetails && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Truck className="h-5 w-5" />
+                      <span>Shipping Details</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {shippingDetails.details.map((detail, index) => (
+                        <div key={detail.sellerId} className="flex justify-between text-sm p-2 rounded bg-muted">
+                          <span>Seller {index + 1} ({detail.distance.toFixed(1)} km)</span>
+                          <span>${detail.price.toFixed(2)}</span>
+                        </div>
+                      ))}
+                      <div className="border-t pt-2">
+                        <div className="flex justify-between font-medium">
+                          <span>Total Shipping:</span>
+                          <span>${shippingDetails.totalShipping.toFixed(2)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="state">State *</Label>
-                      <Input
-                        id="state"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="zipCode">ZIP Code *</Label>
-                    <Input
-                      id="zipCode"
-                      name="zipCode"
-                      value={formData.zipCode}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Payment Information */}
               <Card>
@@ -436,7 +431,7 @@ const Checkout = () => {
                     type="submit"
                     className="w-full bg-green-600 hover:bg-green-700 mt-6"
                     size="lg"
-                    disabled={loading || cartItems.length === 0}
+                    disabled={loading || cartItems.length === 0 || !deliveryLocation}
                   >
                     {loading ? "Processing..." : "Complete Order"}
                   </Button>
