@@ -6,6 +6,8 @@ import { Leaf, ShoppingCart, Star, MapPin, Package, Heart, User, LogOut, Message
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 interface User {
   id: string;
@@ -22,6 +24,98 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    activeOrders: 0,
+    favorites: 0,
+    followedFarms: 0
+  });
+  const [recentPurchases, setRecentPurchases] = useState<any[]>([]);
+  const [favoriteProducts, setFavoriteProducts] = useState<any[]>([]);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [user.id]);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch total orders
+      const { data: totalOrdersData } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact' })
+        .eq('user_id', user.id);
+
+      // Fetch active orders (orders that are not delivered)
+      const { data: activeOrdersData } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact' })
+        .eq('user_id', user.id)
+        .neq('status', 'delivered');
+
+      // Fetch cart items count
+      const { data: cartData } = await supabase
+        .from('cart_items')
+        .select('quantity')
+        .eq('user_id', user.id);
+
+      const totalCartItems = cartData?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+
+      // Fetch recent orders with product details
+      const { data: recentOrdersData } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          total,
+          status,
+          created_at,
+          order_items (
+            quantity,
+            price,
+            products (
+              name,
+              seller_id,
+              profiles!products_seller_id_fkey (
+                business_name,
+                name
+              )
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      // Transform recent orders data
+      const transformedRecentPurchases = recentOrdersData?.map(order => ({
+        id: order.id,
+        product: order.order_items?.[0]?.products?.name || 'Unknown Product',
+        farmer: order.order_items?.[0]?.products?.profiles?.business_name || 
+               order.order_items?.[0]?.products?.profiles?.name || 'Unknown Farmer',
+        price: order.total,
+        status: order.status.charAt(0).toUpperCase() + order.status.slice(1)
+      })) || [];
+
+      // For favorites and followed farms, we'll use placeholder data for now
+      // since these features would require additional tables
+      setStats({
+        totalOrders: totalOrdersData?.length || 0,
+        activeOrders: activeOrdersData?.length || 0,
+        favorites: 0, // Placeholder
+        followedFarms: 0 // Placeholder
+      });
+
+      setRecentPurchases(transformedRecentPurchases);
+      setCartCount(totalCartItems);
+      
+      // Set placeholder favorite products for now
+      setFavoriteProducts([]);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -38,18 +132,6 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
       description: `Added ${productName} to your cart!`,
     });
   };
-
-  const recentPurchases = [
-    { id: 1, product: "Organic Tomatoes", farmer: "Green Valley Farm", price: 4.99, status: "Delivered" },
-    { id: 2, product: "Fresh Apples", farmer: "Sunset Orchards", price: 3.99, status: "In Transit" },
-    { id: 3, product: "Organic Spinach", farmer: "Healthy Greens Co", price: 2.99, status: "Processing" },
-  ];
-
-  const favoriteProducts = [
-    { id: 1, name: "Organic Tomatoes", farmer: "Green Valley Farm", rating: 4.8, image: "🍅" },
-    { id: 2, name: "Fresh Apples", farmer: "Sunset Orchards", rating: 4.9, image: "🍎" },
-    { id: 3, name: "Farm Fresh Eggs", farmer: "Happy Hen Farm", rating: 4.9, image: "🥚" },
-  ];
 
   return (
     <>
@@ -78,10 +160,12 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
             </Link>
           </nav>
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm">
-              <ShoppingCart className="h-4 w-4 mr-1" />
-              Cart (0)
-            </Button>
+            <Link to="/cart">
+              <Button variant="outline" size="sm">
+                <ShoppingCart className="h-4 w-4 mr-1" />
+                Cart ({cartCount})
+              </Button>
+            </Link>
             <Button onClick={handleLogout} variant="outline" size="sm">
               <LogOut className="h-4 w-4 mr-1" />
               Logout
@@ -104,7 +188,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
               <div className="flex items-center space-x-2">
                 <Package className="h-8 w-8 text-blue-600" />
                 <div>
-                  <p className="text-2xl font-bold">12</p>
+                  <p className="text-2xl font-bold">{stats.totalOrders}</p>
                   <p className="text-gray-600 text-sm">Total Orders</p>
                 </div>
               </div>
@@ -116,7 +200,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
               <div className="flex items-center space-x-2">
                 <ShoppingCart className="h-8 w-8 text-green-600" />
                 <div>
-                  <p className="text-2xl font-bold">3</p>
+                  <p className="text-2xl font-bold">{stats.activeOrders}</p>
                   <p className="text-gray-600 text-sm">Active Orders</p>
                 </div>
               </div>
@@ -128,7 +212,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
               <div className="flex items-center space-x-2">
                 <Heart className="h-8 w-8 text-red-600" />
                 <div>
-                  <p className="text-2xl font-bold">8</p>
+                  <p className="text-2xl font-bold">{stats.favorites}</p>
                   <p className="text-gray-600 text-sm">Favorites</p>
                 </div>
               </div>
@@ -140,7 +224,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
               <div className="flex items-center space-x-2">
                 <User className="h-8 w-8 text-purple-600" />
                 <div>
-                  <p className="text-2xl font-bold">5</p>
+                  <p className="text-2xl font-bold">{stats.followedFarms}</p>
                   <p className="text-gray-600 text-sm">Followed Farms</p>
                 </div>
               </div>
@@ -157,22 +241,32 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentPurchases.map((purchase) => (
-                  <div key={purchase.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">{purchase.product}</h4>
-                      <p className="text-sm text-gray-600">{purchase.farmer}</p>
+                {recentPurchases.length > 0 ? (
+                  recentPurchases.map((purchase) => (
+                    <div key={purchase.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h4 className="font-medium">{purchase.product}</h4>
+                        <p className="text-sm text-gray-600">{purchase.farmer}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">${Number(purchase.price).toFixed(2)}</p>
+                        <Badge variant={purchase.status === 'Delivered' ? 'default' : 'secondary'}>
+                          {purchase.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">${purchase.price}</p>
-                      <Badge variant={purchase.status === 'Delivered' ? 'default' : 'secondary'}>
-                        {purchase.status}
-                      </Badge>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No recent purchases yet</p>
+                    <p className="text-sm">Start shopping to see your orders here</p>
                   </div>
-                ))}
+                )}
               </div>
-              <Button className="w-full mt-4" variant="outline">View All Orders</Button>
+              <Link to="/dashboard">
+                <Button className="w-full mt-4" variant="outline">View All Orders</Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -184,26 +278,34 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {favoriteProducts.map((product) => (
-                  <div key={product.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                    <div className="text-3xl">{product.image}</div>
-                    <div className="flex-1">
-                      <h4 className="font-medium">{product.name}</h4>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <MapPin className="h-3 w-3" />
-                        <span>{product.farmer}</span>
-                        <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                        <span>{product.rating}</span>
+                {favoriteProducts.length > 0 ? (
+                  favoriteProducts.map((product) => (
+                    <div key={product.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                      <div className="text-3xl">{product.image}</div>
+                      <div className="flex-1">
+                        <h4 className="font-medium">{product.name}</h4>
+                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <MapPin className="h-3 w-3" />
+                          <span>{product.farmer}</span>
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <span>{product.rating}</span>
+                        </div>
                       </div>
+                      <Button 
+                        size="sm"
+                        onClick={() => handleOrderAgain(product.name)}
+                      >
+                        Order Again
+                      </Button>
                     </div>
-                    <Button 
-                      size="sm"
-                      onClick={() => handleOrderAgain(product.name)}
-                    >
-                      Order Again
-                    </Button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No favorite products yet</p>
+                    <p className="text-sm">Start favoriting products to see them here</p>
                   </div>
-                ))}
+                )}
               </div>
               <Link to="/marketplace">
                 <Button className="w-full mt-4" variant="outline">Browse Marketplace</Button>
