@@ -329,6 +329,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     fetchProducts();
     fetchRecentOrders();
     fetchStats();
+    fetchCustomers();
   }, [user.id]);
 
   const fetchProducts = async () => {
@@ -479,78 +480,195 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     }
   };
 
-  const customers = [
-    { id: 1, name: "John Smith", email: "john@example.com", totalOrders: 15, totalSpent: 450.00 },
-    { id: 2, name: "Sarah Johnson", email: "sarah@example.com", totalOrders: 8, totalSpent: 220.00 },
-    { id: 3, name: "Mike Davis", email: "mike@example.com", totalOrders: 12, totalSpent: 380.00 },
-  ];
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
 
-  const renderAnalytics = () => (
-    <div className="space-y-6">
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold">$12,450</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Orders</p>
-                <p className="text-2xl font-bold">89</p>
-              </div>
-              <Package className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Avg. Order Value</p>
-                <p className="text-2xl font-bold">$140</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Growth Rate</p>
-                <p className="text-2xl font-bold">+23%</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Sales Performance</CardTitle>
-          <CardDescription>Monthly sales trends and analytics</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <BarChart3 className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <p className="text-gray-600">Interactive sales chart would be rendered here</p>
-              <p className="text-sm text-gray-500 mt-2">Revenue increased by 23% this month</p>
-            </div>
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          orders!inner (
+            user_id,
+            profiles!inner (
+              name,
+              email
+            )
+          ),
+          price,
+          quantity,
+          products!inner (
+            seller_id
+          )
+        `)
+        .eq('products.seller_id', user.id);
+
+      if (error) throw error;
+
+      // Group by customer and calculate totals
+      const customerMap = new Map();
+      data?.forEach(item => {
+        const userId = item.orders.user_id;
+        const customer = item.orders.profiles;
+        const orderValue = Number(item.price) * item.quantity;
+
+        if (customerMap.has(userId)) {
+          const existing = customerMap.get(userId);
+          existing.totalOrders += 1;
+          existing.totalSpent += orderValue;
+        } else {
+          customerMap.set(userId, {
+            id: userId,
+            name: customer.name,
+            email: customer.email,
+            totalOrders: 1,
+            totalSpent: orderValue
+          });
+        }
+      });
+
+      const customersArray = Array.from(customerMap.values())
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 10); // Show top 10 customers
+
+      setCustomers(customersArray);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load customer data.",
+        variant: "destructive"
+      });
+    } finally {
+      setCustomersLoading(false);
+    }
+  };
+
+  const renderAnalytics = () => {
+    const avgOrderValue = stats.ordersThisMonth > 0 ? (stats.monthlyRevenue / stats.ordersThisMonth) : 0;
+    
+    return (
+      <div className="space-y-6">
+        {statsLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading analytics...</p>
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+        ) : (
+          <>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Monthly Revenue</p>
+                      <p className="text-2xl font-bold">${stats.monthlyRevenue.toFixed(2)}</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Orders This Month</p>
+                      <p className="text-2xl font-bold">{stats.ordersThisMonth}</p>
+                    </div>
+                    <Package className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Avg. Order Value</p>
+                      <p className="text-2xl font-bold">${avgOrderValue.toFixed(2)}</p>
+                    </div>
+                    <DollarSign className="h-8 w-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Total Customers</p>
+                      <p className="text-2xl font-bold">{stats.totalCustomers}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-orange-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Stats</CardTitle>
+                  <CardDescription>Key performance indicators</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Products Listed</span>
+                    <span className="font-medium">{stats.productsListed}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Monthly Revenue</span>
+                    <span className="font-medium text-green-600">${stats.monthlyRevenue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Customer Base</span>
+                    <span className="font-medium">{stats.totalCustomers} customers</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Orders This Month</span>
+                    <span className="font-medium">{stats.ordersThisMonth}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performance Overview</CardTitle>
+                  <CardDescription>Current month analytics</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Revenue Progress</span>
+                        <span>${stats.monthlyRevenue.toFixed(2)}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-green-600 h-2 rounded-full" 
+                          style={{width: `${Math.min((stats.monthlyRevenue / 1000) * 100, 100)}%`}}
+                        ></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Orders Progress</span>
+                        <span>{stats.ordersThisMonth}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{width: `${Math.min((stats.ordersThisMonth / 50) * 100, 100)}%`}}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
 
   const renderCustomers = () => (
     <div className="space-y-6">
@@ -560,28 +678,41 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           <CardDescription>Manage your customer relationships and communications</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {customers.map((customer) => (
-              <div key={customer.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-medium">{customer.name}</h4>
-                  <p className="text-sm text-gray-600">{customer.email}</p>
+          {customersLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading customers...</p>
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">No customers yet</p>
+              <p className="text-sm text-gray-500 mt-2">Customers will appear here after they place orders</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {customers.map((customer) => (
+                <div key={customer.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{customer.name}</h4>
+                    <p className="text-sm text-gray-600">{customer.email}</p>
+                  </div>
+                  <div className="text-right mr-4">
+                    <p className="font-medium">${customer.totalSpent.toFixed(2)}</p>
+                    <p className="text-sm text-gray-600">{customer.totalOrders} orders</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" onClick={() => toast({ title: "Email Sent", description: `Message sent to ${customer.name}` })}>
+                      <MessageSquare className="h-3 w-3" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => toast({ title: "Customer Details", description: `Viewing ${customer.name}'s profile` })}>
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="text-right mr-4">
-                  <p className="font-medium">${customer.totalSpent}</p>
-                  <p className="text-sm text-gray-600">{customer.totalOrders} orders</p>
-                </div>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" onClick={() => toast({ title: "Email Sent", description: `Message sent to ${customer.name}` })}>
-                    <MessageSquare className="h-3 w-3" />
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => toast({ title: "Customer Details", description: `Viewing ${customer.name}'s profile` })}>
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
