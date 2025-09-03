@@ -195,7 +195,7 @@ const Checkout = () => {
         description: "Your order has been created and will be processed soon.",
       });
 
-      navigate('/payment-success');
+      navigate('/payment-success', { state: { orderId: order.id } });
     } catch (error) {
       console.error('Error creating order:', error);
       toast({

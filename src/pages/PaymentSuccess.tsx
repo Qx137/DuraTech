@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Leaf, Package, Truck, Star, Phone } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -19,20 +19,93 @@ interface Driver {
   };
 }
 
+interface Order {
+  id: string;
+  total: number;
+  tax: number;
+  delivery_address: any;
+  created_at: string;
+  status: string;
+  payment_status: string;
+}
+
+interface OrderItem {
+  id: string;
+  quantity: number;
+  price: number;
+  products: {
+    name: string;
+    unit: string;
+  };
+}
+
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const orderNumber = "ORD-" + Math.random().toString(36).substr(2, 9).toUpperCase();
+  const location = useLocation();
+  const orderId = location.state?.orderId;
+  
+  const [order, setOrder] = useState<Order | null>(null);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [delivery, setDelivery] = useState<any>(null);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [isScanning, setIsScanning] = useState(true);
   const [showDriverSelection, setShowDriverSelection] = useState(false);
 
   useEffect(() => {
+    if (orderId) {
+      fetchOrderData();
+    }
     // Simulate scanning and then fetch available drivers
     setTimeout(() => {
       fetchAvailableDrivers();
     }, 3000);
-  }, []);
+  }, [orderId]);
+
+  const fetchOrderData = async () => {
+    if (!orderId) return;
+
+    try {
+      // Fetch order details
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (orderError) throw orderError;
+      setOrder(orderData);
+
+      // Fetch order items
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('order_items')
+        .select(`
+          *,
+          products (
+            name,
+            unit
+          )
+        `)
+        .eq('order_id', orderId);
+
+      if (itemsError) throw itemsError;
+      setOrderItems(itemsData || []);
+
+      // Fetch delivery info
+      const { data: deliveryData, error: deliveryError } = await supabase
+        .from('deliveries')
+        .select('*')
+        .eq('order_id', orderId)
+        .maybeSingle();
+
+      if (deliveryError) throw deliveryError;
+      setDelivery(deliveryData);
+
+    } catch (error) {
+      console.error('Error fetching order data:', error);
+      toast.error("Error loading order details");
+    }
+  };
 
   const fetchAvailableDrivers = async () => {
     try {
@@ -69,8 +142,8 @@ const PaymentSuccess = () => {
     setTimeout(() => {
       navigate('/delivery-tracking', { 
         state: { 
-          orderNumber, 
-          orderTotal: 24.94,
+          orderId,
+          orderTotal: order?.total || 0,
           selectedDriver: driver
         } 
       });
@@ -107,15 +180,17 @@ const PaymentSuccess = () => {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Order Number:</span>
-                <span className="font-mono text-green-600">{orderNumber}</span>
+                <span className="font-mono text-green-600">ORD-{order?.id?.slice(-8).toUpperCase() || 'Loading...'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Total Amount:</span>
-                <span className="font-semibold">$24.94</span>
+                <span className="font-semibold">${order?.total?.toFixed(2) || '0.00'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Status:</span>
-                <span className="text-green-600 font-medium">Payment Confirmed</span>
+                <span className="text-green-600 font-medium">
+                  {order?.payment_status === 'completed' ? 'Payment Confirmed' : 'Processing...'}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -212,10 +287,17 @@ const PaymentSuccess = () => {
               <CardContent className="p-6 text-center">
                 <Package className="h-12 w-12 text-green-600 mx-auto mb-4" />
                 <h3 className="font-semibold mb-2">Order Details</h3>
-                <p className="text-gray-600 text-sm">
-                  2x Organic Tomatoes<br />
-                  1x Fresh Apples
-                </p>
+                <div className="text-gray-600 text-sm space-y-1">
+                  {orderItems.length > 0 ? (
+                    orderItems.map((item, index) => (
+                      <div key={index}>
+                        {item.quantity}x {item.products.name} ({item.products.unit})
+                      </div>
+                    ))
+                  ) : (
+                    <div>Loading order details...</div>
+                  )}
+                </div>
               </CardContent>
             </Card>
             
@@ -223,10 +305,25 @@ const PaymentSuccess = () => {
               <CardContent className="p-6 text-center">
                 <Truck className="h-12 w-12 text-blue-600 mx-auto mb-4" />
                 <h3 className="font-semibold mb-2">Delivery Info</h3>
-                <p className="text-gray-600 text-sm">
-                  Estimated delivery:<br />
-                  30-45 minutes
-                </p>
+                <div className="text-gray-600 text-sm">
+                  {delivery ? (
+                    <>
+                      <div className="mb-2">
+                        <strong>Delivery Address:</strong><br />
+                        {order?.delivery_address?.address || 'Address not available'}
+                      </div>
+                      <div>
+                        <strong>Status:</strong> {delivery.status}
+                      </div>
+                      <div className="mt-2">
+                        Estimated delivery:<br />
+                        30-45 minutes
+                      </div>
+                    </>
+                  ) : (
+                    <div>Loading delivery details...</div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -244,7 +341,7 @@ const PaymentSuccess = () => {
             )}
             {selectedDriver && (
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/delivery-tracking" state={{ orderNumber, orderTotal: 24.94, selectedDriver }}>
+                <Link to="/delivery-tracking" state={{ orderId, orderTotal: order?.total || 0, selectedDriver }}>
                   <Button className="bg-green-600 hover:bg-green-700">
                     Track My Delivery
                   </Button>
