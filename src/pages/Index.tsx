@@ -153,7 +153,7 @@ const Index = () => {
       </section>
 
       {/* About Us Section */}
-      <section className="py-16">
+      <section id="about-section" className="py-16">
         <div className="container mx-auto px-4">
           <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-8 md:p-12 text-white">
             <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -221,7 +221,7 @@ const Index = () => {
       </section>
 
       {/* Newsletter Section */}
-      <section className="py-16">
+      <section id="newsletter-section" className="py-16">
         <div className="container mx-auto px-4 max-w-2xl text-center">
           <UserCheck className="h-12 w-12 text-green-600 mx-auto mb-6" />
           <h3 className="text-2xl font-bold text-gray-800 mb-4">
@@ -262,24 +262,52 @@ const Index = () => {
                 <li><Link to="/marketplace" className="hover:text-green-500 transition-colors">Marketplace</Link></li>
                 <li><Link to="/community" className="hover:text-green-500 transition-colors">Community</Link></li>
                 <li><Link to="/ai-tools" className="hover:text-green-500 transition-colors">AI Tools</Link></li>
-                <li><a href="#about" className="hover:text-green-500 transition-colors">About Us</a></li>
-                <li><a href="#contact" className="hover:text-green-500 transition-colors">Contact</a></li>
+                <li>
+                  <button 
+                    onClick={() => document.querySelector('#about-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="hover:text-green-500 transition-colors text-left"
+                  >
+                    About Us
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => document.querySelector('#newsletter-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="hover:text-green-500 transition-colors text-left"
+                  >
+                    Contact
+                  </button>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold mb-4">For Farmers</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link to="/register?type=seller" className="hover:text-green-500 transition-colors">Sell Produce</Link></li>
-                <li><a href="#" className="hover:text-green-500 transition-colors">Farmer Resources</a></li>
-                <li><a href="#" className="hover:text-green-500 transition-colors">Support</a></li>
+                <li><Link to="/ai-tools" className="hover:text-green-500 transition-colors">Farmer Resources</Link></li>
+                <li>
+                  <button 
+                    onClick={() => document.querySelector('#newsletter-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="hover:text-green-500 transition-colors text-left"
+                  >
+                    Support
+                  </button>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold mb-4">Support</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-green-500 transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-green-500 transition-colors">Shipping Info</a></li>
-                <li><a href="#" className="hover:text-green-500 transition-colors">Returns</a></li>
+                <li>
+                  <button 
+                    onClick={() => document.querySelector('#newsletter-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="hover:text-green-500 transition-colors text-left"
+                  >
+                    Help Center
+                  </button>
+                </li>
+                <li><Link to="/delivery-tracking" className="hover:text-green-500 transition-colors">Shipping Info</Link></li>
+                <li><Link to="/marketplace" className="hover:text-green-500 transition-colors">Returns</Link></li>
               </ul>
             </div>
           </div>
