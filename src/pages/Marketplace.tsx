@@ -47,6 +47,7 @@ const Marketplace = () => {
         .select(`
           *,
           profiles (
+            name,
             business_name
           )
         `);
@@ -58,7 +59,7 @@ const Marketplace = () => {
         name: product.name,
         price: Number(product.price),
         unit: product.unit,
-        farmer: product.profiles?.business_name || 'Unknown Farmer',
+        farmer: product.profiles?.business_name || product.profiles?.name || 'Unknown Farmer',
         location: product.location || 'Unknown Location',
         rating: Number(product.rating) || 0,
         image: product.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop',
