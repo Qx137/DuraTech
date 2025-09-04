@@ -9,6 +9,7 @@ import AIRecommendationsBanner from "@/components/marketplace/AIRecommendationsB
 import ProductCard from "@/components/marketplace/ProductCard";
 import NoProductsFound from "@/components/marketplace/NoProductsFound";
 import { products as sampleProducts, Product } from "@/data/sampleProducts";
+import { calculateDistance, getSellerLocationFromProduct, Location } from "@/utils/distanceCalculator";
 
 const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,6 +18,7 @@ const Marketplace = () => {
   const [cartCount, setCartCount] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<Location | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -33,12 +35,34 @@ const Marketplace = () => {
 
   useEffect(() => {
     fetchProducts();
+    getUserLocation();
     if (user) {
       fetchCartCount();
     } else {
       setCartCount(0);
     }
   }, [user]);
+
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Location access denied, using default location');
+          // Default to NYC if location access is denied
+          setUserLocation({ lat: 40.7128, lng: -74.0060 });
+        }
+      );
+    } else {
+      // Default to NYC if geolocation is not supported
+      setUserLocation({ lat: 40.7128, lng: -74.0060 });
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -54,19 +78,25 @@ const Marketplace = () => {
 
       if (error) throw error;
 
-      const formattedProducts = data?.map(product => ({
-        id: product.id,
-        name: product.name,
-        price: Number(product.price),
-        unit: product.unit,
-        farmer: product.profiles?.business_name || product.profiles?.name || 'Unknown Farmer',
-        location: product.location || 'Unknown Location',
-        rating: Number(product.rating) || 0,
-        image: product.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop',
-        category: product.category,
-        organic: product.organic,
-        description: product.description || ''
-      })) || [];
+      const formattedProducts = data?.map(product => {
+        const sellerLocation = getSellerLocationFromProduct(product);
+        const distance = userLocation ? calculateDistance(userLocation, sellerLocation) : null;
+        
+        return {
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          unit: product.unit,
+          farmer: product.profiles?.business_name || product.profiles?.name || 'Unknown Farmer',
+          location: product.location || 'Unknown Location',
+          rating: Number(product.rating) || 0,
+          image: product.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop',
+          category: product.category,
+          organic: product.organic,
+          description: product.description || '',
+          distance: distance
+        };
+      }) || [];
 
       setProducts(formattedProducts);
     } catch (error) {

@@ -16,6 +16,7 @@ interface Product {
   category: string;
   organic: boolean;
   description: string | null;
+  distance?: number;
 }
 
 interface ProductCardProps {
@@ -52,7 +53,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         <div className="space-y-3">
           <div className="flex items-center text-sm text-gray-600">
             <MapPin className="h-4 w-4 mr-1" />
-            {product.farmer} {product.location && `• ${product.location}`}
+            {product.farmer} {product.distance ? `• ${product.distance.toFixed(1)} km away` : ''}
           </div>
           
           <div className="flex items-center justify-between">

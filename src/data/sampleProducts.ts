@@ -11,6 +11,7 @@ export interface Product {
   category: string;
   organic: boolean;
   description: string | null;
+  distance?: number;
 }
 
 export const products: Product[] = [
