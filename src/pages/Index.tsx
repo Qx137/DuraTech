@@ -152,26 +152,43 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Mobile App Section */}
+      {/* About Us Section */}
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-8 md:p-12 text-white">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
-                <Monitor className="h-16 w-16 mb-6 opacity-90" />
-                <h3 className="text-3xl font-bold mb-4">Coming Soon: Mobile App</h3>
+                <UserCheck className="h-16 w-16 mb-6 opacity-90" />
+                <h3 className="text-3xl font-bold mb-4">About DuraTech</h3>
                 <p className="text-lg opacity-90 mb-6">
-                  Take DuraTech with you wherever you go. Our mobile app will bring the marketplace right to your pocket.
+                  Founded with a mission to bridge the gap between farmers and consumers, DuraTech revolutionizes agricultural commerce through innovative technology and sustainable practices. We empower farmers with AI-driven insights while providing consumers with fresh, quality produce.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button size="lg" variant="outline" className="text-green-600 border-white bg-white hover:bg-gray-100">
-                    Notify Me
+                    Learn More
                   </Button>
                 </div>
               </div>
               <div className="text-center">
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8">
-                  <Monitor className="h-32 w-32 mx-auto opacity-70" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <Shield className="h-12 w-12 mx-auto mb-2 opacity-70" />
+                      <p className="text-sm opacity-80">Trusted Platform</p>
+                    </div>
+                    <div className="text-center">
+                      <Users className="h-12 w-12 mx-auto mb-2 opacity-70" />
+                      <p className="text-sm opacity-80">Community Driven</p>
+                    </div>
+                    <div className="text-center">
+                      <Cpu className="h-12 w-12 mx-auto mb-2 opacity-70" />
+                      <p className="text-sm opacity-80">AI Powered</p>
+                    </div>
+                    <div className="text-center">
+                      <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-70" />
+                      <p className="text-sm opacity-80">Growth Focused</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
