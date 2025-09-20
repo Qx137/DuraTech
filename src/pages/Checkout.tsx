@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import LocationMap from "@/components/checkout/LocationMap";
+import DeliveryOptions from "@/components/checkout/DeliveryOptions";
 import { calculateTotalShipping, type Location } from "@/utils/distanceCalculator";
 
 const Checkout = () => {
@@ -24,6 +25,7 @@ const Checkout = () => {
     totalShipping: number;
     details: Array<{ sellerId: string; distance: number; price: number; }>;
   } | null>(null);
+  const [selectedDeliveryOption, setSelectedDeliveryOption] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     email: "",
@@ -98,10 +100,10 @@ const Checkout = () => {
     }
 
     // Basic validation
-    if (!formData.email || !formData.firstName || !formData.lastName || !deliveryLocation) {
+    if (!formData.email || !formData.firstName || !formData.lastName || !deliveryLocation || !selectedDeliveryOption) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields and select a delivery location.",
+        description: "Please fill in all required fields, select a delivery location, and choose a delivery option.",
         variant: "destructive",
       });
       return;
@@ -183,7 +185,9 @@ const Checkout = () => {
               lat: deliveryLocation.lat,
               lng: deliveryLocation.lng
             },
-            phone: formData.phone
+            phone: formData.phone,
+            deliveryService: selectedDeliveryOption.name,
+            deliveryServiceId: selectedDeliveryOption.id
           },
           status: 'pending'
         });
@@ -301,6 +305,13 @@ const Checkout = () => {
               <LocationMap
                 onLocationSelect={handleLocationSelect}
                 selectedLocation={deliveryLocation}
+              />
+
+              {/* Delivery Options */}
+              <DeliveryOptions
+                onDeliverySelect={setSelectedDeliveryOption}
+                selectedOption={selectedDeliveryOption?.id}
+                deliveryDistance={shippingDetails?.details.reduce((sum, detail) => sum + detail.distance, 0) / (shippingDetails?.details.length || 1)}
               />
 
               {/* Shipping Details */}
@@ -431,7 +442,7 @@ const Checkout = () => {
                     type="submit"
                     className="w-full bg-green-600 hover:bg-green-700 mt-6"
                     size="lg"
-                    disabled={loading || cartItems.length === 0 || !deliveryLocation}
+                    disabled={loading || cartItems.length === 0 || !deliveryLocation || !selectedDeliveryOption}
                   >
                     {loading ? "Processing..." : "Complete Order"}
                   </Button>
