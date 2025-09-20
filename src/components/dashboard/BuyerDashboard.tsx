@@ -2,6 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Leaf, ShoppingCart, Star, MapPin, Package, Heart, User, LogOut, MessageSquare } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +33,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
     followedFarms: 0
   });
   const [recentPurchases, setRecentPurchases] = useState<any[]>([]);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
   const [favoriteProducts, setFavoriteProducts] = useState<any[]>([]);
   const [cartCount, setCartCount] = useState(0);
 
@@ -87,6 +89,32 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
         .order('created_at', { ascending: false })
         .limit(3);
 
+      // Fetch all orders for the orders tab
+      const { data: allOrdersData } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          total,
+          status,
+          created_at,
+          payment_method,
+          payment_status,
+          order_items (
+            quantity,
+            price,
+            products (
+              name,
+              seller_id,
+              profiles!products_seller_id_fkey (
+                business_name,
+                name
+              )
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
       // Transform recent orders data
       const transformedRecentPurchases = recentOrdersData?.map(order => ({
         id: order.id,
@@ -95,6 +123,23 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                order.order_items?.[0]?.products?.profiles?.name || 'Unknown Farmer',
         price: order.total,
         status: order.status.charAt(0).toUpperCase() + order.status.slice(1)
+      })) || [];
+
+      // Transform all orders data
+      const transformedAllOrders = allOrdersData?.map(order => ({
+        id: order.id,
+        products: order.order_items?.map(item => ({
+          name: item.products?.name || 'Unknown Product',
+          quantity: item.quantity,
+          price: item.price
+        })) || [],
+        farmer: order.order_items?.[0]?.products?.profiles?.business_name || 
+               order.order_items?.[0]?.products?.profiles?.name || 'Unknown Farmer',
+        total: order.total,
+        status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
+        paymentStatus: order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1),
+        paymentMethod: order.payment_method,
+        createdAt: new Date(order.created_at).toLocaleDateString()
       })) || [];
 
       // For favorites and followed farms, we'll use placeholder data for now
@@ -107,6 +152,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
       });
 
       setRecentPurchases(transformedRecentPurchases);
+      setAllOrders(transformedAllOrders);
       setCartCount(totalCartItems);
       
       // Set placeholder favorite products for now
@@ -232,110 +278,174 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Recent Purchases */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Purchases</CardTitle>
-              <CardDescription>Your latest orders and their status</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentPurchases.length > 0 ? (
-                  recentPurchases.map((purchase) => (
-                    <div key={purchase.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium">{purchase.product}</h4>
-                        <p className="text-sm text-gray-600">{purchase.farmer}</p>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="orders">My Orders</TabsTrigger>
+            <TabsTrigger value="favorites">Favorites</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="overview">
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* Recent Purchases */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Purchases</CardTitle>
+                  <CardDescription>Your latest orders and their status</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {recentPurchases.length > 0 ? (
+                      recentPurchases.map((purchase) => (
+                        <div key={purchase.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div>
+                            <h4 className="font-medium">{purchase.product}</h4>
+                            <p className="text-sm text-gray-600">{purchase.farmer}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">${Number(purchase.price).toFixed(2)}</p>
+                            <Badge variant={purchase.status === 'Delivered' ? 'default' : 'secondary'}>
+                              {purchase.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No recent purchases yet</p>
+                        <p className="text-sm">Start shopping to see your orders here</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">${Number(purchase.price).toFixed(2)}</p>
-                        <Badge variant={purchase.status === 'Delivered' ? 'default' : 'secondary'}>
-                          {purchase.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No recent purchases yet</p>
-                    <p className="text-sm">Start shopping to see your orders here</p>
+                    )}
                   </div>
-                )}
-              </div>
-              <Link to="/dashboard">
-                <Button className="w-full mt-4" variant="outline">View All Orders</Button>
-              </Link>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Favorite Products */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Favorite Products</CardTitle>
-              <CardDescription>Products you love from trusted farmers</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {favoriteProducts.length > 0 ? (
-                  favoriteProducts.map((product) => (
-                    <div key={product.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                      <div className="text-3xl">{product.image}</div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{product.name}</h4>
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <MapPin className="h-3 w-3" />
-                          <span>{product.farmer}</span>
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <span>{product.rating}</span>
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                  <CardDescription>Browse and connect with local farmers</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    <Link to="/marketplace">
+                      <Button className="w-full justify-start" variant="outline">
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Browse Marketplace
+                      </Button>
+                    </Link>
+                    <Link to="/community">
+                      <Button className="w-full justify-start" variant="outline">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Join Community
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="orders">
+            <Card>
+              <CardHeader>
+                <CardTitle>All Orders</CardTitle>
+                <CardDescription>Complete history of your orders</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {allOrders.length > 0 ? (
+                    allOrders.map((order) => (
+                      <div key={order.id} className="p-4 border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <h4 className="font-medium">Order #{order.id.slice(-8)}</h4>
+                            <p className="text-sm text-gray-600">{order.createdAt}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">${Number(order.total).toFixed(2)}</p>
+                            <div className="flex gap-2">
+                              <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>
+                                {order.status}
+                              </Badge>
+                              <Badge variant={order.paymentStatus === 'Completed' ? 'default' : 'destructive'}>
+                                {order.paymentStatus}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="border-t pt-2 mt-2">
+                          <p className="text-sm text-gray-600 mb-1">From: {order.farmer}</p>
+                          <p className="text-sm text-gray-600">Payment: {order.paymentMethod}</p>
+                          <div className="mt-2">
+                            <p className="text-sm font-medium">Items:</p>
+                            {order.products.map((product, index) => (
+                              <p key={index} className="text-sm text-gray-600">
+                                {product.quantity}x {product.name} - ${Number(product.price).toFixed(2)}
+                              </p>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      <Button 
-                        size="sm"
-                        onClick={() => handleOrderAgain(product.name)}
-                      >
-                        Order Again
-                      </Button>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No orders found</p>
+                      <p className="text-sm">Start shopping to see your orders here</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No favorite products yet</p>
-                    <p className="text-sm">Start favoriting products to see them here</p>
-                  </div>
-                )}
-              </div>
-              <Link to="/marketplace">
-                <Button className="w-full mt-4" variant="outline">Browse Marketplace</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Quick Actions */}
-        <div className="grid md:grid-cols-2 gap-6 mt-8">
-          <Link to="/marketplace">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-6 text-center">
-                <ShoppingCart className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <h3 className="font-semibold mb-2">Browse Marketplace</h3>
-                <p className="text-gray-600 text-sm">Discover fresh produce from local farmers</p>
+          <TabsContent value="favorites">
+            <Card>
+              <CardHeader>
+                <CardTitle>Favorite Products</CardTitle>
+                <CardDescription>Products you love from trusted farmers</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {favoriteProducts.length > 0 ? (
+                    favoriteProducts.map((product) => (
+                      <div key={product.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                        <div className="text-3xl">{product.image}</div>
+                        <div className="flex-1">
+                          <h4 className="font-medium">{product.name}</h4>
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <MapPin className="h-3 w-3" />
+                            <span>{product.farmer}</span>
+                            <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                            <span>{product.rating}</span>
+                          </div>
+                        </div>
+                        <Button 
+                          size="sm"
+                          onClick={() => handleOrderAgain(product.name)}
+                        >
+                          Order Again
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No favorite products yet</p>
+                      <p className="text-sm">Start favoriting products to see them here</p>
+                    </div>
+                  )}
+                </div>
+                <Link to="/marketplace">
+                  <Button className="w-full mt-4" variant="outline">Browse Marketplace</Button>
+                </Link>
               </CardContent>
             </Card>
-          </Link>
-          
-          <Link to="/community">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-6 text-center">
-                <MessageSquare className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-                <h3 className="font-semibold mb-2">Join Community</h3>
-                <p className="text-gray-600 text-sm">Connect with farmers and other buyers</p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
+          </TabsContent>
+        </Tabs>
+
       </div>
     </>
   );
