@@ -1,1 +1,7 @@
 project_id = "wutfcyskvfkunmvrvafz"
+
+[functions.create-paynow-payment]
+verify_jwt = false
+
+[functions.paynow-webhook]
+verify_jwt = false

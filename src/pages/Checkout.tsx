@@ -140,9 +140,9 @@ const Checkout = () => {
             },
             phone: formData.phone
           },
-          payment_method: 'credit_card',
+          payment_method: 'paynow',
           status: 'pending',
-          payment_status: 'completed'
+          payment_status: 'pending'
         })
         .select()
         .single();
@@ -194,12 +194,23 @@ const Checkout = () => {
 
       if (deliveryError) throw deliveryError;
 
-      toast({
-        title: "Order Placed Successfully!",
-        description: "Your order has been created and will be processed soon.",
+      // Create Paynow payment
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-paynow-payment', {
+        body: {
+          orderId: order.id,
+          amount: total,
+          email: formData.email,
+          phone: formData.phone,
+          customerName: `${formData.firstName} ${formData.lastName}`
+        }
       });
 
-      navigate('/payment-success', { state: { orderId: order.id } });
+      if (paymentError || !paymentData.success) {
+        throw new Error(paymentData?.error || 'Failed to create payment');
+      }
+
+      // Redirect to Paynow payment page
+      window.location.href = paymentData.paymentUrl;
     } catch (error) {
       console.error('Error creating order:', error);
       toast({
@@ -351,50 +362,15 @@ const Checkout = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="nameOnCard">Name on Card *</Label>
-                    <Input
-                      id="nameOnCard"
-                      name="nameOnCard"
-                      value={formData.nameOnCard}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cardNumber">Card Number *</Label>
-                    <Input
-                      id="cardNumber"
-                      name="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      value={formData.cardNumber}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="expiryDate">Expiry Date *</Label>
-                      <Input
-                        id="expiryDate"
-                        name="expiryDate"
-                        placeholder="MM/YY"
-                        value={formData.expiryDate}
-                        onChange={handleInputChange}
-                        required
-                      />
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <CreditCard className="h-5 w-5 text-blue-600" />
+                      <span className="font-medium text-blue-800">Paynow Payment</span>
                     </div>
-                    <div>
-                      <Label htmlFor="cvv">CVV *</Label>
-                      <Input
-                        id="cvv"
-                        name="cvv"
-                        placeholder="123"
-                        value={formData.cvv}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
+                    <p className="text-sm text-blue-700">
+                      You will be redirected to Paynow to complete your payment securely. 
+                      Paynow supports EcoCash, Telecel Cash, OneMoney, Visa, and Mastercard.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
