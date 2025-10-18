@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Navigation, Target } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Fix default marker icons for Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -23,9 +24,6 @@ interface LocationMapProps {
   selectedLocation: { lat: number; lng: number; address: string } | null;
 }
 
-// GraphHopper API configuration
-const GRAPHHOPPER_API_KEY = import.meta.env.VITE_GRAPHHOPPER_API_KEY || '';
-
 function MapClickHandler({ onLocationSelect }: { onLocationSelect: (location: { lat: number; lng: number; address: string }) => void }) {
   const [marker, setMarker] = useState<L.LatLng | null>(null);
 
@@ -34,14 +32,15 @@ function MapClickHandler({ onLocationSelect }: { onLocationSelect: (location: { 
       const { lat, lng } = e.latlng;
       setMarker(e.latlng);
 
-      // Reverse geocode using GraphHopper
+      // Reverse geocode using secure edge function
       try {
-        const response = await fetch(
-          `https://graphhopper.com/api/1/geocode?reverse=true&point=${lat},${lng}&key=${GRAPHHOPPER_API_KEY}`
-        );
-        const data = await response.json();
-        const address = data.hits?.[0]?.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        const { data, error } = await supabase.functions.invoke('graphhopper-geocode', {
+          body: { lat, lng, type: 'reverse' }
+        });
         
+        if (error) throw error;
+        
+        const address = data.hits?.[0]?.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         onLocationSelect({ lat, lng, address });
       } catch (error) {
         console.error('Error getting address:', error);
@@ -66,14 +65,15 @@ const LocationMap: React.FC<LocationMapProps> = ({ onLocationSelect, selectedLoc
           setCenter([latitude, longitude]);
           setKey(prev => prev + 1); // Force map re-render
 
-          // Get address for current location using GraphHopper
+          // Get address for current location using secure edge function
           try {
-            const response = await fetch(
-              `https://graphhopper.com/api/1/geocode?reverse=true&point=${latitude},${longitude}&key=${GRAPHHOPPER_API_KEY}`
-            );
-            const data = await response.json();
-            const address = data.hits?.[0]?.name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            const { data, error } = await supabase.functions.invoke('graphhopper-geocode', {
+              body: { lat: latitude, lng: longitude, type: 'reverse' }
+            });
             
+            if (error) throw error;
+            
+            const address = data.hits?.[0]?.name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
             onLocationSelect({ lat: latitude, lng: longitude, address });
           } catch (error) {
             console.error('Error getting address:', error);

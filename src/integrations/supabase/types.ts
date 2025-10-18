@@ -102,6 +102,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "deliveries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_drivers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "deliveries_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -346,7 +353,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_drivers: {
+        Row: {
+          created_at: string | null
+          current_location: Json | null
+          id: string | null
+          rating: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_location?: Json | null
+          id?: string | null
+          rating?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_location?: Json | null
+          id?: string | null
+          rating?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never

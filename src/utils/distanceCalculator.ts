@@ -1,4 +1,5 @@
 // Distance calculation utilities similar to InDrive pricing
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Location {
   lat: number;
@@ -21,21 +22,18 @@ const DEFAULT_PRICING: PricingConfig = {
 };
 
 /**
- * Calculate actual road distance between two coordinates using GraphHopper
+ * Calculate actual road distance between two coordinates using GraphHopper via secure edge function
  */
 export async function calculateDistance(from: Location, to: Location): Promise<number> {
-  const apiKey = import.meta.env.VITE_GRAPHHOPPER_API_KEY || '';
-  
   try {
-    const response = await fetch(
-      `https://graphhopper.com/api/1/route?point=${from.lat},${from.lng}&point=${to.lat},${to.lng}&vehicle=car&key=${apiKey}`
-    );
+    const { data, error } = await supabase.functions.invoke('graphhopper-geocode', {
+      body: { 
+        type: 'route',
+        points: [[from.lat, from.lng], [to.lat, to.lng]]
+      }
+    });
     
-    if (!response.ok) {
-      throw new Error('GraphHopper API request failed');
-    }
-    
-    const data = await response.json();
+    if (error) throw error;
     
     // Distance is returned in meters, convert to kilometers
     const distanceInMeters = data.paths?.[0]?.distance || 0;

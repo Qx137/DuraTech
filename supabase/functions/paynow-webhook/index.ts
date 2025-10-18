@@ -6,6 +6,40 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Verify Paynow webhook signature using SHA-512 hash
+async function verifyPaynowSignature(data: Record<string, string>, receivedHash: string): Promise<boolean> {
+  try {
+    const integrationKey = Deno.env.get('PAYNOW_INTEGRATION_KEY');
+    if (!integrationKey) {
+      console.error('PAYNOW_INTEGRATION_KEY not configured');
+      return false;
+    }
+
+    // Create string from all values + integration key
+    const values = Object.keys(data)
+      .sort() // Sort keys for consistent ordering
+      .map(key => data[key])
+      .join('') + integrationKey;
+
+    // Generate SHA-512 hash
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest('SHA-512', encoder.encode(values));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const calculatedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+    console.log('Hash verification:', {
+      received: receivedHash.toUpperCase(),
+      calculated: calculatedHash,
+      match: calculatedHash === receivedHash.toUpperCase()
+    });
+
+    return calculatedHash === receivedHash.toUpperCase();
+  } catch (error) {
+    console.error('Error verifying signature:', error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -26,7 +60,22 @@ serve(async (req) => {
       webhookData[key.toLowerCase()] = value.toString();
     }
 
-    console.log('Paynow webhook received:', webhookData);
+    console.log('Paynow webhook received:', { ...webhookData, hash: '***' });
+
+    // Extract hash and verify signature
+    const { hash, ...dataToVerify } = webhookData;
+    
+    if (!hash) {
+      console.error('No hash provided in webhook');
+      throw new Error('Missing signature hash');
+    }
+
+    // Verify the webhook is from Paynow
+    const isValid = await verifyPaynowSignature(dataToVerify, hash);
+    if (!isValid) {
+      console.error('Invalid webhook signature');
+      throw new Error('Invalid webhook signature - request rejected');
+    }
 
     const { reference, paynowreference, amount, status } = webhookData;
 
