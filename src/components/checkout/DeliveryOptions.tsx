@@ -81,8 +81,18 @@ const DeliveryOptions = ({ onDeliverySelect, selectedOption, deliveryDistance = 
   ];
 
   const calculateDeliveryPrice = (option: DeliveryOption) => {
-    const distanceMultiplier = Math.max(1, deliveryDistance / 5); // $0.20 per km beyond 5km
-    return (option.basePrice * distanceMultiplier).toFixed(2);
+    if (!deliveryDistance || deliveryDistance === 0) {
+      return option.basePrice.toFixed(2);
+    }
+    
+    // Calculate price: base price + (distance in km * per km rate)
+    // Each km costs $0.50 beyond the base price
+    const pricePerKm = 0.50;
+    const price = option.basePrice + (deliveryDistance * pricePerKm);
+    
+    // Cap at reasonable maximum of $50
+    const finalPrice = Math.min(price, 50.00);
+    return finalPrice.toFixed(2);
   };
 
   const handleOptionChange = (value: string) => {
