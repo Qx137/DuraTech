@@ -1,108 +1,83 @@
-import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Navigation, Target } from 'lucide-react';
 
-// You'll need to add your Mapbox token here
-const MAPBOX_TOKEN = 'pk.eyJ1IjoidXNlcm5hbWUiLCJhIjoiY2xrZjBvNDBhMDA0ODNxcGNkZzVmZGN4ZiJ9.XYZ'; // Replace with actual token
+// Fix default marker icons for Leaflet
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+});
 
 interface LocationMapProps {
   onLocationSelect: (location: { lat: number; lng: number; address: string }) => void;
   selectedLocation: { lat: number; lng: number; address: string } | null;
 }
 
-const LocationMap: React.FC<LocationMapProps> = ({ onLocationSelect, selectedLocation }) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const marker = useRef<mapboxgl.Marker | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<GeolocationPosition | null>(null);
+// GraphHopper API configuration
+const GRAPHHOPPER_API_KEY = import.meta.env.VITE_GRAPHHOPPER_API_KEY || '';
 
-  useEffect(() => {
-    if (!mapContainer.current) return;
+function MapClickHandler({ onLocationSelect }: { onLocationSelect: (location: { lat: number; lng: number; address: string }) => void }) {
+  const [marker, setMarker] = useState<L.LatLng | null>(null);
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-74.5, 40],
-      zoom: 9
-    });
+  const map = useMapEvents({
+    click: async (e) => {
+      const { lat, lng } = e.latlng;
+      setMarker(e.latlng);
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-    // Add click handler
-    map.current.on('click', async (e) => {
-      const { lng, lat } = e.lngLat;
-      
-      // Remove existing marker
-      if (marker.current) {
-        marker.current.remove();
-      }
-
-      // Add new marker
-      marker.current = new mapboxgl.Marker({ color: '#10b981' })
-        .setLngLat([lng, lat])
-        .addTo(map.current!);
-
-      // Reverse geocode to get address
+      // Reverse geocode using GraphHopper
       try {
         const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}`
+          `https://graphhopper.com/api/1/geocode?reverse=true&point=${lat},${lng}&key=${GRAPHHOPPER_API_KEY}`
         );
         const data = await response.json();
-        const address = data.features[0]?.place_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        const address = data.hits?.[0]?.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         
         onLocationSelect({ lat, lng, address });
       } catch (error) {
         console.error('Error getting address:', error);
         onLocationSelect({ lat, lng, address: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
       }
-    });
+    },
+  });
 
-    return () => {
-      map.current?.remove();
-    };
-  }, [onLocationSelect]);
+  return marker ? <Marker position={marker} /> : null;
+}
+
+const LocationMap: React.FC<LocationMapProps> = ({ onLocationSelect, selectedLocation }) => {
+  const [center, setCenter] = useState<[number, number]>([40, -74]);
+  const [key, setKey] = useState(0);
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation(position);
+        async (position) => {
           const { latitude, longitude } = position.coords;
           
-          if (map.current) {
-            map.current.flyTo({
-              center: [longitude, latitude],
-              zoom: 14
-            });
+          setCenter([latitude, longitude]);
+          setKey(prev => prev + 1); // Force map re-render
 
-            // Remove existing marker
-            if (marker.current) {
-              marker.current.remove();
-            }
-
-            // Add marker at current location
-            marker.current = new mapboxgl.Marker({ color: '#10b981' })
-              .setLngLat([longitude, latitude])
-              .addTo(map.current);
-
-            // Get address for current location
-            fetch(
-              `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}`
-            )
-              .then(response => response.json())
-              .then(data => {
-                const address = data.features[0]?.place_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-                onLocationSelect({ lat: latitude, lng: longitude, address });
-              })
-              .catch(error => {
-                console.error('Error getting address:', error);
-                onLocationSelect({ lat: latitude, lng: longitude, address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` });
-              });
+          // Get address for current location using GraphHopper
+          try {
+            const response = await fetch(
+              `https://graphhopper.com/api/1/geocode?reverse=true&point=${latitude},${longitude}&key=${GRAPHHOPPER_API_KEY}`
+            );
+            const data = await response.json();
+            const address = data.hits?.[0]?.name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            
+            onLocationSelect({ lat: latitude, lng: longitude, address });
+          } catch (error) {
+            console.error('Error getting address:', error);
+            onLocationSelect({ lat: latitude, lng: longitude, address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` });
           }
         },
         (error) => {
@@ -134,10 +109,23 @@ const LocationMap: React.FC<LocationMapProps> = ({ onLocationSelect, selectedLoc
           </Button>
         </div>
         
-        <div 
-          ref={mapContainer} 
-          className="w-full h-64 rounded-lg border border-border"
-        />
+        <div className="w-full h-64 rounded-lg border border-border overflow-hidden">
+          <MapContainer
+            key={key}
+            center={center}
+            zoom={13}
+            style={{ height: '100%', width: '100%' }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapClickHandler onLocationSelect={onLocationSelect} />
+            {selectedLocation && (
+              <Marker position={[selectedLocation.lat, selectedLocation.lng]} />
+            )}
+          </MapContainer>
+        </div>
         
         {selectedLocation && (
           <div className="p-3 rounded-lg bg-muted">
