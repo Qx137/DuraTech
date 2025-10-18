@@ -78,11 +78,11 @@ const Checkout = () => {
     return { subtotal, shipping, tax, total: subtotal + shipping + tax };
   };
 
-  const handleLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+  const handleLocationSelect = async (location: { lat: number; lng: number; address: string }) => {
     setDeliveryLocation(location);
     
     if (cartItems.length > 0) {
-      const shippingCalc = calculateTotalShipping(cartItems, location);
+      const shippingCalc = await calculateTotalShipping(cartItems, location);
       setShippingDetails(shippingCalc);
     }
   };

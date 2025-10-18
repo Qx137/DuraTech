@@ -21,9 +21,36 @@ const DEFAULT_PRICING: PricingConfig = {
 };
 
 /**
- * Calculate distance between two coordinates using Haversine formula
+ * Calculate actual road distance between two coordinates using GraphHopper
  */
-export function calculateDistance(from: Location, to: Location): number {
+export async function calculateDistance(from: Location, to: Location): Promise<number> {
+  const apiKey = import.meta.env.VITE_GRAPHHOPPER_API_KEY || '';
+  
+  try {
+    const response = await fetch(
+      `https://graphhopper.com/api/1/route?point=${from.lat},${from.lng}&point=${to.lat},${to.lng}&vehicle=car&key=${apiKey}`
+    );
+    
+    if (!response.ok) {
+      throw new Error('GraphHopper API request failed');
+    }
+    
+    const data = await response.json();
+    
+    // Distance is returned in meters, convert to kilometers
+    const distanceInMeters = data.paths?.[0]?.distance || 0;
+    return distanceInMeters / 1000;
+  } catch (error) {
+    console.error('Error calculating distance with GraphHopper:', error);
+    // Fallback to Haversine formula for straight-line distance
+    return calculateDistanceFallback(from, to);
+  }
+}
+
+/**
+ * Fallback: Calculate straight-line distance using Haversine formula
+ */
+function calculateDistanceFallback(from: Location, to: Location): number {
   const R = 6371; // Earth's radius in kilometers
   const dLat = toRad(to.lat - from.lat);
   const dLng = toRad(to.lng - from.lng);
@@ -71,10 +98,10 @@ export function getSellerLocationFromProduct(product: any): Location {
 /**
  * Calculate total shipping for multiple products from different sellers
  */
-export function calculateTotalShipping(
+export async function calculateTotalShipping(
   cartItems: any[],
   deliveryLocation: Location
-): { totalShipping: number; details: Array<{ sellerId: string; distance: number; price: number; }> } {
+): Promise<{ totalShipping: number; details: Array<{ sellerId: string; distance: number; price: number; }> }> {
   const sellerGroups = new Map<string, any[]>();
   
   // Group items by seller
@@ -89,16 +116,22 @@ export function calculateTotalShipping(
   const details: Array<{ sellerId: string; distance: number; price: number; }> = [];
   let totalShipping = 0;
   
-  // Calculate shipping for each seller
-  sellerGroups.forEach((items, sellerId) => {
+  // Calculate shipping for each seller (in parallel for efficiency)
+  const promises = Array.from(sellerGroups.entries()).map(async ([sellerId, items]) => {
     // Use the first product in the group to get seller location
     const product = items[0].products;
     const sellerLocation = getSellerLocationFromProduct(product);
-    const distance = calculateDistance(sellerLocation, deliveryLocation);
+    const distance = await calculateDistance(sellerLocation, deliveryLocation);
     const price = calculateShippingPrice(distance);
     
-    details.push({ sellerId, distance, price });
-    totalShipping += price;
+    return { sellerId, distance, price };
+  });
+  
+  const results = await Promise.all(promises);
+  
+  results.forEach(result => {
+    details.push(result);
+    totalShipping += result.price;
   });
   
   return { totalShipping, details };
