@@ -59,7 +59,9 @@ const Checkout = () => {
             id,
             name,
             price,
-            seller_id
+            seller_id,
+            pickup_latitude,
+            pickup_longitude
           )
         `)
         .eq('user_id', user.id);
