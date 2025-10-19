@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,9 +21,62 @@ serve(async (req) => {
   }
 
   try {
+    // 1. Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Missing authorization header');
+    }
+
+    // 2. Initialize Supabase with user's JWT
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase configuration missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // 3. Get authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('Unauthorized');
+    }
+
     const { orderId, amount, email, phone, customerName }: PaymentRequest = await req.json();
 
-    console.log('Creating Paynow payment for:', { orderId, amount, email, customerName });
+    console.log('Creating Paynow payment for user:', user.id, 'order:', orderId);
+
+    // 4. Verify order ownership and get actual amount
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id, user_id, total, payment_status')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError || !order) {
+      console.error('Order not found:', orderError);
+      throw new Error('Order not found');
+    }
+
+    // 5. Verify user owns this order
+    if (order.user_id !== user.id) {
+      console.error('Access denied: Order belongs to another user');
+      throw new Error('Access denied: Order belongs to another user');
+    }
+
+    // 6. Verify order hasn't been paid
+    if (order.payment_status === 'completed') {
+      throw new Error('Order already paid');
+    }
+
+    // 7. Verify amount matches (prevent price manipulation)
+    if (Math.abs(order.total - amount) > 0.01) {
+      console.error('Amount mismatch:', { requested: amount, actual: order.total });
+      throw new Error('Amount mismatch');
+    }
 
     // Get Paynow credentials from environment
     const integrationId = Deno.env.get('PAYNOW_INTEGRATION_ID');
@@ -100,13 +154,14 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error creating Paynow payment:', error);
+    const status = error instanceof Error && error.message.includes('Access denied') ? 403 : 400;
     return new Response(
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : 'An unknown error occurred'
       }),
       {
-        status: 400,
+        status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
