@@ -47,27 +47,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSession(session);
         
         if (session?.user) {
-          console.log('User authenticated, fetching profile...');
+          console.log('User authenticated, fetching profile and roles...');
           // Use setTimeout to defer the async profile fetch to avoid blocking the auth state change
           setTimeout(async () => {
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
+            // Fetch both profile and user role
+            const [profileResult, rolesResult] = await Promise.all([
+              supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single(),
+              supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .limit(1)
+                .single()
+            ]);
             
-            if (profile && !error) {
-              console.log('Profile loaded:', profile);
+            if (profileResult.data && !profileResult.error) {
+              console.log('Profile loaded:', profileResult.data);
+              
+              // Determine user type from user_roles table (primary source)
+              // Fall back to profile.user_type for backwards compatibility
+              const userType = rolesResult.data?.role || profileResult.data.user_type;
+              
               setUser({
-                id: profile.id,
-                name: profile.name,
-                email: profile.email,
-                userType: profile.user_type as 'buyer' | 'seller',
-                businessName: profile.business_name || undefined,
-                description: profile.description || undefined,
+                id: profileResult.data.id,
+                name: profileResult.data.name,
+                email: profileResult.data.email,
+                userType: userType as 'buyer' | 'seller',
+                businessName: profileResult.data.business_name || undefined,
+                description: profileResult.data.description || undefined,
               });
             } else {
-              console.error("Error fetching profile:", error);
+              console.error("Error fetching profile:", profileResult.error);
               // If no profile exists, create a basic user object from auth data
               setUser({
                 id: session.user.id,
