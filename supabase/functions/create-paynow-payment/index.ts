@@ -113,14 +113,43 @@ serve(async (req) => {
       hash: hashHex.toUpperCase()
     };
 
-    // Send request to Paynow
-    const paynowResponse = await fetch('https://www.paynow.co.zw/interface/initiatetransaction', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams(finalPaymentData).toString()
-    });
+    // Send request to Paynow with retry logic
+    let paynowResponse;
+    let lastError;
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Paynow request attempt ${attempt}/${maxRetries}`);
+        
+        paynowResponse = await fetch('https://www.paynow.co.zw/interface/initiatetransaction', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams(finalPaymentData).toString(),
+          signal: AbortSignal.timeout(30000) // 30 second timeout
+        });
+        
+        // If we get here, the request succeeded
+        break;
+      } catch (error) {
+        lastError = error;
+        console.error(`Attempt ${attempt} failed:`, error);
+        
+        if (attempt < maxRetries) {
+          // Wait before retrying (exponential backoff: 1s, 2s, 4s)
+          const waitTime = Math.pow(2, attempt - 1) * 1000;
+          console.log(`Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+    
+    if (!paynowResponse) {
+      console.error('All Paynow connection attempts failed');
+      throw new Error('Unable to connect to payment gateway. Please try again later.');
+    }
 
     const responseText = await paynowResponse.text();
     console.log('Paynow response:', responseText);
