@@ -424,6 +424,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      seller_has_order: {
+        Args: { _order_id: string; _seller_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "buyer" | "seller" | "driver"
