@@ -50,6 +50,35 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error('GraphHopper API error:', data);
+      
+      // If rate limit exceeded, return a fallback response for route calculations
+      if (data.message && data.message.includes('API limit')) {
+        console.log('Rate limit exceeded, using fallback calculation');
+        
+        if (type === 'route' && points && points.length === 2) {
+          // Calculate straight-line distance as fallback
+          const [lat1, lng1] = points[0];
+          const [lat2, lng2] = points[1];
+          const R = 6371; // Earth's radius in km
+          const dLat = (lat2 - lat1) * Math.PI / 180;
+          const dLng = (lng2 - lng1) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const distance = R * c * 1000; // Convert to meters
+          
+          return new Response(JSON.stringify({
+            paths: [{
+              distance: distance * 1.3 // Add 30% for actual road distance estimate
+            }]
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      
       throw new Error(data.message || 'GraphHopper API request failed');
     }
 
