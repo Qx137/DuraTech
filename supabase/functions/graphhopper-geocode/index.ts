@@ -17,7 +17,7 @@ serve(async (req) => {
       throw new Error('GRAPHHOPPER_API_KEY not configured');
     }
 
-    const { lat, lng, address, type } = await req.json();
+    const { lat, lng, address, type, points } = await req.json();
 
     let url: string;
     if (type === 'reverse') {
@@ -34,7 +34,6 @@ serve(async (req) => {
       url = `https://graphhopper.com/api/1/geocode?q=${encodeURIComponent(address)}&key=${apiKey}`;
     } else if (type === 'route') {
       // Route calculation
-      const { points } = await req.json();
       if (!points || points.length < 2) {
         throw new Error('At least 2 points are required for routing');
       }
