@@ -22,7 +22,7 @@ serve(async (req) => {
       if (!lat || !lng) {
         throw new Error('Latitude and longitude are required for reverse geocoding');
       }
-      url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
+      url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`;
       
       console.log('Nominatim reverse geocoding request:', { type, lat, lng });
       
@@ -51,7 +51,7 @@ serve(async (req) => {
       if (!address) {
         throw new Error('Address is required for forward geocoding');
       }
-      url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
+      url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=5&addressdetails=1&countrycodes=zw`;
       
       console.log('Nominatim forward geocoding request:', { type, address });
       
