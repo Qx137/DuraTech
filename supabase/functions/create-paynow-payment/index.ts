@@ -121,21 +121,28 @@ serve(async (req) => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Paynow request attempt ${attempt}/${maxRetries}`);
+        console.log('Request URL: https://www.paynow.co.zw/interface/initiatetransaction');
+        console.log('Request data:', { ...finalPaymentData, hash: '***', id: '***' });
         
         paynowResponse = await fetch('https://www.paynow.co.zw/interface/initiatetransaction', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Supabase-Edge-Function'
           },
           body: new URLSearchParams(finalPaymentData).toString(),
           signal: AbortSignal.timeout(30000) // 30 second timeout
         });
         
+        console.log(`Response status: ${paynowResponse.status}`);
+        
         // If we get here, the request succeeded
         break;
       } catch (error) {
         lastError = error;
-        console.error(`Attempt ${attempt} failed:`, error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(`Attempt ${attempt} failed:`, errorMsg);
+        console.error('Full error details:', error);
         
         if (attempt < maxRetries) {
           // Wait before retrying (exponential backoff: 1s, 2s, 4s)
@@ -147,8 +154,10 @@ serve(async (req) => {
     }
     
     if (!paynowResponse) {
-      console.error('All Paynow connection attempts failed');
-      throw new Error('Unable to connect to payment gateway. Please try again later.');
+      const errorDetails = lastError instanceof Error ? lastError.message : String(lastError);
+      console.error('All Paynow connection attempts failed. Last error:', errorDetails);
+      console.error('Possible causes: 1) Paynow API is down, 2) Network/firewall blocking, 3) Invalid credentials');
+      throw new Error('Unable to connect to payment gateway. Please try again later or contact support.');
     }
 
     const responseText = await paynowResponse.text();

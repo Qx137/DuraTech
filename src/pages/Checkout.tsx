@@ -208,17 +208,34 @@ const Checkout = () => {
       });
 
       if (paymentError || !paymentData.success) {
-        throw new Error(paymentData?.error || 'Failed to create payment');
+        const errorMessage = paymentData?.error || paymentError?.message || 'Failed to create payment';
+        
+        // Provide specific error messages based on the error type
+        let userMessage = "There was an error processing your order. Please try again.";
+        
+        if (errorMessage.includes('Unable to connect to payment gateway')) {
+          userMessage = "The payment gateway is temporarily unavailable. Your order has been created. Please try again in a few moments or contact support with your order ID: " + order.id;
+        } else if (errorMessage.includes('credentials')) {
+          userMessage = "Payment system configuration error. Please contact support.";
+        } else if (errorMessage.includes('Amount mismatch')) {
+          userMessage = "There was an issue with the order amount. Please refresh and try again.";
+        }
+        
+        throw new Error(userMessage);
       }
 
       // Redirect to Paynow payment page
       window.location.href = paymentData.paymentUrl;
     } catch (error) {
       console.error('Error creating order:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : "There was an error processing your order. Please try again.";
+      
       toast({
         title: "Order Failed",
-        description: "There was an error processing your order. Please try again.",
+        description: errorMessage,
         variant: "destructive",
+        duration: 10000, // Show for 10 seconds for longer messages
       });
     } finally {
       setLoading(false);
