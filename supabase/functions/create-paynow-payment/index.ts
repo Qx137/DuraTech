@@ -113,50 +113,76 @@ serve(async (req) => {
       hash: hashHex.toUpperCase()
     };
 
-    // Send request to Paynow with retry logic
-    let paynowResponse;
-    let lastError;
+    // Send request to Paynow with endpoint fallback + retry logic
+    let paynowResponse: Response | undefined;
+    let lastError: unknown;
     const maxRetries = 3;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Paynow request attempt ${attempt}/${maxRetries}`);
-        console.log('Request URL: https://www.paynow.co.zw/interface/initiatetransaction');
-        console.log('Request data:', { ...finalPaymentData, hash: '***', id: '***' });
-        
-        paynowResponse = await fetch('https://www.paynow.co.zw/interface/initiatetransaction', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'Supabase-Edge-Function'
-          },
-          body: new URLSearchParams(finalPaymentData).toString(),
-          signal: AbortSignal.timeout(30000) // 30 second timeout
-        });
-        
-        console.log(`Response status: ${paynowResponse.status}`);
-        
-        // If we get here, the request succeeded
-        break;
-      } catch (error) {
-        lastError = error;
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        console.error(`Attempt ${attempt} failed:`, errorMsg);
-        console.error('Full error details:', error);
-        
-        if (attempt < maxRetries) {
-          // Wait before retrying (exponential backoff: 1s, 2s, 4s)
-          const waitTime = Math.pow(2, attempt - 1) * 1000;
-          console.log(`Waiting ${waitTime}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+
+    // Build endpoints list with optional config and sandbox
+    const paynowEnv = (Deno.env.get('PAYNOW_ENV') || '').toLowerCase();
+    const configuredBaseUrl = Deno.env.get('PAYNOW_BASE_URL');
+    const endpoints: string[] = [];
+
+    if (configuredBaseUrl) endpoints.push(configuredBaseUrl);
+    if (paynowEnv === 'sandbox') {
+      endpoints.push('https://sandbox.paynow.co.zw/interface/initiatetransaction');
+    }
+    // Default production endpoints (try www then non-www)
+    endpoints.push(
+      'https://www.paynow.co.zw/interface/initiatetransaction',
+      'https://paynow.co.zw/interface/initiatetransaction'
+    );
+
+    for (const endpoint of endpoints) {
+      console.log(`Attempting Paynow endpoint: ${endpoint}`);
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`Paynow request attempt ${attempt}/${maxRetries}`);
+          console.log('Request URL:', endpoint);
+          console.log('Request data:', { ...finalPaymentData, hash: '***', id: '***' });
+
+          paynowResponse = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+              'Accept': 'text/plain, */*;q=0.8',
+              'User-Agent': 'Supabase-Edge-Function/1.0 (+https://supabase.com)'
+            },
+            body: new URLSearchParams(finalPaymentData).toString(),
+            signal: AbortSignal.timeout(30000) // 30 second timeout
+          });
+
+          console.log(`Response status: ${paynowResponse.status}`);
+
+          // If we get here, the request succeeded (network level)
+          break;
+        } catch (error) {
+          lastError = error;
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.error(`Attempt ${attempt} failed:`, errorMsg);
+          console.error('Full error details:', error);
+
+          if (attempt < maxRetries) {
+            // Wait before retrying (exponential backoff: 1s, 2s, 4s)
+            const waitTime = Math.pow(2, attempt - 1) * 1000;
+            console.log(`Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
         }
       }
+
+      if (paynowResponse) {
+        // Exit endpoint loop if we received a response
+        break;
+      } else {
+        console.warn(`No response from endpoint, trying next: ${endpoint}`);
+      }
     }
-    
+
     if (!paynowResponse) {
       const errorDetails = lastError instanceof Error ? lastError.message : String(lastError);
       console.error('All Paynow connection attempts failed. Last error:', errorDetails);
-      console.error('Possible causes: 1) Paynow API is down, 2) Network/firewall blocking, 3) Invalid credentials');
+      console.error('Possible causes: 1) Paynow API is down, 2) Network/firewall blocking, 3) Invalid credentials, 4) Using test credentials against production endpoint');
       throw new Error('Unable to connect to payment gateway. Please try again later or contact support.');
     }
 
