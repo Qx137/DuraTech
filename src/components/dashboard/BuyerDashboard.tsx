@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import { OrderCancellation } from "@/components/orders/OrderCancellation";
 
 interface User {
   id: string;
@@ -363,16 +364,23 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                             <h4 className="font-medium">Order #{order.id.slice(-8)}</h4>
                             <p className="text-sm text-gray-600">{order.createdAt}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium">${Number(order.total).toFixed(2)}</p>
-                            <div className="flex gap-2">
-                              <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>
-                                {order.status}
-                              </Badge>
-                              <Badge variant={order.paymentStatus === 'Completed' ? 'default' : 'destructive'}>
-                                {order.paymentStatus}
-                              </Badge>
+                          <div className="text-right flex items-center gap-2">
+                            <div>
+                              <p className="font-medium">${Number(order.total).toFixed(2)}</p>
+                              <div className="flex gap-2">
+                                <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>
+                                  {order.status}
+                                </Badge>
+                                <Badge variant={order.paymentStatus === 'Completed' ? 'default' : 'destructive'}>
+                                  {order.paymentStatus}
+                                </Badge>
+                              </div>
                             </div>
+                            <OrderCancellation 
+                              orderId={order.id}
+                              currentStatus={order.status.toLowerCase()}
+                              onCancelled={fetchDashboardData}
+                            />
                           </div>
                         </div>
                         <div className="border-t pt-2 mt-2">

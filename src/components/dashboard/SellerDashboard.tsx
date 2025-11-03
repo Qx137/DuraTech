@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import LocationMap from "@/components/checkout/LocationMap";
+import { OrderManagement } from "@/components/orders/OrderManagement";
 
 interface User {
   id: string;
@@ -780,48 +781,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   const renderOrders = () => (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>All Orders</CardTitle>
-          <CardDescription>Complete history of orders for your products</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {ordersLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
-              <p className="text-gray-500">Loading orders...</p>
-            </div>
-          ) : recentOrders.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No orders yet</p>
-              <p className="text-sm text-gray-400 mt-2">Orders will appear here when customers purchase your products</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{order.product}</h4>
-                    <p className="text-sm text-gray-600">Customer: {order.buyer}</p>
-                    <p className="text-sm text-gray-500">Quantity: {order.quantity}</p>
-                    <p className="text-xs text-gray-400">
-                      Ordered on {new Date(order.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-lg">${Number(order.total).toFixed(2)}</p>
-                    <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="mt-1">
-                      {order.status}
-                    </Badge>
-                    <p className="text-xs text-gray-400 mt-1">Order #{order.order_id.slice(0, 8)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <OrderManagement sellerId={user.id} />
     </div>
   );
 

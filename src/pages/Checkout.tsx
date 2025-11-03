@@ -196,6 +196,15 @@ const Checkout = () => {
 
       if (deliveryError) throw deliveryError;
 
+      // Send order confirmation email
+      try {
+        await supabase.functions.invoke('send-order-email', {
+          body: { orderId: order.id, type: 'confirmation' }
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+      }
+
       // Create Paynow payment
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-paynow-payment', {
         body: {
