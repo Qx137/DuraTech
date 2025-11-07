@@ -94,8 +94,10 @@ export type Database = {
           actual_delivery_time: string | null
           created_at: string
           delivery_address: Json
+          distance_km: number | null
           driver_id: string | null
           estimated_delivery_time: string | null
+          estimated_price: number | null
           id: string
           order_id: string
           pickup_address: Json
@@ -107,8 +109,10 @@ export type Database = {
           actual_delivery_time?: string | null
           created_at?: string
           delivery_address: Json
+          distance_km?: number | null
           driver_id?: string | null
           estimated_delivery_time?: string | null
+          estimated_price?: number | null
           id?: string
           order_id: string
           pickup_address: Json
@@ -120,8 +124,10 @@ export type Database = {
           actual_delivery_time?: string | null
           created_at?: string
           delivery_address?: Json
+          distance_km?: number | null
           driver_id?: string | null
           estimated_delivery_time?: string | null
+          estimated_price?: number | null
           id?: string
           order_id?: string
           pickup_address?: Json
