@@ -2,10 +2,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Clock, Truck, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Package, Clock, Truck, CheckCircle, XCircle, RefreshCw, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Order {
   id: string;
@@ -181,6 +192,37 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
     }
   };
 
+  const handleEraseOrderHistory = async () => {
+    try {
+      // Get all order IDs for the seller's products
+      const orderIds = orders.map(order => order.id);
+      
+      if (orderIds.length === 0) return;
+
+      // Delete order items for these orders
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .in('order_id', orderIds);
+
+      if (orderItemsError) throw orderItemsError;
+
+      // Delete the orders
+      const { error: ordersError } = await supabase
+        .from('orders')
+        .delete()
+        .in('id', orderIds);
+
+      if (ordersError) throw ordersError;
+
+      toast.success("Order history cleared successfully");
+      fetchOrders();
+    } catch (error) {
+      console.error('Error deleting order history:', error);
+      toast.error("Failed to delete order history. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -200,19 +242,45 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
           <h3 className="text-lg font-semibold">Order Management</h3>
           <p className="text-sm text-muted-foreground">Manage and track your customer orders</p>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Orders</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="processing">Processing</SelectItem>
-            <SelectItem value="shipped">Shipped</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Orders</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          {orders.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Erase History
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete all order history for your products.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleEraseOrderHistory}>
+                    Delete All Orders
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
       {orders.length === 0 ? (
