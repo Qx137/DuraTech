@@ -3,13 +3,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Leaf, ShoppingCart, Star, MapPin, Package, Heart, User, LogOut, MessageSquare } from "lucide-react";
+import { Leaf, ShoppingCart, Star, MapPin, Package, Heart, User, LogOut, MessageSquare, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { OrderCancellation } from "@/components/orders/OrderCancellation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface User {
   id: string;
@@ -178,6 +189,41 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
       title: "Order Placed",
       description: `Added ${productName} to your cart!`,
     });
+  };
+
+  const handleEraseOrderHistory = async () => {
+    try {
+      // Delete all order items first (foreign key constraint)
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .in('order_id', allOrders.map(order => order.id));
+
+      if (orderItemsError) throw orderItemsError;
+
+      // Delete all orders
+      const { error: ordersError } = await supabase
+        .from('orders')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (ordersError) throw ordersError;
+
+      toast({
+        title: "Order history cleared",
+        description: "All your orders have been permanently deleted.",
+      });
+
+      // Refresh dashboard data
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error deleting order history:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete order history. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -351,8 +397,36 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
           <TabsContent value="orders">
             <Card>
               <CardHeader>
-                <CardTitle>All Orders</CardTitle>
-                <CardDescription>Complete history of your orders</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>All Orders</CardTitle>
+                    <CardDescription>Complete history of your orders</CardDescription>
+                  </div>
+                  {allOrders.length > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Erase History
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete all your order history.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleEraseOrderHistory}>
+                            Delete All Orders
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
