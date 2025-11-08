@@ -6,6 +6,11 @@ interface OrderStatus {
   status: string;
   payment_status: string;
   updated_at: string;
+  delivery_address: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  } | null;
 }
 
 export const useOrderStatus = (orderId: string | null) => {
@@ -23,12 +28,12 @@ export const useOrderStatus = (orderId: string | null) => {
       try {
         const { data, error } = await supabase
           .from('orders')
-          .select('id, status, payment_status, updated_at')
+          .select('id, status, payment_status, updated_at, delivery_address')
           .eq('id', orderId)
           .single();
 
         if (error) throw error;
-        setOrderStatus(data);
+        setOrderStatus(data as OrderStatus);
       } catch (error) {
         console.error('Error fetching order status:', error);
       } finally {

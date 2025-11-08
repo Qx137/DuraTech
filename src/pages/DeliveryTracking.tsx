@@ -8,6 +8,7 @@ import { MapPin, Package, Clock, Phone, User, Star, ArrowLeft, Navigation } from
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { supabase } from '@/integrations/supabase/client';
+import TrackingMap from '@/components/delivery/TrackingMap';
 
 interface Driver {
   id: string;
@@ -322,23 +323,32 @@ const DeliveryTracking = () => {
               </Card>
             )}
 
-            {/* Live Map Placeholder */}
+            {/* Live Map */}
             <Card>
               <CardHeader>
                 <CardTitle>Live Tracking</CardTitle>
                 <CardDescription>Real-time driver location</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="bg-muted rounded-lg h-64 flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Live map tracking</p>
-                    {driverLocation && (
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Driver at: {driverLocation.latitude.toFixed(4)}, {driverLocation.longitude.toFixed(4)}
-                      </p>
-                    )}
-                  </div>
+              <CardContent className="p-0">
+                <div className="h-96">
+                  {orderStatus?.delivery_address ? (
+                    <TrackingMap
+                      driverLocation={driverLocation}
+                      destinationLocation={{
+                        latitude: (orderStatus.delivery_address as any).latitude || -17.8252,
+                        longitude: (orderStatus.delivery_address as any).longitude || 31.0335
+                      }}
+                      driverName={driver?.name}
+                      showRoute={deliveryStatus !== 'pending' && deliveryStatus !== 'scanning'}
+                    />
+                  ) : (
+                    <div className="bg-muted rounded-lg h-full flex items-center justify-center">
+                      <div className="text-center">
+                        <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">Loading map...</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
