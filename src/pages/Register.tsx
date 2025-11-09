@@ -10,6 +10,33 @@ import { Leaf, ShoppingCart, User, Mail, Lock, Phone, MapPin, Building, FileText
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { z } from "zod";
+
+const registerSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name is too long")
+    .regex(/^[a-zA-Z\s'-]+$/, "Name contains invalid characters"),
+  email: z.string()
+    .trim()
+    .email("Please enter a valid email address")
+    .max(255),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  confirmPassword: z.string(),
+  phone: z.string()
+    .regex(/^\+?[1-9]\d{1,14}$/, "Please enter a valid phone number")
+    .optional()
+    .or(z.literal("")),
+  businessName: z.string().trim().max(200).optional().or(z.literal("")),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
 
 const Register = () => {
   const [searchParams] = useSearchParams();
@@ -33,19 +60,12 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
+    // Validate input
+    const validation = registerSchema.safeParse(formData);
+    if (!validation.success) {
       toast({
-        title: "Password Mismatch",
-        description: "Passwords do not match. Please try again.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast({
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters long.",
+        title: "Validation Error",
+        description: validation.error.errors[0].message,
         variant: "destructive"
       });
       return;
@@ -54,7 +74,7 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await register({ ...formData, userType });
+      const { error } = await register({ ...validation.data, userType });
       
       if (error) {
         toast({

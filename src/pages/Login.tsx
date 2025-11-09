@@ -8,6 +8,12 @@ import { Mail, Lock, LeafyGreen } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Please enter a valid email address").max(255),
+  password: z.string().min(1, "Password is required")
+});
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -21,24 +27,31 @@ const Login = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    console.log('Login page - auth status:', { isAuthenticated, loading });
     if (isAuthenticated && !loading) {
-      console.log('User is authenticated, redirecting to dashboard...');
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login form submitted');
+    
+    // Validate input
+    const validation = loginSchema.safeParse(formData);
+    if (!validation.success) {
+      toast({
+        title: "Validation Error",
+        description: validation.error.errors[0].message,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      // Login and capture the error if any
-      const { error } = await login(formData.email, formData.password);
+      const { error } = await login(validation.data.email, validation.data.password);
       
       if (error) {
-        console.log('Login failed:', error);
         toast({
           title: "Login Failed",
           description: error,
@@ -46,15 +59,12 @@ const Login = () => {
         });
         setIsLoading(false);
       } else {
-        console.log('Login successful, waiting for redirect...');
         toast({
           title: "Login Successful!",
           description: "Welcome back to DuraTech!",
         });
-        // Don't set loading to false here, let the auth context and useEffect handle the redirect
       }
     } catch (error) {
-      console.error("Login error:", error);
       toast({
         title: "Login Error",
         description: "Something went wrong. Please try again.",

@@ -38,16 +38,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('Setting up auth state listener...');
-    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         
         if (session?.user) {
-          console.log('User authenticated, fetching profile and roles...');
           // Use setTimeout to defer the async profile fetch to avoid blocking the auth state change
           setTimeout(async () => {
             // Fetch both profile and user role
@@ -66,8 +62,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             ]);
             
             if (profileResult.data && !profileResult.error) {
-              console.log('Profile loaded:', profileResult.data);
-              
               // Determine user type from user_roles table (primary source)
               // Fall back to profile.user_type for backwards compatibility
               const userType = rolesResult.data?.role || profileResult.data.user_type;
@@ -92,7 +86,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
           }, 0);
         } else {
-          console.log('No session, clearing user');
           setUser(null);
         }
         
@@ -102,9 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 
     // Check for existing session
-    console.log('Checking for existing session...');
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Existing session:', session?.user?.id);
       // The auth state change listener will handle the session, just ensure loading is set to false if no session
       if (!session) {
         setLoading(false);
@@ -112,14 +103,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     return () => {
-      console.log('Cleaning up auth listener');
       subscription.unsubscribe();
     };
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Attempting login for:', email);
       setLoading(true);
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -128,13 +117,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (error) {
-        console.error("Login error:", error.message);
         setLoading(false);
         return { error: error.message };
       }
       
-      console.log("Login successful:", data?.user?.id);
-      // Don't set loading to false here, let the auth state change handle it
       return {};
     } catch (error: any) {
       console.error("Unexpected login error:", error);
@@ -145,7 +131,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (userData: any) => {
     try {
-      console.log('Attempting registration for:', userData.email);
       const { error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -161,11 +146,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (error) {
-        console.error("Registration error:", error.message);
         return { error: error.message };
       }
       
-      console.log("Registration successful");
       return {};
     } catch (error: any) {
       console.error("Unexpected registration error:", error);
@@ -174,7 +157,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
-    console.log('Logging out...');
     await supabase.auth.signOut();
   };
 
