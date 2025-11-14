@@ -14,7 +14,7 @@ const MarketplaceHeader = ({ cartCount }: MarketplaceHeaderProps) => {
         <Link to="/" className="flex items-center">
           <img 
             src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-            alt="DuraTech Logo" 
+            alt="Durahub Logo" 
             className="h-12"
           />
         </Link>

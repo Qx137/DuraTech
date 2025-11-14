@@ -116,7 +116,7 @@ const Register = () => {
           <Link to="/" className="inline-flex items-center mb-6 text-green-600 hover:text-green-700">
             <img 
               src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="DuraTech Logo" 
+              alt="Durahub Logo" 
               className="h-12"
             />
           </Link>

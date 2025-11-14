@@ -73,7 +73,7 @@ const DriverRegistration = () => {
           <Link to="/" className="flex items-center">
             <img 
               src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="DuraTech Logo" 
+              alt="Durahub Logo" 
               className="h-12"
             />
           </Link>
@@ -92,7 +92,7 @@ const DriverRegistration = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <Truck className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Become a DuraTech Market Driver</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Become a Durahub Market Driver</h1>
             <p className="text-gray-600">Join our team and help deliver fresh produce to customers in your area</p>
           </div>
 

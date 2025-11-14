@@ -54,7 +54,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <img 
             src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-            alt="DuraTech Logo" 
+            alt="Durahub Logo" 
             className="h-12"
           />
           <nav className="hidden md:flex items-center space-x-6">
@@ -110,7 +110,7 @@ const Index = () => {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose DuraTech?</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Durahub?</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Connecting farmers and buyers with innovative technology and sustainable practices
             </p>
@@ -159,9 +159,9 @@ const Index = () => {
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
                 <UserCheck className="h-16 w-16 mb-6 opacity-90" />
-                <h3 className="text-3xl font-bold mb-4">About DuraTech</h3>
+                <h3 className="text-3xl font-bold mb-4">About Durahub</h3>
                 <p className="text-lg opacity-90 mb-6">
-                  Founded with a mission to bridge the gap between farmers and consumers, DuraTech revolutionizes agricultural commerce through innovative technology and sustainable practices. We empower farmers with AI-driven insights while providing consumers with fresh, quality produce.
+                  Founded with a mission to bridge the gap between farmers and consumers, Durahub revolutionizes agricultural commerce through innovative technology and sustainable practices. We empower farmers with AI-driven insights while providing consumers with fresh, quality produce.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button size="lg" variant="outline" className="text-green-600 border-white bg-white hover:bg-gray-100">
@@ -225,7 +225,7 @@ const Index = () => {
         <div className="container mx-auto px-4 max-w-2xl text-center">
           <UserCheck className="h-12 w-12 text-green-600 mx-auto mb-6" />
           <h3 className="text-2xl font-bold text-gray-800 mb-4">
-            Stay Updated with DuraTech
+            Stay Updated with Durahub
           </h3>
           <p className="text-gray-600 mb-6">
             Get the latest updates on fresh produce, seasonal offers, and agricultural insights.
@@ -250,7 +250,7 @@ const Index = () => {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Store className="h-6 w-6 text-green-500" />
-                <span className="text-xl font-bold">DuraTech</span>
+                <span className="text-xl font-bold">Durahub</span>
               </div>
               <p className="text-gray-400">
                 Connecting farmers and consumers for a sustainable agricultural future.
@@ -312,7 +312,7 @@ const Index = () => {
             </div>
           </div>
           <div className="border-t border-gray-700 pt-8 mt-8 text-center text-gray-400">
-            <p>&copy; 2025 DuraTech. All rights reserved.</p>
+            <p>&copy; 2025 Durahub. All rights reserved.</p>
           </div>
         </div>
       </footer>
