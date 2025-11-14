@@ -1,4 +1,7 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+/// <reference path="./deno_global.d.ts" />
+/// <reference path="./deno_std_server.d.ts" />
+/// <reference path="./supabase_js_esmsh.d.ts" />
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
 
 const corsHeaders = {
@@ -39,23 +42,35 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // 3. Get authenticated user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // 3. Get authenticated user (avoid unsafe nested destructuring)
+    const userResult = await supabase.auth.getUser();
+    const user = userResult.data?.user;
+    const userError = userResult.error;
     if (userError || !user) {
       throw new Error('Unauthorized');
     }
 
-    const { orderId, amount, email, phone, customerName }: PaymentRequest = await req.json();
+    // Parse and validate input (ensure amount is a number)
+    const body = await req.json();
+    let { orderId, amount, email, phone, customerName } = body as PaymentRequest;
+    if (typeof amount === 'string') {
+      amount = parseFloat(amount);
+    }
+    if (typeof amount !== 'number' || Number.isNaN(amount)) {
+      throw new Error('Invalid amount');
+    }
 
     console.log('Creating Paynow payment for user:', user.id, 'order:', orderId);
 
     // 4. Verify order ownership and get actual amount
-    const { data: order, error: orderError } = await supabase
+    const orderRes: any = await (supabase
       .from('orders')
       .select('id, user_id, total, payment_status')
       .eq('id', orderId)
-      .single();
-
+      .single() as any);
+    const order = orderRes.data;
+    const orderError = orderRes.error;
+    
     if (orderError || !order) {
       console.error('Order not found:', orderError);
       throw new Error('Order not found');
@@ -136,6 +151,10 @@ serve(async (req) => {
     for (const endpoint of endpoints) {
       console.log(`Attempting Paynow endpoint: ${endpoint}`);
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        // Create an AbortController per attempt with a 30s timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
         try {
           console.log(`Paynow request attempt ${attempt}/${maxRetries}`);
           console.log('Request URL:', endpoint);
@@ -148,19 +167,22 @@ serve(async (req) => {
               'Accept': 'text/plain, */*;q=0.8',
               'User-Agent': 'Supabase-Edge-Function/1.0 (+https://supabase.com)'
             },
-            body: new URLSearchParams(finalPaymentData).toString(),
-            signal: AbortSignal.timeout(30000) // 30 second timeout
+            body: new URLSearchParams(finalPaymentData as Record<string, string>).toString(),
+            signal: controller.signal
           });
 
           console.log(`Response status: ${paynowResponse.status}`);
 
           // If we get here, the request succeeded (network level)
+          clearTimeout(timeoutId);
           break;
         } catch (error) {
           lastError = error;
           const errorMsg = error instanceof Error ? error.message : String(error);
           console.error(`Attempt ${attempt} failed:`, errorMsg);
           console.error('Full error details:', error);
+
+          clearTimeout(timeoutId);
 
           if (attempt < maxRetries) {
             // Wait before retrying (exponential backoff: 1s, 2s, 4s)
