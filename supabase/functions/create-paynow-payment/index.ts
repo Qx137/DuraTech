@@ -238,13 +238,14 @@ serve(async (req) => {
       throw new Error(responseData.error || 'Failed to create payment');
     }
 
-  } catch (error) {
-    console.error('Error creating Paynow payment:', error);
-    const status = error instanceof Error && error.message.includes('Access denied') ? 403 : 400;
+  } catch (err) {
+    console.error('Error creating Paynow payment:', err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const status = errMsg.includes('Access denied') ? 403 : 400;
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : 'An unknown error occurred'
+        error: errMsg
       }),
       {
         status,

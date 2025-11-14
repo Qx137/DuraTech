@@ -123,11 +123,12 @@ serve(async (req) => {
       headers: corsHeaders,
     });
 
-  } catch (error) {
-    console.error('Error processing Paynow webhook:', error);
+  } catch (err) {
+    console.error('Error processing Paynow webhook:', err);
+    const errMsg = err instanceof Error ? err.message : String(err);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'An unknown error occurred' 
+        error: errMsg
       }),
       {
         status: 400,

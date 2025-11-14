@@ -10,6 +10,17 @@ interface Location {
   longitude: number;
 }
 
+// add driver interface used in the function
+interface Driver {
+  id: string;
+  user_id?: string;
+  current_location?: Location | null;
+  rating?: number;
+  vehicle_type?: string;
+  status?: string;
+  // include any other fields you expect from the drivers table
+}
+
 // Calculate distance between two points using Haversine formula
 function calculateDistance(loc1: Location, loc2: Location): number {
   const R = 6371; // Earth's radius in km
@@ -47,10 +58,11 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       console.log('Pickup location:', pickupLocation);
 
       // Fetch available drivers
-      const { data: drivers, error: driversError } = await supabaseClient
-        .from('drivers')
+      const driversRes: any = await (supabaseClient.from('drivers') as any)
         .select('*')
         .eq('status', 'available');
+      const drivers: Driver[] = driversRes?.data ?? [];
+      const driversError = driversRes?.error ?? null;
 
       if (driversError) {
         console.error('Error fetching drivers:', driversError);
@@ -68,14 +80,14 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
 
       // Calculate distances and find best match
       const driversWithDistance = drivers
-        .filter(driver => driver.current_location)
-        .map(driver => {
+        .filter((driver: Driver) => !!driver.current_location)
+        .map((driver: Driver) => {
           const driverLocation = driver.current_location as Location;
           const distance = calculateDistance(pickupLocation, driverLocation);
           return {
             ...driver,
             distance,
-            score: distance * 0.7 + (5 - (driver.rating || 5)) * 0.3 // Weighted score: distance (70%) + rating (30%)
+            score: distance * 0.7 + (5 - (driver.rating ?? 5)) * 0.3 // Weighted score: distance (70%) + rating (30%)
           };
         })
         .sort((a, b) => a.score - b.score);
@@ -91,13 +103,13 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       console.log('Best matched driver:', bestDriver.id, 'Distance:', bestDriver.distance.toFixed(2), 'km');
 
       // Assign delivery to driver
-      const { error: updateError } = await supabaseClient
-        .from('deliveries')
+      const updateRes: any = await (supabaseClient.from('deliveries') as any)
         .update({
           driver_id: bestDriver.id,
           status: 'assigned'
         })
         .eq('id', deliveryId);
+      const updateError = updateRes?.error ?? null;
 
       if (updateError) {
         console.error('Error updating delivery:', updateError);
@@ -105,10 +117,10 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       }
 
       // Update driver status to busy
-      const { error: driverUpdateError } = await supabaseClient
-        .from('drivers')
+      const driverUpdateRes: any = await (supabaseClient.from('drivers') as any)
         .update({ status: 'busy' })
         .eq('id', bestDriver.id);
+      const driverUpdateError = driverUpdateRes?.error ?? null;
 
       if (driverUpdateError) {
         console.error('Error updating driver status:', driverUpdateError);
@@ -116,8 +128,7 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       }
 
       // Create notification for driver
-      const { error: notificationError } = await supabaseClient
-        .from('notifications')
+      const notificationRes: any = await (supabaseClient.from('notifications') as any)
         .insert({
           user_id: bestDriver.user_id,
           type: 'delivery_assigned',
@@ -125,6 +136,7 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
           message: `You have been assigned a new delivery ${bestDriver.distance.toFixed(1)} km away`,
           data: { delivery_id: deliveryId, distance: bestDriver.distance }
         });
+      const notificationError = notificationRes?.error ?? null;
 
       if (notificationError) {
         console.error('Error creating notification:', notificationError);
@@ -144,10 +156,11 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
-    } catch (error) {
-      console.error('Error in match-driver function:', error);
+    } catch (err) {
+      console.error('Error in match-driver function:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: errMsg }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
