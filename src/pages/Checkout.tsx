@@ -38,6 +38,22 @@ const Checkout = () => {
     nameOnCard: ""
   });
 
+  // Pre-fill contact information from user profile
+  useEffect(() => {
+    if (user) {
+      const nameParts = user.name?.split(' ') || [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || prev.email,
+        firstName: prev.firstName || firstName,
+        lastName: prev.lastName || lastName,
+      }));
+    }
+  }, [user]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
