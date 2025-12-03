@@ -17,12 +17,50 @@ serve(async (req) => {
   }
 
   try {
+    // Create client with user's JWT to verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Client for verifying user auth
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    if (userError || !user) {
+      console.error('Auth error:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    console.log('Authenticated user:', user.id);
+
+    // Service role client for privileged operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const { orderId, type }: EmailRequest = await req.json();
+
+    if (!orderId || !type) {
+      return new Response(
+        JSON.stringify({ error: 'Missing orderId or type' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    console.log('Processing email request for order:', orderId, 'Type:', type);
 
     // Fetch order details
     const { data: order, error: orderError } = await supabase
@@ -45,7 +83,24 @@ serve(async (req) => {
       .eq('id', orderId)
       .single();
 
-    if (orderError) throw orderError;
+    if (orderError || !order) {
+      console.error('Order fetch error:', orderError);
+      return new Response(
+        JSON.stringify({ error: 'Order not found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      );
+    }
+
+    // AUTHORIZATION CHECK: Verify the user owns this order
+    if (order.user_id !== user.id) {
+      console.error('Authorization failed: User', user.id, 'does not own order', orderId);
+      return new Response(
+        JSON.stringify({ error: 'You are not authorized to send emails for this order' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+
+    console.log('Authorization passed. Preparing email for order:', orderId);
 
     // Generate email content based on type
     let subject = '';
@@ -64,9 +119,14 @@ serve(async (req) => {
         subject = `Order Cancelled - #${orderId.slice(-8).toUpperCase()}`;
         htmlContent = generateCancellationEmail(order);
         break;
+      default:
+        return new Response(
+          JSON.stringify({ error: 'Invalid email type' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
     }
 
-    console.log(`Email would be sent to: ${order.profiles.email}`);
+    console.log(`Email would be sent to: ${order.profiles?.email || user.email}`);
     console.log(`Subject: ${subject}`);
     console.log(`Order ID: ${orderId}, Type: ${type}`);
     
@@ -77,7 +137,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         message: 'Email notification prepared',
-        recipient: order.profiles.email
+        recipient: order.profiles?.email || user.email
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -129,7 +189,7 @@ function generateConfirmationEmail(order: any): string {
           </div>
           
           <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
-            <p>Hi ${order.profiles.name},</p>
+            <p>Hi ${order.profiles?.name || 'Customer'},</p>
             <p>We've received your order and we're getting it ready for delivery!</p>
             
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -185,7 +245,7 @@ function generateStatusUpdateEmail(order: any): string {
           </div>
           
           <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
-            <p>Hi ${order.profiles.name},</p>
+            <p>Hi ${order.profiles?.name || 'Customer'},</p>
             <p>Your order status has been updated:</p>
             
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
@@ -220,7 +280,7 @@ function generateCancellationEmail(order: any): string {
           </div>
           
           <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
-            <p>Hi ${order.profiles.name},</p>
+            <p>Hi ${order.profiles?.name || 'Customer'},</p>
             <p>Your order has been cancelled as requested.</p>
             
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">

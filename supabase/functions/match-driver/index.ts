@@ -18,7 +18,6 @@ interface Driver {
   rating?: number;
   vehicle_type?: string;
   status?: string;
-  // include any other fields you expect from the drivers table
 }
 
 // Calculate distance between two points using Haversine formula
@@ -40,7 +39,36 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
     }
 
     try {
-      const supabaseClient = createClient(
+      // Create client with user's JWT to verify authentication
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Missing authorization header' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
+      }
+
+      // Client for verifying user auth
+      const supabaseAuth = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      // Get the authenticated user
+      const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+      if (userError || !user) {
+        console.error('Auth error:', userError);
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
+      }
+
+      console.log('Authenticated user:', user.id);
+
+      // Service role client for privileged operations
+      const supabaseAdmin = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
@@ -55,10 +83,36 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       }
 
       console.log('Matching driver for delivery:', deliveryId);
-      console.log('Pickup location:', pickupLocation);
+
+      // AUTHORIZATION CHECK: Verify the user owns the order associated with this delivery
+      const { data: delivery, error: deliveryError } = await supabaseAdmin
+        .from('deliveries')
+        .select('id, order_id, orders!inner(user_id)')
+        .eq('id', deliveryId)
+        .single();
+
+      if (deliveryError || !delivery) {
+        console.error('Delivery fetch error:', deliveryError);
+        return new Response(
+          JSON.stringify({ error: 'Delivery not found' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        );
+      }
+
+      // Check if the authenticated user owns the order
+      const orderUserId = (delivery as any).orders?.user_id;
+      if (orderUserId !== user.id) {
+        console.error('Authorization failed: User', user.id, 'does not own order for delivery', deliveryId);
+        return new Response(
+          JSON.stringify({ error: 'You are not authorized to request a driver for this delivery' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+        );
+      }
+
+      console.log('Authorization passed. Pickup location:', pickupLocation);
 
       // Fetch available drivers
-      const driversRes: any = await (supabaseClient.from('drivers') as any)
+      const driversRes: any = await (supabaseAdmin.from('drivers') as any)
         .select('*')
         .eq('status', 'available');
       const drivers: Driver[] = driversRes?.data ?? [];
@@ -103,7 +157,7 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       console.log('Best matched driver:', bestDriver.id, 'Distance:', bestDriver.distance.toFixed(2), 'km');
 
       // Assign delivery to driver
-      const updateRes: any = await (supabaseClient.from('deliveries') as any)
+      const updateRes: any = await (supabaseAdmin.from('deliveries') as any)
         .update({
           driver_id: bestDriver.id,
           status: 'assigned'
@@ -117,7 +171,7 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       }
 
       // Update driver status to busy
-      const driverUpdateRes: any = await (supabaseClient.from('drivers') as any)
+      const driverUpdateRes: any = await (supabaseAdmin.from('drivers') as any)
         .update({ status: 'busy' })
         .eq('id', bestDriver.id);
       const driverUpdateError = driverUpdateRes?.error ?? null;
@@ -128,7 +182,7 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       }
 
       // Create notification for driver
-      const notificationRes: any = await (supabaseClient.from('notifications') as any)
+      const notificationRes: any = await (supabaseAdmin.from('notifications') as any)
         .insert({
           user_id: bestDriver.user_id,
           type: 'delivery_assigned',
