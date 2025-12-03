@@ -12,6 +12,39 @@ import { useAuth } from "@/contexts/AuthContext";
 import LocationMap from "@/components/checkout/LocationMap";
 import DeliveryOptions from "@/components/checkout/DeliveryOptions";
 import { calculateTotalShipping, type Location } from "@/utils/distanceCalculator";
+import { z } from "zod";
+
+// Validation schema for checkout form
+const checkoutSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address")
+    .max(255, "Email must be less than 255 characters"),
+  firstName: z
+    .string()
+    .trim()
+    .min(1, "First name is required")
+    .max(100, "First name must be less than 100 characters")
+    .regex(/^[a-zA-Z\s'-]+$/, "First name can only contain letters, spaces, hyphens, and apostrophes"),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, "Last name is required")
+    .max(100, "Last name must be less than 100 characters")
+    .regex(/^[a-zA-Z\s'-]+$/, "Last name can only contain letters, spaces, hyphens, and apostrophes"),
+  phone: z
+    .string()
+    .trim()
+    .max(20, "Phone number must be less than 20 characters")
+    .regex(/^(\+?\d{1,4}[\s-]?)?(\(?\d{1,4}\)?[\s-]?)?\d{1,4}[\s-]?\d{1,4}[\s-]?\d{1,9}$|^$/, "Please enter a valid phone number")
+    .optional()
+    .or(z.literal("")),
+});
+
+type CheckoutFormData = z.infer<typeof checkoutSchema>;
+type FormErrors = Partial<Record<keyof CheckoutFormData, string>>;
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -19,6 +52,7 @@ const Checkout = () => {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   
   const [deliveryLocation, setDeliveryLocation] = useState<Location & { address: string } | null>(null);
   const [shippingDetails, setShippingDetails] = useState<{
@@ -57,6 +91,11 @@ const Checkout = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear the error for this field when user starts typing
+    if (formErrors[name as keyof FormErrors]) {
+      setFormErrors(prev => ({ ...prev, [name]: undefined }));
+    }
   };
 
   useEffect(() => {
@@ -105,6 +144,30 @@ const Checkout = () => {
     }
   };
 
+  const validateForm = (): boolean => {
+    const result = checkoutSchema.safeParse({
+      email: formData.email,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phone: formData.phone,
+    });
+
+    if (!result.success) {
+      const errors: FormErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof FormErrors;
+        if (!errors[field]) {
+          errors[field] = err.message;
+        }
+      });
+      setFormErrors(errors);
+      return false;
+    }
+
+    setFormErrors({});
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -117,11 +180,21 @@ const Checkout = () => {
       return;
     }
 
-    // Basic validation
-    if (!formData.email || !formData.firstName || !formData.lastName || !deliveryLocation || !selectedDeliveryOption) {
+    // Validate form with Zod
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Additional validation for delivery location and option
+    if (!deliveryLocation || !selectedDeliveryOption) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields, select a delivery location, and choose a delivery option.",
+        description: "Please select a delivery location and choose a delivery option.",
         variant: "destructive",
       });
       return;
@@ -141,6 +214,14 @@ const Checkout = () => {
     try {
       const { subtotal, shipping, tax, total } = calculateTotal();
       
+      // Sanitize form data before sending to database
+      const sanitizedData = {
+        email: formData.email.trim(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        phone: formData.phone.trim(),
+      };
+      
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -149,14 +230,14 @@ const Checkout = () => {
           total,
           tax,
           delivery_address: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
+            firstName: sanitizedData.firstName,
+            lastName: sanitizedData.lastName,
             address: deliveryLocation.address,
             coordinates: {
               lat: deliveryLocation.lat,
               lng: deliveryLocation.lng
             },
-            phone: formData.phone
+            phone: sanitizedData.phone
           },
           payment_method: 'paynow',
           status: 'pending',
@@ -196,14 +277,14 @@ const Checkout = () => {
           order_id: order.id,
           pickup_address: { address: "Farm Location" }, // This would be the seller's address
           delivery_address: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
+            firstName: sanitizedData.firstName,
+            lastName: sanitizedData.lastName,
             address: deliveryLocation.address,
             coordinates: {
               lat: deliveryLocation.lat,
               lng: deliveryLocation.lng
             },
-            phone: formData.phone,
+            phone: sanitizedData.phone,
             deliveryService: selectedDeliveryOption.name,
             deliveryServiceId: selectedDeliveryOption.id
           },
@@ -226,9 +307,9 @@ const Checkout = () => {
         body: {
           orderId: order.id,
           amount: total,
-          email: formData.email,
-          phone: formData.phone,
-          customerName: `${formData.firstName} ${formData.lastName}`
+          email: sanitizedData.email,
+          phone: sanitizedData.phone,
+          customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`
         }
       });
 
@@ -318,8 +399,13 @@ const Checkout = () => {
                       type="email"
                       value={formData.email}
                       onChange={handleInputChange}
+                      className={formErrors.email ? "border-destructive" : ""}
+                      maxLength={255}
                       required
                     />
+                    {formErrors.email && (
+                      <p className="text-sm text-destructive mt-1">{formErrors.email}</p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -329,8 +415,13 @@ const Checkout = () => {
                         name="firstName"
                         value={formData.firstName}
                         onChange={handleInputChange}
+                        className={formErrors.firstName ? "border-destructive" : ""}
+                        maxLength={100}
                         required
                       />
+                      {formErrors.firstName && (
+                        <p className="text-sm text-destructive mt-1">{formErrors.firstName}</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="lastName">Last Name *</Label>
@@ -339,8 +430,13 @@ const Checkout = () => {
                         name="lastName"
                         value={formData.lastName}
                         onChange={handleInputChange}
+                        className={formErrors.lastName ? "border-destructive" : ""}
+                        maxLength={100}
                         required
                       />
+                      {formErrors.lastName && (
+                        <p className="text-sm text-destructive mt-1">{formErrors.lastName}</p>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -351,7 +447,13 @@ const Checkout = () => {
                       type="tel"
                       value={formData.phone}
                       onChange={handleInputChange}
+                      className={formErrors.phone ? "border-destructive" : ""}
+                      maxLength={20}
+                      placeholder="+263 7X XXX XXXX"
                     />
+                    {formErrors.phone && (
+                      <p className="text-sm text-destructive mt-1">{formErrors.phone}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
