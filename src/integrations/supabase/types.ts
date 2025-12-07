@@ -159,6 +159,87 @@ export type Database = {
           },
         ]
       }
+      driver_applications: {
+        Row: {
+          account_holder_name: string
+          account_number_masked: string
+          address: string
+          bank_name: string
+          city: string
+          created_at: string
+          drivers_license: string
+          email: string
+          full_name: string
+          id: string
+          license_expiry: string
+          mobile_money_number_masked: string | null
+          national_id: string
+          phone: string
+          registration_number: string
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          vehicle_color: string
+          vehicle_make: string
+          vehicle_model: string
+          vehicle_type: string
+          vehicle_year: string
+        }
+        Insert: {
+          account_holder_name: string
+          account_number_masked: string
+          address: string
+          bank_name: string
+          city: string
+          created_at?: string
+          drivers_license: string
+          email: string
+          full_name: string
+          id?: string
+          license_expiry: string
+          mobile_money_number_masked?: string | null
+          national_id: string
+          phone: string
+          registration_number: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          vehicle_color: string
+          vehicle_make: string
+          vehicle_model: string
+          vehicle_type: string
+          vehicle_year: string
+        }
+        Update: {
+          account_holder_name?: string
+          account_number_masked?: string
+          address?: string
+          bank_name?: string
+          city?: string
+          created_at?: string
+          drivers_license?: string
+          email?: string
+          full_name?: string
+          id?: string
+          license_expiry?: string
+          mobile_money_number_masked?: string | null
+          national_id?: string
+          phone?: string
+          registration_number?: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_color?: string
+          vehicle_make?: string
+          vehicle_model?: string
+          vehicle_type?: string
+          vehicle_year?: string
+        }
+        Relationships: []
+      }
       driver_ratings: {
         Row: {
           created_at: string
