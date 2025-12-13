@@ -1,6 +1,3 @@
-/// <reference path="./deno_global.d.ts" />
-/// <reference path="./deno_std_server.d.ts" />
-/// <reference path="./supabase_js_esmsh.d.ts" />
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
 
