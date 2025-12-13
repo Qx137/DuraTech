@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Leaf, CreditCard, MapPin, User, Truck } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CreditCard, User, Truck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +46,7 @@ const checkoutSchema = z.object({
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 type FormErrors = Partial<Record<keyof CheckoutFormData, string>>;
+type PaymentMethod = 'paynow' | 'stripe';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -53,6 +55,7 @@ const Checkout = () => {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('stripe');
   
   const [deliveryLocation, setDeliveryLocation] = useState<Location & { address: string } | null>(null);
   const [shippingDetails, setShippingDetails] = useState<{
@@ -239,7 +242,7 @@ const Checkout = () => {
             },
             phone: sanitizedData.phone
           },
-          payment_method: 'paynow',
+          payment_method: paymentMethod,
           status: 'pending',
           payment_status: 'pending'
         })
@@ -302,36 +305,61 @@ const Checkout = () => {
         console.error('Failed to send confirmation email:', emailError);
       }
 
-      // Create Paynow payment
-      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-paynow-payment', {
-        body: {
-          orderId: order.id,
-          amount: total,
-          email: sanitizedData.email,
-          phone: sanitizedData.phone,
-          customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`
-        }
-      });
+      // Process payment based on selected method
+      if (paymentMethod === 'stripe') {
+        // Create Stripe checkout session
+        const { data: stripeData, error: stripeError } = await supabase.functions.invoke('create-stripe-checkout', {
+          body: {
+            orderId: order.id,
+            amount: total,
+            email: sanitizedData.email,
+            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`,
+            items: cartItems.map(item => ({
+              name: item.products.name,
+              quantity: item.quantity,
+              price: item.products.price
+            }))
+          }
+        });
 
-      if (paymentError || !paymentData.success) {
-        const errorMessage = paymentData?.error || paymentError?.message || 'Failed to create payment';
-        
-        // Provide specific error messages based on the error type
-        let userMessage = "There was an error processing your order. Please try again.";
-        
-        if (errorMessage.includes('Unable to connect to payment gateway')) {
-          userMessage = "The payment gateway is temporarily unavailable. Your order has been created. Please try again in a few moments or contact support with your order ID: " + order.id;
-        } else if (errorMessage.includes('credentials')) {
-          userMessage = "Payment system configuration error. Please contact support.";
-        } else if (errorMessage.includes('Amount mismatch')) {
-          userMessage = "There was an issue with the order amount. Please refresh and try again.";
+        if (stripeError || !stripeData?.success) {
+          const errorMessage = stripeData?.error || stripeError?.message || 'Failed to create Stripe checkout';
+          throw new Error(errorMessage);
         }
-        
-        throw new Error(userMessage);
+
+        // Redirect to Stripe Checkout
+        window.location.href = stripeData.url;
+      } else {
+        // Create Paynow payment
+        const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-paynow-payment', {
+          body: {
+            orderId: order.id,
+            amount: total,
+            email: sanitizedData.email,
+            phone: sanitizedData.phone,
+            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`
+          }
+        });
+
+        if (paymentError || !paymentData.success) {
+          const errorMessage = paymentData?.error || paymentError?.message || 'Failed to create payment';
+          
+          let userMessage = "There was an error processing your order. Please try again.";
+          
+          if (errorMessage.includes('Unable to connect to payment gateway')) {
+            userMessage = "The payment gateway is temporarily unavailable. Your order has been created. Please try again in a few moments or contact support with your order ID: " + order.id;
+          } else if (errorMessage.includes('credentials')) {
+            userMessage = "Payment system configuration error. Please contact support.";
+          } else if (errorMessage.includes('Amount mismatch')) {
+            userMessage = "There was an issue with the order amount. Please refresh and try again.";
+          }
+          
+          throw new Error(userMessage);
+        }
+
+        // Redirect to Paynow payment page
+        window.location.href = paymentData.paymentUrl;
       }
-
-      // Redirect to Paynow payment page
-      window.location.href = paymentData.paymentUrl;
     } catch (error) {
       console.error('Error creating order:', error);
       
@@ -499,23 +527,59 @@ const Checkout = () => {
                 </Card>
               )}
 
-              {/* Payment Information */}
+              {/* Payment Method Selection */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <CreditCard className="h-5 w-5" />
-                    <span>Payment Information</span>
+                    <span>Payment Method</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <CreditCard className="h-5 w-5 text-blue-600" />
-                      <span className="font-medium text-blue-800">Paynow Payment</span>
+                  <RadioGroup
+                    value={paymentMethod}
+                    onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+                    className="space-y-3"
+                  >
+                    <div className={`flex items-center space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${paymentMethod === 'stripe' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/50'}`}>
+                      <RadioGroupItem value="stripe" id="stripe" />
+                      <Label htmlFor="stripe" className="flex-1 cursor-pointer">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Stripe</p>
+                            <p className="text-sm text-muted-foreground">Pay with Visa, Mastercard, or other cards</p>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Visa</span>
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Mastercard</span>
+                          </div>
+                        </div>
+                      </Label>
                     </div>
-                    <p className="text-sm text-blue-700">
-                      You will be redirected to Paynow to complete your payment securely. 
-                      Paynow supports EcoCash, Telecel Cash, OneMoney, Visa, and Mastercard.
+                    
+                    <div className={`flex items-center space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${paymentMethod === 'paynow' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/50'}`}>
+                      <RadioGroupItem value="paynow" id="paynow" />
+                      <Label htmlFor="paynow" className="flex-1 cursor-pointer">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Paynow</p>
+                            <p className="text-sm text-muted-foreground">Pay with EcoCash, Telecel Cash, OneMoney</p>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">EcoCash</span>
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">OneMoney</span>
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+
+                  <div className="bg-muted/50 rounded-lg p-4 mt-4">
+                    <p className="text-sm text-muted-foreground">
+                      {paymentMethod === 'stripe' 
+                        ? "You will be redirected to Stripe's secure checkout to complete your payment."
+                        : "You will be redirected to Paynow to complete your payment with mobile money or card."
+                      }
                     </p>
                   </div>
                 </CardContent>
