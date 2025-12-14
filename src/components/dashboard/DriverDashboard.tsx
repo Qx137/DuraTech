@@ -3,8 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
-import { MapPin, Package, Clock, DollarSign, CheckCircle, Navigation } from 'lucide-react';
+import { CreateBidForm } from '@/components/delivery/CreateBidForm';
+import { MapPin, Package, Clock, DollarSign, CheckCircle, Navigation, Gavel, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Driver {
@@ -12,6 +14,7 @@ interface Driver {
   status: string;
   rating: number;
   vehicle_type: string;
+  company_id: string | null;
 }
 
 interface Delivery {
@@ -23,6 +26,8 @@ interface Delivery {
   distance_km: number | null;
   estimated_price: number | null;
   order_id: string;
+  bidding_enabled: boolean;
+  bidding_deadline: string | null;
   orders: {
     total: number;
     user_id: string;
@@ -33,7 +38,10 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
   const [driver, setDriver] = useState<Driver | null>(null);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [availableDeliveries, setAvailableDeliveries] = useState<Delivery[]>([]);
+  const [biddableDeliveries, setBiddableDeliveries] = useState<Delivery[]>([]);
+  const [myBids, setMyBids] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDeliveryForBid, setSelectedDeliveryForBid] = useState<string | null>(null);
   const { location, updateLocation } = useDriverLocation(driver?.id || null);
 
   useEffect(() => {
@@ -65,7 +73,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
       if (deliveriesError) throw deliveriesError;
       setDeliveries(assignedDeliveries || []);
 
-      // Fetch available deliveries if driver is available
+      // Fetch available deliveries (non-bidding) if driver is available
       if (driverData.status === 'available') {
         const { data: available, error: availableError } = await supabase
           .from('deliveries')
@@ -74,11 +82,45 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
             orders(total, user_id)
           `)
           .eq('status', 'pending')
+          .eq('bidding_enabled', false)
           .limit(10);
 
         if (availableError) throw availableError;
         setAvailableDeliveries(available || []);
+
+        // Fetch biddable deliveries
+        const { data: biddable, error: biddableError } = await supabase
+          .from('deliveries')
+          .select(`
+            *,
+            orders(total, user_id)
+          `)
+          .eq('status', 'pending')
+          .eq('bidding_enabled', true)
+          .limit(10);
+
+        if (biddableError) throw biddableError;
+        setBiddableDeliveries(biddable || []);
       }
+
+      // Fetch my bids
+      const { data: bidsData, error: bidsError } = await supabase
+        .from('delivery_bids')
+        .select(`
+          *,
+          deliveries(
+            id,
+            status,
+            pickup_address,
+            delivery_address,
+            order_id
+          )
+        `)
+        .eq('driver_id', driverData.id)
+        .order('created_at', { ascending: false });
+
+      if (bidsError) throw bidsError;
+      setMyBids(bidsData || []);
     } catch (error) {
       console.error('Error fetching driver data:', error);
       toast.error('Failed to load driver data');
@@ -103,7 +145,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
       toast.success(`Status changed to ${newStatus}`);
       
       if (newStatus === 'available') {
-        fetchDriverData(); // Refresh to get available deliveries
+        fetchDriverData();
       }
     } catch (error) {
       console.error('Error updating status:', error);
@@ -212,6 +254,15 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
     }
   };
 
+  const getBidStatusVariant = (status: string) => {
+    switch (status) {
+      case 'pending': return 'outline';
+      case 'accepted': return 'default';
+      case 'rejected': return 'destructive';
+      default: return 'secondary';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -221,7 +272,15 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Driver Dashboard</CardTitle>
-                <CardDescription>Vehicle: {driver.vehicle_type} • Rating: ⭐ {driver.rating}</CardDescription>
+                <CardDescription>
+                  Vehicle: {driver.vehicle_type} • Rating: ⭐ {driver.rating}
+                  {driver.company_id && (
+                    <Badge variant="secondary" className="ml-2">
+                      <Building2 className="h-3 w-3 mr-1" />
+                      Company Driver
+                    </Badge>
+                  )}
+                </CardDescription>
               </div>
               <div className="flex gap-2">
                 <Badge variant={getStatusColor(driver.status)}>{driver.status}</Badge>
@@ -307,60 +366,209 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
           </CardContent>
         </Card>
 
-        {/* Available Deliveries */}
+        {/* Available & Biddable Deliveries */}
         {driver.status === 'available' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Available Deliveries</CardTitle>
-              <CardDescription>Accept new deliveries in your area</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {availableDeliveries.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No available deliveries at the moment</p>
-              ) : (
-                <div className="space-y-4">
-                  {availableDeliveries.map((delivery) => (
-                    <Card key={delivery.id}>
-                      <CardContent className="pt-6">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-2">
-                              <Package className="h-4 w-4" />
-                              <span className="font-medium">Order #{delivery.order_id.slice(0, 8)}</span>
-                            </div>
-                            <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <MapPin className="h-4 w-4 mt-0.5" />
-                              <div>
-                                <p>Pickup: {delivery.pickup_address.address}</p>
-                                <p>Delivery: {delivery.delivery_address.address}</p>
-                              </div>
-                            </div>
-                            {delivery.distance_km && (
-                              <div className="flex items-center gap-4 text-sm">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4" />
-                                  {delivery.distance_km.toFixed(1)} km
-                                </span>
-                                {delivery.estimated_price && (
-                                  <span className="flex items-center gap-1 font-medium text-primary">
-                                    <DollarSign className="h-4 w-4" />
-                                    ${delivery.estimated_price.toFixed(2)}
-                                  </span>
+          <Tabs defaultValue="instant">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="instant">Instant Accept</TabsTrigger>
+              <TabsTrigger value="bidding">Open for Bidding</TabsTrigger>
+              <TabsTrigger value="mybids">My Bids ({myBids.filter(b => b.status === 'pending').length})</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="instant">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Available Deliveries</CardTitle>
+                  <CardDescription>Accept these deliveries immediately</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {availableDeliveries.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No available deliveries at the moment</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {availableDeliveries.map((delivery) => (
+                        <Card key={delivery.id}>
+                          <CardContent className="pt-6">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-2 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <Package className="h-4 w-4" />
+                                  <span className="font-medium">Order #{delivery.order_id.slice(0, 8)}</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                                  <MapPin className="h-4 w-4 mt-0.5" />
+                                  <div>
+                                    <p>Pickup: {delivery.pickup_address.address}</p>
+                                    <p>Delivery: {delivery.delivery_address.address}</p>
+                                  </div>
+                                </div>
+                                {delivery.distance_km && (
+                                  <div className="flex items-center gap-4 text-sm">
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="h-4 w-4" />
+                                      {delivery.distance_km.toFixed(1)} km
+                                    </span>
+                                    {delivery.estimated_price && (
+                                      <span className="flex items-center gap-1 font-medium text-primary">
+                                        <DollarSign className="h-4 w-4" />
+                                        ${delivery.estimated_price.toFixed(2)}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
-                            )}
-                          </div>
-                          <Button onClick={() => acceptDelivery(delivery.id)}>
-                            Accept
-                          </Button>
-                        </div>
+                              <Button onClick={() => acceptDelivery(delivery.id)}>
+                                Accept
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="bidding">
+              <div className="grid lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Gavel className="h-5 w-5" />
+                      Open for Bidding
+                    </CardTitle>
+                    <CardDescription>Submit competitive bids for these deliveries</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {biddableDeliveries.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">No biddable deliveries available</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {biddableDeliveries.map((delivery) => (
+                          <Card 
+                            key={delivery.id}
+                            className={`cursor-pointer transition-all ${
+                              selectedDeliveryForBid === delivery.id ? 'ring-2 ring-primary' : ''
+                            }`}
+                            onClick={() => setSelectedDeliveryForBid(delivery.id)}
+                          >
+                            <CardContent className="pt-6">
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">Order #{delivery.order_id.slice(0, 8)}</span>
+                                  <Badge variant="outline">
+                                    <Gavel className="h-3 w-3 mr-1" />
+                                    Bidding
+                                  </Badge>
+                                </div>
+                                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                                  <MapPin className="h-4 w-4 mt-0.5" />
+                                  <div>
+                                    <p>From: {delivery.pickup_address?.address || 'N/A'}</p>
+                                    <p>To: {delivery.delivery_address?.address || 'N/A'}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm">
+                                  {delivery.distance_km && (
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="h-4 w-4" />
+                                      {delivery.distance_km.toFixed(1)} km
+                                    </span>
+                                  )}
+                                  {delivery.estimated_price && (
+                                    <span className="flex items-center gap-1 text-primary font-medium">
+                                      <DollarSign className="h-4 w-4" />
+                                      Est. ${delivery.estimated_price.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div>
+                  {selectedDeliveryForBid ? (
+                    <CreateBidForm
+                      deliveryId={selectedDeliveryForBid}
+                      driverId={driver.id}
+                      suggestedPrice={
+                        biddableDeliveries.find(d => d.id === selectedDeliveryForBid)?.estimated_price || undefined
+                      }
+                      onBidCreated={() => {
+                        fetchDriverData();
+                        setSelectedDeliveryForBid(null);
+                      }}
+                    />
+                  ) : (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <Gavel className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">Select a delivery to submit your bid</p>
                       </CardContent>
                     </Card>
-                  ))}
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="mybids">
+              <Card>
+                <CardHeader>
+                  <CardTitle>My Bids</CardTitle>
+                  <CardDescription>Track your submitted bids</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {myBids.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No bids submitted yet</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {myBids.map((bid) => (
+                        <Card key={bid.id}>
+                          <CardContent className="pt-6">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">
+                                    Order #{bid.deliveries?.order_id?.slice(0, 8) || 'N/A'}
+                                  </span>
+                                  <Badge variant={getBidStatusVariant(bid.status)}>{bid.status}</Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm">
+                                  <span className="flex items-center gap-1 font-semibold text-primary">
+                                    <DollarSign className="h-4 w-4" />
+                                    ${bid.bid_amount.toFixed(2)}
+                                  </span>
+                                  <span className="flex items-center gap-1 text-muted-foreground">
+                                    <Clock className="h-4 w-4" />
+                                    {bid.estimated_time_minutes} min
+                                  </span>
+                                </div>
+                                {bid.message && (
+                                  <p className="text-sm text-muted-foreground italic">"{bid.message}"</p>
+                                )}
+                              </div>
+                              {bid.status === 'accepted' && (
+                                <Badge className="bg-green-500 text-white">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Won
+                                </Badge>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
     </div>

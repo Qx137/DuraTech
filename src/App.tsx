@@ -18,6 +18,7 @@ import Checkout from "./pages/Checkout";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import DeliveryTracking from "./pages/DeliveryTracking";
 import DriverRegistration from "./pages/DriverRegistration";
+import CompanyRegistration from "./pages/CompanyRegistration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/delivery-tracking" element={<DeliveryTracking />} />
             <Route path="/driver-registration" element={<DriverRegistration />} />
+            <Route path="/company-registration" element={<CompanyRegistration />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

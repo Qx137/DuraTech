@@ -1,17 +1,19 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { BuyerDashboard } from "@/components/dashboard/BuyerDashboard";
 import { SellerDashboard } from "@/components/dashboard/SellerDashboard";
 import { DriverDashboard } from "@/components/dashboard/DriverDashboard";
+import { CompanyDashboard } from "@/components/dashboard/CompanyDashboard";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
+type UserRole = 'driver' | 'company' | 'seller' | 'buyer';
+
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [isDriver, setIsDriver] = useState(false);
-  const [checkingDriver, setCheckingDriver] = useState(true);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -19,31 +21,50 @@ const Dashboard = () => {
       return;
     }
 
-    // Check if user is a driver
-    const checkDriverStatus = async () => {
+    const checkUserRole = async () => {
       if (!user?.id) return;
 
       try {
-        const { data, error } = await supabase
+        // Check if user owns a delivery company
+        const { data: companyData } = await supabase
+          .from('delivery_companies')
+          .select('id')
+          .eq('owner_id', user.id)
+          .maybeSingle();
+
+        if (companyData) {
+          setUserRole('company');
+          setLoading(false);
+          return;
+        }
+
+        // Check if user is a driver
+        const { data: driverData } = await supabase
           .from('drivers')
           .select('id')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (!error && data) {
-          setIsDriver(true);
+        if (driverData) {
+          setUserRole('driver');
+          setLoading(false);
+          return;
         }
+
+        // Default to user type
+        setUserRole(user.userType === 'seller' ? 'seller' : 'buyer');
       } catch (error) {
-        console.error('Error checking driver status:', error);
+        console.error('Error checking user role:', error);
+        setUserRole('buyer');
       } finally {
-        setCheckingDriver(false);
+        setLoading(false);
       }
     };
 
-    checkDriverStatus();
-  }, [isAuthenticated, navigate, user?.id]);
+    checkUserRole();
+  }, [isAuthenticated, navigate, user?.id, user?.userType]);
 
-  if (!user || checkingDriver) {
+  if (!user || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -56,9 +77,11 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {isDriver ? (
+      {userRole === 'company' ? (
+        <CompanyDashboard userId={user.id} />
+      ) : userRole === 'driver' ? (
         <DriverDashboard userId={user.id} />
-      ) : user.userType === 'seller' ? (
+      ) : userRole === 'seller' ? (
         <SellerDashboard user={user} />
       ) : (
         <BuyerDashboard user={user} />
