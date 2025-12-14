@@ -92,6 +92,9 @@ export type Database = {
       deliveries: {
         Row: {
           actual_delivery_time: string | null
+          bidding_deadline: string | null
+          bidding_enabled: boolean | null
+          buyer_can_select: boolean | null
           created_at: string
           delivery_address: Json
           distance_km: number | null
@@ -101,12 +104,16 @@ export type Database = {
           id: string
           order_id: string
           pickup_address: Json
+          selected_bid_id: string | null
           status: string
           tracking_number: string
           updated_at: string
         }
         Insert: {
           actual_delivery_time?: string | null
+          bidding_deadline?: string | null
+          bidding_enabled?: boolean | null
+          buyer_can_select?: boolean | null
           created_at?: string
           delivery_address: Json
           distance_km?: number | null
@@ -116,12 +123,16 @@ export type Database = {
           id?: string
           order_id: string
           pickup_address: Json
+          selected_bid_id?: string | null
           status?: string
           tracking_number?: string
           updated_at?: string
         }
         Update: {
           actual_delivery_time?: string | null
+          bidding_deadline?: string | null
+          bidding_enabled?: boolean | null
+          buyer_can_select?: boolean | null
           created_at?: string
           delivery_address?: Json
           distance_km?: number | null
@@ -131,6 +142,7 @@ export type Database = {
           id?: string
           order_id?: string
           pickup_address?: Json
+          selected_bid_id?: string | null
           status?: string
           tracking_number?: string
           updated_at?: string
@@ -157,7 +169,130 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "deliveries_selected_bid_id_fkey"
+            columns: ["selected_bid_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_bids"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      delivery_bids: {
+        Row: {
+          bid_amount: number
+          company_id: string | null
+          created_at: string
+          delivery_id: string
+          driver_id: string | null
+          estimated_time_minutes: number
+          id: string
+          message: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bid_amount: number
+          company_id?: string | null
+          created_at?: string
+          delivery_id: string
+          driver_id?: string | null
+          estimated_time_minutes: number
+          id?: string
+          message?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bid_amount?: number
+          company_id?: string | null
+          created_at?: string
+          delivery_id?: string
+          driver_id?: string | null
+          estimated_time_minutes?: number
+          id?: string
+          message?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_bids_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_bids_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_bids_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_bids_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_companies: {
+        Row: {
+          address: string | null
+          city: string | null
+          contact_email: string
+          contact_phone: string
+          created_at: string
+          description: string | null
+          id: string
+          is_verified: boolean | null
+          logo_url: string | null
+          name: string
+          owner_id: string
+          rating: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          contact_email: string
+          contact_phone: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name: string
+          owner_id: string
+          rating?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          contact_email?: string
+          contact_phone?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name?: string
+          owner_id?: string
+          rating?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       driver_applications: {
         Row: {
@@ -294,6 +429,7 @@ export type Database = {
       }
       drivers: {
         Row: {
+          company_id: string | null
           created_at: string
           current_location: Json | null
           id: string
@@ -306,6 +442,7 @@ export type Database = {
           vehicle_type: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           current_location?: Json | null
           id?: string
@@ -318,6 +455,7 @@ export type Database = {
           vehicle_type: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           current_location?: Json | null
           id?: string
@@ -330,6 +468,13 @@ export type Database = {
           vehicle_type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "drivers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "drivers_user_id_fkey"
             columns: ["user_id"]
