@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CreditCard, User, Truck } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { CreditCard, User, Truck, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,6 +64,7 @@ const Checkout = () => {
     details: Array<{ sellerId: string; distance: number; price: number; }>;
   } | null>(null);
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState<any>(null);
+  const [biddingEnabled, setBiddingEnabled] = useState(false);
   
   const [formData, setFormData] = useState({
     email: "",
@@ -194,10 +196,19 @@ const Checkout = () => {
     }
 
     // Additional validation for delivery location and option
-    if (!deliveryLocation || !selectedDeliveryOption) {
+    if (!deliveryLocation) {
       toast({
         title: "Missing Information",
-        description: "Please select a delivery location and choose a delivery option.",
+        description: "Please select a delivery location.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!biddingEnabled && !selectedDeliveryOption) {
+      toast({
+        title: "Missing Information",
+        description: "Please choose a delivery option or enable competitive bidding.",
         variant: "destructive",
       });
       return;
@@ -273,7 +284,11 @@ const Checkout = () => {
 
       if (clearCartError) throw clearCartError;
 
-      // Create delivery
+      // Create delivery with bidding settings
+      const biddingDeadline = biddingEnabled 
+        ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+        : null;
+
       const { error: deliveryError } = await supabase
         .from('deliveries')
         .insert({
@@ -288,10 +303,15 @@ const Checkout = () => {
               lng: deliveryLocation.lng
             },
             phone: sanitizedData.phone,
-            deliveryService: selectedDeliveryOption.name,
-            deliveryServiceId: selectedDeliveryOption.id
+            deliveryService: biddingEnabled ? null : selectedDeliveryOption.name,
+            deliveryServiceId: biddingEnabled ? null : selectedDeliveryOption.id
           },
-          status: 'pending'
+          status: biddingEnabled ? 'awaiting_bids' : 'pending',
+          bidding_enabled: biddingEnabled,
+          bidding_deadline: biddingDeadline,
+          buyer_can_select: true,
+          estimated_price: shippingDetails?.totalShipping || null,
+          distance_km: shippingDetails?.details.reduce((sum, d) => sum + d.distance, 0) || null
         });
 
       if (deliveryError) throw deliveryError;
@@ -509,7 +529,7 @@ const Checkout = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {shippingDetails.details.map((detail, index) => (
                         <div key={detail.sellerId} className="flex justify-between text-sm p-2 rounded bg-muted">
                           <span>Seller {index + 1} ({detail.distance.toFixed(1)} km)</span>
@@ -518,9 +538,39 @@ const Checkout = () => {
                       ))}
                       <div className="border-t pt-2">
                         <div className="flex justify-between font-medium">
-                          <span>Total Shipping:</span>
+                          <span>Estimated Shipping:</span>
                           <span>${shippingDetails.totalShipping.toFixed(2)}</span>
                         </div>
+                      </div>
+
+                      {/* Competitive Bidding Toggle */}
+                      <div className="border-t pt-4">
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
+                          <div className="flex items-center space-x-3">
+                            <Users className="h-5 w-5 text-primary" />
+                            <div>
+                              <Label htmlFor="bidding-toggle" className="font-medium cursor-pointer">
+                                Enable Competitive Bidding
+                              </Label>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Let drivers and companies bid for your delivery
+                              </p>
+                            </div>
+                          </div>
+                          <Switch
+                            id="bidding-toggle"
+                            checked={biddingEnabled}
+                            onCheckedChange={setBiddingEnabled}
+                          />
+                        </div>
+                        {biddingEnabled && (
+                          <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm">
+                            <p className="text-amber-800">
+                              <strong>How it works:</strong> After placing your order, drivers and delivery companies will submit bids. 
+                              You'll have 24 hours to review and select the best offer before delivery begins.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -628,7 +678,7 @@ const Checkout = () => {
                     type="submit"
                     className="w-full bg-green-600 hover:bg-green-700 mt-6"
                     size="lg"
-                    disabled={loading || cartItems.length === 0 || !deliveryLocation || !selectedDeliveryOption}
+                    disabled={loading || cartItems.length === 0 || !deliveryLocation || (!biddingEnabled && !selectedDeliveryOption)}
                   >
                     {loading ? "Processing..." : "Complete Order"}
                   </Button>
