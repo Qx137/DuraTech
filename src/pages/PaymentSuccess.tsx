@@ -2,10 +2,11 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Leaf, Package, Truck, Star, Phone } from "lucide-react";
+import { CheckCircle, Leaf, Package, Truck, Star, Phone, Users } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface Driver {
   id: string;
@@ -56,11 +57,18 @@ const PaymentSuccess = () => {
     if (orderId) {
       fetchOrderData();
     }
-    // Simulate scanning and then fetch available drivers
-    setTimeout(() => {
-      fetchAvailableDrivers();
-    }, 3000);
   }, [orderId]);
+
+  useEffect(() => {
+    // Only scan for drivers if bidding is not enabled
+    if (delivery && !delivery.bidding_enabled) {
+      setTimeout(() => {
+        fetchAvailableDrivers();
+      }, 3000);
+    } else if (delivery && delivery.bidding_enabled) {
+      setIsScanning(false);
+    }
+  }, [delivery]);
 
   const fetchOrderData = async () => {
     if (!orderId) return;
@@ -170,8 +178,38 @@ const PaymentSuccess = () => {
           <div className="mb-8">
             <CheckCircle className="h-24 w-24 text-green-600 mx-auto mb-4" />
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Payment Successful!</h1>
-            <p className="text-gray-600">Thank you for your order. We're now finding the best driver for your delivery.</p>
+            <p className="text-gray-600">
+              {delivery?.bidding_enabled 
+                ? "Thank you for your order. Drivers and companies will submit bids for your delivery."
+                : "Thank you for your order. We're now finding the best driver for your delivery."
+              }
+            </p>
           </div>
+
+          {/* Bidding Enabled Section */}
+          {delivery?.bidding_enabled && (
+            <Card className="mb-8 border-primary/20 bg-primary/5">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <Users className="h-8 w-8 text-primary" />
+                  <h3 className="text-xl font-semibold">Competitive Bidding Enabled</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  Drivers and delivery companies will submit bids for your delivery. You can review and select the best offer.
+                </p>
+                <Badge variant="secondary" className="mb-4">
+                  Tracking: {delivery.tracking_number}
+                </Badge>
+                <div className="mt-4">
+                  <Button asChild className="w-full sm:w-auto">
+                    <Link to={`/delivery-bids/${delivery.id}`}>
+                      View & Select Bids
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="mb-8">
             <CardHeader>
@@ -195,7 +233,7 @@ const PaymentSuccess = () => {
             </CardContent>
           </Card>
 
-          {isScanning && (
+          {isScanning && !delivery?.bidding_enabled && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
               <div className="flex items-center justify-center space-x-2 mb-4">
                 <Truck className="h-6 w-6 text-blue-600" />
