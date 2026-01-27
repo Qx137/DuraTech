@@ -7,53 +7,150 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Bot, TrendingUp, Search, Leaf, MapPin, Calendar, DollarSign, Cloud, Thermometer } from "lucide-react";
+import { Bot, TrendingUp, Search, Leaf, MapPin, Calendar, DollarSign, Cloud, Thermometer, Loader2, Key } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { generateCropRecommendations, analyzePriceTrends, smartSearch, CropRecommendation, PriceAnalysis } from "@/services/ai";
 
 const AITools = () => {
   const [selectedTool, setSelectedTool] = useState("recommendations");
   const [location, setLocation] = useState("");
+  const [season, setSeason] = useState("");
+  const [soilType, setSoilType] = useState("");
   const [cropType, setCropType] = useState("");
   const [priceQuery, setPriceQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [apiKey, setApiKey] = useState(localStorage.getItem("gemini_api_key") || "");
+  const [isLoading, setIsLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+
+  const handleSaveApiKey = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem("gemini_api_key", key);
+    toast({
+      title: "API Key Saved",
+      description: "Your Gemini API key has been saved locally.",
+    });
+  };
+
   const { toast } = useToast();
 
-  // Mock AI responses
-  const cropRecommendations = [
-    { crop: "Tomatoes", confidence: 95, reason: "High demand, optimal season", price: "$4.50/lb" },
-    { crop: "Sweet Corn", confidence: 88, reason: "Seasonal peak, good weather", price: "$2.00/ear" },
-    { crop: "Lettuce", confidence: 82, reason: "Growing demand, suitable climate", price: "$3.20/lb" },
-    { crop: "Bell Peppers", confidence: 79, reason: "Market gap, profitable", price: "$5.80/lb" }
-  ];
+  const [cropRecommendations, setCropRecommendations] = useState<CropRecommendation[]>([]);
+  const [priceAnalysis, setPriceAnalysis] = useState<PriceAnalysis | null>(null);
+  const [searchResults, setSearchResults] = useState("");
 
-  const priceAnalysis = {
-    current: "$4.50",
-    prediction: "$5.20",
-    trend: "increasing",
-    confidence: 87,
-    factors: ["Seasonal demand", "Weather conditions", "Supply chain"]
+  const handleGenerateRecommendations = async () => {
+    if (!apiKey) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your Google Gemini API key to use AI features.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!location || !season || !soilType) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide location, season, and soil type.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setAiError("");
+    setCropRecommendations([]);
+
+    try {
+      const results = await generateCropRecommendations(apiKey, location, season, soilType);
+      setCropRecommendations(results);
+      toast({
+        title: "AI Analysis Complete",
+        description: "Generated crop recommendations based on your location and market data.",
+      });
+    } catch (error) {
+      console.error(error);
+      setAiError("Failed to generate recommendations. Verify your API key and try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGenerateRecommendations = () => {
-    toast({
-      title: "AI Analysis Complete",
-      description: "Generated crop recommendations based on your location and market data.",
-    });
+  const handlePriceAnalysis = async () => {
+    if (!apiKey) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your Google Gemini API key.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!cropType) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a crop type.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setAiError("");
+    setPriceAnalysis(null);
+
+    try {
+      const result = await analyzePriceTrends(apiKey, cropType, "3 months");
+      setPriceAnalysis(result);
+      toast({
+        title: "Price Analysis Ready",
+        description: `Generated price predictions for ${cropType}.`,
+      });
+    } catch (error) {
+      console.error(error);
+      setAiError("Failed to analyze prices.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handlePriceAnalysis = () => {
-    toast({
-      title: "Price Analysis Ready",
-      description: `Generated price predictions for ${cropType}.`,
-    });
-  };
+  const handleSmartSearch = async () => {
+    if (!apiKey) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your Google Gemini API key.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const handleSmartSearch = () => {
-    toast({
-      title: "Search Complete",
-      description: "Found relevant products using AI-powered search.",
-    });
+    if (!searchQuery) {
+      toast({
+        title: "Empty Query",
+        description: "Please enter a search query.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setAiError("");
+    setSearchResults("");
+
+    try {
+      const result = await smartSearch(apiKey, searchQuery);
+      setSearchResults(result);
+      toast({
+        title: "Search Complete",
+        description: "Found relevant insights using AI.",
+      });
+    } catch (error) {
+      console.error(error);
+      setAiError("Failed to perform search.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -62,9 +159,9 @@ const AITools = () => {
       <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>
@@ -96,17 +193,32 @@ const AITools = () => {
             <Bot className="inline h-10 w-10 mr-3 text-green-600" />
             AI-Powered Agricultural Tools
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
             Leverage artificial intelligence to make smarter farming and trading decisions
           </p>
+
+          <div className="max-w-md mx-auto relative">
+            <Input
+              type="password"
+              placeholder="Enter Google Gemini API Key"
+              value={apiKey}
+              onChange={(e) => handleSaveApiKey(e.target.value)}
+              className="pl-10"
+            />
+            <Key className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+          {!apiKey && (
+            <p className="text-sm text-red-500 mt-2">
+              You need a Google Gemini API Key to use these features.
+            </p>
+          )}
         </div>
 
         {/* Tool Selection */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card 
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
-              selectedTool === "recommendations" ? "ring-2 ring-green-500 shadow-lg" : ""
-            }`}
+          <Card
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "recommendations" ? "ring-2 ring-green-500 shadow-lg" : ""
+              }`}
             onClick={() => setSelectedTool("recommendations")}
           >
             <CardHeader className="text-center">
@@ -116,10 +228,9 @@ const AITools = () => {
             </CardHeader>
           </Card>
 
-          <Card 
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
-              selectedTool === "pricing" ? "ring-2 ring-blue-500 shadow-lg" : ""
-            }`}
+          <Card
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "pricing" ? "ring-2 ring-blue-500 shadow-lg" : ""
+              }`}
             onClick={() => setSelectedTool("pricing")}
           >
             <CardHeader className="text-center">
@@ -129,10 +240,9 @@ const AITools = () => {
             </CardHeader>
           </Card>
 
-          <Card 
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
-              selectedTool === "search" ? "ring-2 ring-purple-500 shadow-lg" : ""
-            }`}
+          <Card
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "search" ? "ring-2 ring-purple-500 shadow-lg" : ""
+              }`}
             onClick={() => setSelectedTool("search")}
           >
             <CardHeader className="text-center">
@@ -210,10 +320,12 @@ const AITools = () => {
                       </Select>
                     </div>
                   </div>
-                  <Button 
+                  <Button
                     onClick={handleGenerateRecommendations}
+                    disabled={isLoading}
                     className="w-full bg-green-600 hover:bg-green-700"
                   >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Generate AI Recommendations
                   </Button>
                 </>
@@ -256,10 +368,12 @@ const AITools = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button 
+                  <Button
                     onClick={handlePriceAnalysis}
+                    disabled={isLoading}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                   >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Analyze Price Trends
                   </Button>
                 </>
@@ -297,10 +411,12 @@ const AITools = () => {
                       </Badge>
                     </div>
                   </div>
-                  <Button 
+                  <Button
                     onClick={handleSmartSearch}
+                    disabled={isLoading}
                     className="w-full bg-purple-600 hover:bg-purple-700"
                   >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Search with AI
                   </Button>
                 </>
@@ -320,65 +436,79 @@ const AITools = () => {
                     <div className="text-3xl mb-2">🌱</div>
                     <h3 className="font-semibold text-lg">Recommended Crops for Your Area</h3>
                   </div>
-                  {cropRecommendations.map((crop, index) => (
-                    <div key={index} className="border rounded-lg p-4 hover:bg-green-50 transition-colors">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">{crop.crop}</h4>
-                        <Badge 
-                          className={`${crop.confidence >= 90 ? 'bg-green-100 text-green-800' : 
-                                     crop.confidence >= 80 ? 'bg-yellow-100 text-yellow-800' : 
-                                     'bg-gray-100 text-gray-800'}`}
-                        >
-                          {crop.confidence}% confidence
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">{crop.reason}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Expected price: {crop.price}</span>
-                        <Button size="sm" variant="outline">View Details</Button>
-                      </div>
+                  {cropRecommendations.length === 0 ? (
+                    <div className="text-center text-gray-500">
+                      Enter your details above to get AI recommendations.
                     </div>
-                  ))}
+                  ) : (
+                    cropRecommendations.map((crop, index) => (
+                      <div key={index} className="border rounded-lg p-4 hover:bg-green-50 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium">{crop.crop}</h4>
+                          <Badge
+                            className={`${crop.confidence >= 90 ? 'bg-green-100 text-green-800' :
+                              crop.confidence >= 80 ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'}`}
+                          >
+                            {crop.confidence}% confidence
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{crop.reason}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Expected price: {crop.price}</span>
+                          <Button size="sm" variant="outline">View Details</Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
 
-              {selectedTool === "pricing" && cropType && (
+              {selectedTool === "pricing" && (
                 <div className="space-y-4">
                   <div className="text-center mb-4">
                     <div className="text-3xl mb-2">📈</div>
-                    <h3 className="font-semibold text-lg">Price Analysis for {cropType}</h3>
+                    <h3 className="font-semibold text-lg">Price Analysis {cropType ? `for ${cropType}` : ""}</h3>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="text-sm text-gray-600">Current Price</div>
-                      <div className="text-2xl font-bold text-blue-600">{priceAnalysis.current}</div>
+
+                  {!priceAnalysis ? (
+                    <div className="text-center text-gray-500">
+                      Select a crop and timeframe to analyze price trends.
                     </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="text-sm text-gray-600">Predicted Price</div>
-                      <div className="text-2xl font-bold text-green-600">{priceAnalysis.prediction}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">Trend Analysis</span>
-                      <Badge className={`${priceAnalysis.trend === 'increasing' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {priceAnalysis.trend}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-gray-600 mb-2">
-                      Confidence: {priceAnalysis.confidence}%
-                    </div>
-                    <div className="text-sm">
-                      <strong>Key factors:</strong>
-                      <ul className="list-disc list-inside mt-1">
-                        {priceAnalysis.factors.map((factor, index) => (
-                          <li key={index}>{factor}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <div className="text-sm text-gray-600">Current Price</div>
+                          <div className="text-2xl font-bold text-blue-600">{priceAnalysis.current}</div>
+                        </div>
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <div className="text-sm text-gray-600">Predicted Price</div>
+                          <div className="text-2xl font-bold text-green-600">{priceAnalysis.prediction}</div>
+                        </div>
+                      </div>
+
+                      <div className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Trend Analysis</span>
+                          <Badge className={`${priceAnalysis.trend === 'increasing' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {priceAnalysis.trend}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          Confidence: {priceAnalysis.confidence}%
+                        </div>
+                        <div className="text-sm">
+                          <strong>Key factors:</strong>
+                          <ul className="list-disc list-inside mt-1">
+                            {priceAnalysis.factors.map((factor, index) => (
+                              <li key={index}>{factor}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -388,9 +518,15 @@ const AITools = () => {
                     <div className="text-3xl mb-2">🔍</div>
                     <h3 className="font-semibold text-lg">Smart Search Results</h3>
                   </div>
-                  <div className="text-center text-gray-500">
-                    Enter a search query to see AI-powered product recommendations
-                  </div>
+                  {searchResults ? (
+                    <div className="bg-gray-50 p-4 rounded-lg text-left whitespace-pre-wrap">
+                      {searchResults}
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-500">
+                      Enter a search query above to see AI-powered product recommendations
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
