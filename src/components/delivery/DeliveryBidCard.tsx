@@ -17,8 +17,9 @@ interface DeliveryBidCardProps {
       id: string;
       rating: number | null;
       vehicle_type: string;
-      user_id: string;
-      profile_name?: string;
+      profiles?: {
+        name: string;
+      };
     } | null;
     company?: {
       id: string;
@@ -43,7 +44,7 @@ export const DeliveryBidCard = ({
   const isCompanyBid = !!bid.company;
   const providerName = isCompanyBid 
     ? bid.company?.name 
-    : bid.driver?.profile_name || 'Driver';
+    : bid.driver?.profiles?.name || 'Driver';
   const providerRating = isCompanyBid 
     ? bid.company?.rating 
     : bid.driver?.rating;

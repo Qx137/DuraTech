@@ -75,7 +75,7 @@ export const DeliveryBidsPanel = ({
             id,
             rating,
             vehicle_type,
-            user_id
+            profiles:user_id(name)
           ),
           company:delivery_companies(
             id,
@@ -86,31 +86,6 @@ export const DeliveryBidsPanel = ({
         `)
         .eq('delivery_id', deliveryId)
         .order('bid_amount', { ascending: true });
-
-      if (error) throw error;
-
-      // Fetch profile names for drivers
-      const bidsWithProfiles = await Promise.all(
-        (data || []).map(async (bid) => {
-          if (bid.driver?.user_id) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('name')
-              .eq('id', bid.driver.user_id)
-              .maybeSingle();
-            return {
-              ...bid,
-              driver: {
-                ...bid.driver,
-                profile_name: profile?.name || 'Unknown Driver'
-              }
-            };
-          }
-          return bid;
-        })
-      );
-
-      setBids(bidsWithProfiles);
 
       if (error) throw error;
       setBids(data || []);
