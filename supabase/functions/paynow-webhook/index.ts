@@ -1,7 +1,3 @@
-/// <reference path="../create-paynow-payment/deno_std_server.d.ts" />
-/// <reference path="../create-paynow-payment/supabase_js_esmsh.d.ts" />
-/// <reference path="../create-paynow-payment/deno_global.d.ts" />
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
 
