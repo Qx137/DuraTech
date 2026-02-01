@@ -20,18 +20,8 @@ const AITools = () => {
   const [cropType, setCropType] = useState("");
   const [priceQuery, setPriceQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [apiKey, setApiKey] = useState(localStorage.getItem("gemini_api_key") || "");
   const [isLoading, setIsLoading] = useState(false);
-  const [aiError, setAiError] = useState("");
 
-  const handleSaveApiKey = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem("gemini_api_key", key);
-    toast({
-      title: "API Key Saved",
-      description: "Your Gemini API key has been saved locally.",
-    });
-  };
 
   const { toast } = useToast();
 
@@ -40,15 +30,6 @@ const AITools = () => {
   const [searchResults, setSearchResults] = useState("");
 
   const handleGenerateRecommendations = async () => {
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your Google Gemini API key to use AI features.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!location || !season || !soilType) {
       toast({
         title: "Missing Information",
@@ -59,11 +40,10 @@ const AITools = () => {
     }
 
     setIsLoading(true);
-    setAiError("");
     setCropRecommendations([]);
 
     try {
-      const results = await generateCropRecommendations(apiKey, location, season, soilType);
+      const results = await generateCropRecommendations(location, season, soilType);
       setCropRecommendations(results);
       toast({
         title: "AI Analysis Complete",
@@ -71,22 +51,17 @@ const AITools = () => {
       });
     } catch (error) {
       console.error(error);
-      setAiError("Failed to generate recommendations. Verify your API key and try again.");
+      toast({
+        title: "Analysis Failed",
+        description: "Failed to generate recommendations. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handlePriceAnalysis = async () => {
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your Google Gemini API key.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!cropType) {
       toast({
         title: "Missing Information",
@@ -97,11 +72,10 @@ const AITools = () => {
     }
 
     setIsLoading(true);
-    setAiError("");
     setPriceAnalysis(null);
 
     try {
-      const result = await analyzePriceTrends(apiKey, cropType, "3 months");
+      const result = await analyzePriceTrends(cropType, "3 months");
       setPriceAnalysis(result);
       toast({
         title: "Price Analysis Ready",
@@ -109,22 +83,17 @@ const AITools = () => {
       });
     } catch (error) {
       console.error(error);
-      setAiError("Failed to analyze prices.");
+      toast({
+        title: "Analysis Failed",
+        description: "Failed to analyze prices. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSmartSearch = async () => {
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your Google Gemini API key.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!searchQuery) {
       toast({
         title: "Empty Query",
@@ -135,11 +104,10 @@ const AITools = () => {
     }
 
     setIsLoading(true);
-    setAiError("");
     setSearchResults("");
 
     try {
-      const result = await smartSearch(apiKey, searchQuery);
+      const result = await smartSearch(searchQuery);
       setSearchResults(result);
       toast({
         title: "Search Complete",
@@ -147,7 +115,11 @@ const AITools = () => {
       });
     } catch (error) {
       console.error(error);
-      setAiError("Failed to perform search.");
+      toast({
+        title: "Search Failed",
+        description: "Failed to perform search. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -197,21 +169,6 @@ const AITools = () => {
             Leverage artificial intelligence to make smarter farming and trading decisions
           </p>
 
-          <div className="max-w-md mx-auto relative">
-            <Input
-              type="password"
-              placeholder="Enter Google Gemini API Key"
-              value={apiKey}
-              onChange={(e) => handleSaveApiKey(e.target.value)}
-              className="pl-10"
-            />
-            <Key className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
-          {!apiKey && (
-            <p className="text-sm text-red-500 mt-2">
-              You need a Google Gemini API Key to use these features.
-            </p>
-          )}
         </div>
 
         {/* Tool Selection */}

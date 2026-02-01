@@ -2,8 +2,12 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize the API with a key
-export const getAIClient = (apiKey: string) => {
-    return new GoogleGenerativeAI(apiKey);
+export const getAIClient = (apiKey?: string) => {
+    const key = apiKey || import.meta.env.VITE_GEMINI_API_KEY;
+    if (!key) {
+        throw new Error("Gemini API key is missing. Please set VITE_GEMINI_API_KEY in your environment.");
+    }
+    return new GoogleGenerativeAI(key);
 };
 
 export interface CropRecommendation {
@@ -22,10 +26,10 @@ export interface PriceAnalysis {
 }
 
 export const generateCropRecommendations = async (
-    apiKey: string,
     location: string,
     season: string,
-    soilType: string
+    soilType: string,
+    apiKey?: string
 ): Promise<CropRecommendation[]> => {
     try {
         const genAI = getAIClient(apiKey);
@@ -53,9 +57,9 @@ export const generateCropRecommendations = async (
 };
 
 export const analyzePriceTrends = async (
-    apiKey: string,
     crop: string,
-    period: string
+    period: string,
+    apiKey?: string
 ): Promise<PriceAnalysis> => {
     try {
         const genAI = getAIClient(apiKey);
@@ -86,8 +90,8 @@ export const analyzePriceTrends = async (
 };
 
 export const smartSearch = async (
-    apiKey: string,
-    query: string
+    query: string,
+    apiKey?: string
 ): Promise<string> => {
     try {
         const genAI = getAIClient(apiKey);
