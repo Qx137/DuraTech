@@ -103,17 +103,28 @@ serve(async (req) => {
   }
 
   try {
+    // Verify content-type is form data
+    const contentType = req.headers.get('content-type') || '';
+    if (!contentType.includes('application/x-www-form-urlencoded')) {
+      console.error('Invalid content type:', contentType);
+      return new Response('Invalid content type', {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Parse webhook data from Paynow
-    const formData = await req.formData();
+    // Parse webhook data from Paynow (form-urlencoded)
+    const bodyText = await req.text();
     const webhookData: Record<string, string> = {};
+    const params = new URLSearchParams(bodyText);
     
-    for (const [key, value] of formData.entries()) {
-      webhookData[key.toLowerCase()] = value.toString();
+    for (const [key, value] of params.entries()) {
+      webhookData[key.toLowerCase()] = value;
     }
 
     console.log('Paynow webhook received:', { ...webhookData, hash: '***' });
