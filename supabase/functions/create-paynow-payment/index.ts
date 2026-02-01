@@ -14,6 +14,24 @@ interface PaymentRequest {
   customerName: string;
 }
 
+// Map internal errors to safe client messages
+function getSafeErrorMessage(error: string): string {
+  const errorMap: Record<string, string> = {
+    'Missing authorization header': 'Authentication required',
+    'Unauthorized': 'Authentication required',
+    'Supabase configuration missing': 'Service temporarily unavailable',
+    'Invalid amount': 'Invalid payment amount',
+    'Order not found': 'Unable to process payment',
+    'Access denied: Order belongs to another user': 'Unable to process payment',
+    'Order already paid': 'This order has already been paid',
+    'Amount mismatch': 'Unable to process payment',
+    'Paynow credentials not configured': 'Payment service temporarily unavailable',
+  };
+
+  // Return mapped message or generic error
+  return errorMap[error] || 'Payment processing failed. Please try again.';
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -24,6 +42,7 @@ serve(async (req) => {
     // 1. Verify authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('Missing authorization header');
       throw new Error('Missing authorization header');
     }
 
@@ -32,6 +51,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
     
     if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase configuration missing');
       throw new Error('Supabase configuration missing');
     }
 
@@ -44,6 +64,7 @@ serve(async (req) => {
     const user = userResult.data?.user;
     const userError = userResult.error;
     if (userError || !user) {
+      console.error('User authentication failed:', userError);
       throw new Error('Unauthorized');
     }
 
@@ -54,6 +75,7 @@ serve(async (req) => {
       amount = parseFloat(amount);
     }
     if (typeof amount !== 'number' || Number.isNaN(amount)) {
+      console.error('Invalid amount received:', body.amount);
       throw new Error('Invalid amount');
     }
 
@@ -69,24 +91,25 @@ serve(async (req) => {
     const orderError = orderRes.error;
     
     if (orderError || !order) {
-      console.error('Order not found:', orderError);
+      console.error('Order lookup failed:', orderError);
       throw new Error('Order not found');
     }
 
     // 5. Verify user owns this order
     if (order.user_id !== user.id) {
-      console.error('Access denied: Order belongs to another user');
+      console.error('User', user.id, 'attempted to access order belonging to', order.user_id);
       throw new Error('Access denied: Order belongs to another user');
     }
 
     // 6. Verify order hasn't been paid
     if (order.payment_status === 'completed') {
+      console.error('Order already paid:', orderId);
       throw new Error('Order already paid');
     }
 
     // 7. Verify amount matches (prevent price manipulation)
     if (Math.abs(order.total - amount) > 0.01) {
-      console.error('Amount mismatch:', { requested: amount, actual: order.total });
+      console.error('Amount mismatch - requested:', amount, 'actual:', order.total);
       throw new Error('Amount mismatch');
     }
 
@@ -95,6 +118,7 @@ serve(async (req) => {
     const integrationKey = Deno.env.get('PAYNOW_INTEGRATION_KEY');
 
     if (!integrationId || !integrationKey) {
+      console.error('Paynow credentials not configured');
       throw new Error('Paynow credentials not configured');
     }
 
@@ -154,8 +178,6 @@ serve(async (req) => {
 
         try {
           console.log(`Paynow request attempt ${attempt}/${maxRetries}`);
-          console.log('Request URL:', endpoint);
-          console.log('Request data:', { ...finalPaymentData, hash: '***', id: '***' });
 
           paynowResponse = await fetch(endpoint, {
             method: 'POST',
@@ -177,7 +199,6 @@ serve(async (req) => {
           lastError = error;
           const errorMsg = error instanceof Error ? error.message : String(error);
           console.error(`Attempt ${attempt} failed:`, errorMsg);
-          console.error('Full error details:', error);
 
           clearTimeout(timeoutId);
 
@@ -194,19 +215,27 @@ serve(async (req) => {
         // Exit endpoint loop if we received a response
         break;
       } else {
-        console.warn(`No response from endpoint, trying next: ${endpoint}`);
+        console.warn(`No response from endpoint: ${endpoint}`);
       }
     }
 
     if (!paynowResponse) {
       const errorDetails = lastError instanceof Error ? lastError.message : String(lastError);
       console.error('All Paynow connection attempts failed. Last error:', errorDetails);
-      console.error('Possible causes: 1) Paynow API is down, 2) Network/firewall blocking, 3) Invalid credentials, 4) Using test credentials against production endpoint');
-      throw new Error('Unable to connect to payment gateway. Please try again later or contact support.');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Payment gateway temporarily unavailable. Please try again later.'
+        }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const responseText = await paynowResponse.text();
-    console.log('Paynow response:', responseText);
+    console.log('Paynow response received');
 
     // Parse Paynow response
     const responseLines = responseText.split('\n');
@@ -232,17 +261,32 @@ serve(async (req) => {
         }
       );
     } else {
-      throw new Error(responseData.error || 'Failed to create payment');
+      console.error('Paynow returned error:', responseData.error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Payment initialization failed. Please try again.'
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
   } catch (err) {
-    console.error('Error creating Paynow payment:', err);
-    const errMsg = err instanceof Error ? err.message : String(err);
-    const status = errMsg.includes('Access denied') ? 403 : 400;
+    const internalError = err instanceof Error ? err.message : String(err);
+    console.error('Error creating Paynow payment:', internalError);
+    
+    // Return safe error message to client
+    const safeMessage = getSafeErrorMessage(internalError);
+    const status = internalError.includes('Access denied') ? 403 : 
+                   internalError.includes('Unauthorized') ? 401 : 400;
+    
     return new Response(
       JSON.stringify({
         success: false,
-        error: errMsg
+        error: safeMessage
       }),
       {
         status,

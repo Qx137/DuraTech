@@ -32,6 +32,27 @@ function calculateDistance(loc1: Location, loc2: Location): number {
   return R * c;
 }
 
+// Map internal errors to safe client messages
+function getSafeErrorMessage(error: string): string {
+  const errorMap: Record<string, string> = {
+    'Missing authorization header': 'Authentication required',
+    'Unauthorized': 'Authentication required',
+    'Missing deliveryId or pickupLocation': 'Invalid request',
+    'Delivery not found': 'Unable to find delivery',
+    'You are not authorized to request a driver for this delivery': 'Access denied',
+    'No available drivers found': 'No drivers available at this time',
+    'No drivers with location data found': 'No drivers available at this time',
+  };
+
+  for (const [pattern, message] of Object.entries(errorMap)) {
+    if (error.includes(pattern)) {
+      return message;
+    }
+  }
+
+  return 'Unable to process request. Please try again.';
+}
+
 if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
   (Deno as any).serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
@@ -42,8 +63,9 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       // Create client with user's JWT to verify authentication
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
+        console.error('Missing authorization header');
         return new Response(
-          JSON.stringify({ error: 'Missing authorization header' }),
+          JSON.stringify({ error: 'Authentication required' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
         );
       }
@@ -60,7 +82,7 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       if (userError || !user) {
         console.error('Auth error:', userError);
         return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
+          JSON.stringify({ error: 'Authentication required' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
         );
       }
@@ -76,8 +98,9 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       const { deliveryId, pickupLocation } = await req.json();
 
       if (!deliveryId || !pickupLocation) {
+        console.error('Missing required fields:', { deliveryId, pickupLocation });
         return new Response(
-          JSON.stringify({ error: 'Missing deliveryId or pickupLocation' }),
+          JSON.stringify({ error: 'Invalid request' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         );
       }
@@ -94,7 +117,7 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       if (deliveryError || !delivery) {
         console.error('Delivery fetch error:', deliveryError);
         return new Response(
-          JSON.stringify({ error: 'Delivery not found' }),
+          JSON.stringify({ error: 'Unable to find delivery' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
         );
       }
@@ -104,12 +127,12 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       if (orderUserId !== user.id) {
         console.error('Authorization failed: User', user.id, 'does not own order for delivery', deliveryId);
         return new Response(
-          JSON.stringify({ error: 'You are not authorized to request a driver for this delivery' }),
+          JSON.stringify({ error: 'Access denied' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
         );
       }
 
-      console.log('Authorization passed. Pickup location:', pickupLocation);
+      console.log('Authorization passed');
 
       // Fetch available drivers
       const driversRes: any = await (supabaseAdmin.from('drivers') as any)
@@ -120,12 +143,16 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
 
       if (driversError) {
         console.error('Error fetching drivers:', driversError);
-        throw driversError;
+        return new Response(
+          JSON.stringify({ error: 'Unable to process request. Please try again.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
       }
 
       if (!drivers || drivers.length === 0) {
+        console.log('No available drivers found');
         return new Response(
-          JSON.stringify({ error: 'No available drivers found' }),
+          JSON.stringify({ error: 'No drivers available at this time' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
         );
       }
@@ -147,8 +174,9 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
         .sort((a, b) => a.score - b.score);
 
       if (driversWithDistance.length === 0) {
+        console.log('No drivers with location data found');
         return new Response(
-          JSON.stringify({ error: 'No drivers with location data found' }),
+          JSON.stringify({ error: 'No drivers available at this time' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
         );
       }
@@ -167,7 +195,10 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
 
       if (updateError) {
         console.error('Error updating delivery:', updateError);
-        throw updateError;
+        return new Response(
+          JSON.stringify({ error: 'Unable to process request. Please try again.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
       }
 
       // Update driver status to busy
@@ -178,7 +209,7 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
 
       if (driverUpdateError) {
         console.error('Error updating driver status:', driverUpdateError);
-        throw driverUpdateError;
+        // Don't fail the request, just log
       }
 
       // Create notification for driver
@@ -194,6 +225,7 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
 
       if (notificationError) {
         console.error('Error creating notification:', notificationError);
+        // Don't fail the request, just log
       }
 
       return new Response(
@@ -211,10 +243,13 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
       );
 
     } catch (err) {
-      console.error('Error in match-driver function:', err);
-      const errMsg = err instanceof Error ? err.message : String(err);
+      const internalError = err instanceof Error ? err.message : String(err);
+      console.error('Error in match-driver function:', internalError);
+      
+      const safeMessage = getSafeErrorMessage(internalError);
+      
       return new Response(
-        JSON.stringify({ error: errMsg }),
+        JSON.stringify({ error: safeMessage }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
