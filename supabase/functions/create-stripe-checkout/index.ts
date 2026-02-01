@@ -12,6 +12,26 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-STRIPE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// Map internal errors to safe client messages
+function getSafeErrorMessage(error: string): string {
+  const errorMap: Record<string, string> = {
+    'STRIPE_SECRET_KEY is not configured': 'Payment service temporarily unavailable',
+    'No authorization header provided': 'Authentication required',
+    'User not authenticated': 'Authentication required',
+    'Missing required fields: orderId and amount': 'Invalid request',
+    'Order not found or unauthorized': 'Unable to process payment',
+  };
+
+  // Check for known error patterns
+  for (const [pattern, message] of Object.entries(errorMap)) {
+    if (error.includes(pattern)) {
+      return message;
+    }
+  }
+
+  return 'Payment processing failed. Please try again.';
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -22,6 +42,7 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
+      console.error("STRIPE_SECRET_KEY is not configured");
       throw new Error("STRIPE_SECRET_KEY is not configured");
     }
     logStep("Stripe key verified");
@@ -35,6 +56,7 @@ serve(async (req) => {
     // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error("No authorization header provided");
       throw new Error("No authorization header provided");
     }
 
@@ -42,17 +64,19 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !userData.user) {
+      console.error("User authentication failed:", userError);
       throw new Error("User not authenticated");
     }
     
     const user = userData.user;
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    logStep("User authenticated", { userId: user.id });
 
     // Parse request body
     const { orderId, amount, email, customerName, items } = await req.json();
-    logStep("Request body parsed", { orderId, amount, email, itemCount: items?.length });
+    logStep("Request body parsed", { orderId, itemCount: items?.length });
 
     if (!orderId || !amount) {
+      console.error("Missing required fields:", { orderId, amount });
       throw new Error("Missing required fields: orderId and amount");
     }
 
@@ -65,7 +89,7 @@ serve(async (req) => {
       .single();
 
     if (orderError || !order) {
-      logStep("Order verification failed", { orderId, userId: user.id });
+      console.error("Order verification failed for order:", orderId);
       throw new Error("Order not found or unauthorized");
     }
     logStep("Order verified", { orderId: order.id });
@@ -79,9 +103,7 @@ serve(async (req) => {
     
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-      logStep("Found existing Stripe customer", { customerId });
-    } else {
-      logStep("No existing Stripe customer found");
+      logStep("Found existing Stripe customer");
     }
 
     // Build line items for the order
@@ -105,7 +127,7 @@ serve(async (req) => {
       quantity: 1,
     }];
 
-    logStep("Creating checkout session", { lineItemCount: lineItems.length });
+    logStep("Creating checkout session");
 
     const origin = req.headers.get("origin") || "https://durahub.lovable.app";
 
@@ -123,7 +145,7 @@ serve(async (req) => {
       },
     });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    logStep("Checkout session created");
 
     // Update order with Stripe session info
     await supabaseClient
@@ -142,15 +164,20 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
+    const internalError = error instanceof Error ? error.message : String(error);
+    logStep("ERROR", { message: internalError });
+    
+    // Return safe error message to client
+    const safeMessage = getSafeErrorMessage(internalError);
+    const status = internalError.includes('not authenticated') || internalError.includes('authorization') ? 401 : 
+                   internalError.includes('unauthorized') ? 403 : 500;
     
     return new Response(JSON.stringify({ 
       success: false,
-      error: errorMessage 
+      error: safeMessage 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status,
     });
   }
 });

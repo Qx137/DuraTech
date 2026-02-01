@@ -11,6 +11,26 @@ interface EmailRequest {
   type: 'confirmation' | 'status_update' | 'cancellation';
 }
 
+// Map internal errors to safe client messages
+function getSafeErrorMessage(error: string): string {
+  const errorMap: Record<string, string> = {
+    'Missing authorization header': 'Authentication required',
+    'Unauthorized': 'Authentication required',
+    'Missing orderId or type': 'Invalid request',
+    'Order not found': 'Unable to process request',
+    'You are not authorized to send emails for this order': 'Access denied',
+    'Invalid email type': 'Invalid request',
+  };
+
+  for (const [pattern, message] of Object.entries(errorMap)) {
+    if (error.includes(pattern)) {
+      return message;
+    }
+  }
+
+  return 'Unable to process request. Please try again.';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,8 +40,9 @@ serve(async (req) => {
     // Create client with user's JWT to verify authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('Missing authorization header');
       return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
+        JSON.stringify({ error: 'Authentication required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
@@ -38,7 +59,7 @@ serve(async (req) => {
     if (userError || !user) {
       console.error('Auth error:', userError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Authentication required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
@@ -54,8 +75,9 @@ serve(async (req) => {
     const { orderId, type }: EmailRequest = await req.json();
 
     if (!orderId || !type) {
+      console.error('Missing required fields:', { orderId, type });
       return new Response(
-        JSON.stringify({ error: 'Missing orderId or type' }),
+        JSON.stringify({ error: 'Invalid request' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -86,7 +108,7 @@ serve(async (req) => {
     if (orderError || !order) {
       console.error('Order fetch error:', orderError);
       return new Response(
-        JSON.stringify({ error: 'Order not found' }),
+        JSON.stringify({ error: 'Unable to process request' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       );
     }
@@ -95,7 +117,7 @@ serve(async (req) => {
     if (order.user_id !== user.id) {
       console.error('Authorization failed: User', user.id, 'does not own order', orderId);
       return new Response(
-        JSON.stringify({ error: 'You are not authorized to send emails for this order' }),
+        JSON.stringify({ error: 'Access denied' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
       );
     }
@@ -120,15 +142,14 @@ serve(async (req) => {
         htmlContent = generateCancellationEmail(order);
         break;
       default:
+        console.error('Invalid email type:', type);
         return new Response(
-          JSON.stringify({ error: 'Invalid email type' }),
+          JSON.stringify({ error: 'Invalid request' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         );
     }
 
-    console.log(`Email would be sent to: ${order.profiles?.email || user.email}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Order ID: ${orderId}, Type: ${type}`);
+    console.log('Email prepared successfully');
     
     // Note: To actually send emails, integrate with a service like Resend
     // For now, we just log the email content
@@ -136,8 +157,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'Email notification prepared',
-        recipient: order.profiles?.email || user.email
+        message: 'Email notification prepared'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -146,9 +166,13 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Error in send-order-email:', error);
+    const internalError = error.message || String(error);
+    console.error('Error in send-order-email:', internalError);
+    
+    const safeMessage = getSafeErrorMessage(internalError);
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: safeMessage }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 
