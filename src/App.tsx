@@ -20,6 +20,7 @@ import DeliveryTracking from "./pages/DeliveryTracking";
 import DriverRegistration from "./pages/DriverRegistration";
 import CompanyRegistration from "./pages/CompanyRegistration";
 import DeliveryBidSelection from "./pages/DeliveryBidSelection";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/driver-registration" element={<DriverRegistration />} />
             <Route path="/company-registration" element={<CompanyRegistration />} />
             <Route path="/delivery-bids/:deliveryId" element={<DeliveryBidSelection />} />
+            <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

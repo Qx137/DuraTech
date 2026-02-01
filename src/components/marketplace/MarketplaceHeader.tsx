@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Store, ShoppingBag } from "lucide-react";
+import { ShoppingBag, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface MarketplaceHeaderProps {
@@ -37,6 +37,11 @@ const MarketplaceHeader = ({ cartCount }: MarketplaceHeaderProps) => {
             <Button variant="outline" size="sm">
               <ShoppingBag className="h-4 w-4 mr-1" />
               Cart ({cartCount})
+            </Button>
+          </Link>
+          <Link to="/settings">
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Settings className="h-4 w-4" />
             </Button>
           </Link>
           <Link to="/login">
