@@ -7,7 +7,7 @@ interface UserProfile {
   id: string;
   name: string;
   email: string;
-  userType: 'buyer' | 'seller';
+  userType: 'buyer' | 'seller' | 'driver';
   businessName?: string;
   description?: string;
 }
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
-        
+
         if (session?.user) {
           // Use setTimeout to defer the async profile fetch to avoid blocking the auth state change
           setTimeout(async () => {
@@ -60,17 +60,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 .limit(1)
                 .single()
             ]);
-            
+
             if (profileResult.data && !profileResult.error) {
               // Determine user type from user_roles table (primary source)
               // Fall back to profile.user_type for backwards compatibility
               const userType = rolesResult.data?.role || profileResult.data.user_type;
-              
+
               setUser({
                 id: profileResult.data.id,
                 name: profileResult.data.name,
                 email: profileResult.data.email,
-                userType: userType as 'buyer' | 'seller',
+                userType: userType as 'buyer' | 'seller' | 'driver',
                 businessName: profileResult.data.business_name || undefined,
                 description: profileResult.data.description || undefined,
               });
@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
           setUser(null);
         }
-        
+
         // Always set loading to false after processing auth state
         setLoading(false);
       }
@@ -110,17 +110,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) {
         setLoading(false);
         return { error: error.message };
       }
-      
+
       return {};
     } catch (error: any) {
       console.error("Unexpected login error:", error);
@@ -144,11 +144,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           emailRedirectTo: `${window.location.origin}/`,
         },
       });
-      
+
       if (error) {
         return { error: error.message };
       }
-      
+
       return {};
     } catch (error: any) {
       console.error("Unexpected registration error:", error);

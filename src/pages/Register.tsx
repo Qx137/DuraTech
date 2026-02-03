@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Leaf, ShoppingCart, User, Mail, Lock, Phone, MapPin, Building, FileText, Shield } from "lucide-react";
+import { Leaf, ShoppingCart, User, Mail, Lock, Phone, MapPin, Building, FileText, Shield, Truck } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,7 +59,7 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate input
     const validation = registerSchema.safeParse(formData);
     if (!validation.success) {
@@ -75,7 +75,7 @@ const Register = () => {
 
     try {
       const { error } = await register({ ...validation.data, userType });
-      
+
       if (error) {
         toast({
           title: "Registration Failed",
@@ -114,9 +114,9 @@ const Register = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center mb-6 text-green-600 hover:text-green-700">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>
@@ -136,14 +136,14 @@ const Register = () => {
               {/* User Type Selection */}
               <div className="space-y-3">
                 <Label className="text-base font-medium">I want to:</Label>
-                <RadioGroup value={userType} onValueChange={setUserType} className="grid grid-cols-2 gap-4">
+                <RadioGroup value={userType} onValueChange={setUserType} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex items-center space-x-2 border rounded-lg p-4 hover:bg-green-50 transition-colors">
                     <RadioGroupItem value="buyer" id="buyer" />
                     <Label htmlFor="buyer" className="cursor-pointer flex items-center space-x-2 flex-1">
                       <ShoppingCart className="h-5 w-5 text-green-600" />
                       <div>
-                        <div className="font-medium">Buy Products</div>
-                        <div className="text-sm text-gray-500">Purchase fresh produce</div>
+                        <div className="font-medium">Buy</div>
+                        <div className="text-xs text-gray-500">Purchase produce</div>
                       </div>
                     </Label>
                   </div>
@@ -152,8 +152,18 @@ const Register = () => {
                     <Label htmlFor="seller" className="cursor-pointer flex items-center space-x-2 flex-1">
                       <Leaf className="h-5 w-5 text-green-600" />
                       <div>
-                        <div className="font-medium">Sell Products</div>
-                        <div className="text-sm text-gray-500">Farmer/Producer</div>
+                        <div className="font-medium">Sell</div>
+                        <div className="text-xs text-gray-500">Farmer/Producer</div>
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 border rounded-lg p-4 hover:bg-green-50 transition-colors">
+                    <RadioGroupItem value="driver" id="driver" />
+                    <Label htmlFor="driver" className="cursor-pointer flex items-center space-x-2 flex-1">
+                      <Truck className="h-5 w-5 text-green-600" />
+                      <div>
+                        <div className="font-medium">Deliver</div>
+                        <div className="text-xs text-gray-500">Delivery Service</div>
                       </div>
                     </Label>
                   </div>
@@ -308,8 +318,39 @@ const Register = () => {
                 </>
               )}
 
-              <Button 
-                type="submit" 
+              {/* Driver-specific fields */}
+              {userType === 'driver' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="businessName">
+                      <Truck className="inline h-4 w-4 mr-1" />
+                      Service/Business Name
+                    </Label>
+                    <Input
+                      id="businessName"
+                      name="businessName"
+                      type="text"
+                      value={formData.businessName}
+                      onChange={handleInputChange}
+                      placeholder="Your delivery service name"
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 text-blue-800 mb-2">
+                      <Shield className="h-5 w-5" />
+                      <h3 className="font-semibold">Professional Verification</h3>
+                    </div>
+                    <p className="text-sm text-blue-700">
+                      To start providing delivery services, you will need to complete a background check and provide vehicle/business documentation in your dashboard.
+                    </p>
+                  </div>
+                </>
+              )}
+
+              <Button
+                type="submit"
                 className="w-full bg-green-600 hover:bg-green-700 text-lg py-3"
                 disabled={isLoading}
               >
