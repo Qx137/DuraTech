@@ -1,0 +1,49 @@
+﻿Analyzing mobile...                                             
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ai\ai_tools_screen.dart:222:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\auth\register_screen.dart:172:35 - deprecated_member_use
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\cart\checkout_screen.dart:101:41 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\cart\checkout_screen.dart:140:40 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\cart\checkout_screen.dart:145:24 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\cart\checkout_screen.dart:150:51 - undefined_getter
+  error - Invalid constant value - lib\screens\cart\checkout_screen.dart:160:53 - invalid_constant
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\cart\checkout_screen.dart:160:60 - undefined_getter
+  error - Invalid constant value - lib\screens\cart\checkout_screen.dart:184:24 - invalid_constant
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\cart\checkout_screen.dart:184:31 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\community\community_screen.dart:81:34 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\community\community_screen.dart:82:30 - undefined_getter
+  error - Invalid constant value - lib\screens\community\community_screen.dart:115:53 - invalid_constant
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\community\community_screen.dart:115:60 - undefined_getter
+  error - Invalid constant value - lib\screens\community\post_detail_screen.dart:173:57 - invalid_constant
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\community\post_detail_screen.dart:173:64 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\dashboard\dashboard_screen.dart:94:21 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\dashboard\dashboard_screen.dart:102:39 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\dashboard\dashboard_screen.dart:127:43 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\dashboard\dashboard_screen.dart:251:38 - undefined_getter
+  error - The getter 'stockQuantity' isn't defined for the type 'Product' - lib\screens\dashboard\seller_inventory_screen.dart:66:54 - undefined_getter
+  error - The getter 'emerald' isn't defined for the type 'Colors' - lib\screens\dashboard\seller_inventory_screen.dart:75:33 - undefined_getter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\marketplace\product_detail_screen.dart:136:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\theme\app_colors.dart:6:61 - deprecated_member_use
+
+flutter : 24 issues 
+found. (ran in 2.1s)
+At line:1 char:1
++ flutter analyze 
+--no-pub > 
+errors_remain.txt 
+2>&1; Get-Content 
+errors ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (24 issu   
+ es found. (ran i    
+n 2.1s):String)     
+[], RemoteExcept    
+ion
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
