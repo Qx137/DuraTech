@@ -22,6 +22,7 @@ const Marketplace = () => {
   const [priceRange, setPriceRange] = useState([0, 100]);
   const [minQuantity, setMinQuantity] = useState("");
   const [sortBy, setSortBy] = useState("relevance");
+  const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -30,11 +31,16 @@ const Marketplace = () => {
       product.farmer.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
     const matchesOrganic = !organicOnly || product.organic;
-    const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
-    const matchesQuantity = !minQuantity || (product.stock_quantity || 0) >= parseInt(minQuantity);
+
+    // Only apply advanced filters if they are visible (showFilters is true)
+    const matchesPrice = !showFilters || (product.price >= priceRange[0] && product.price <= priceRange[1]);
+    const matchesQuantity = !showFilters || (!minQuantity || (product.stock_quantity || 0) >= parseInt(minQuantity));
 
     return matchesSearch && matchesCategory && matchesOrganic && matchesPrice && matchesQuantity;
   }).sort((a, b) => {
+    // Only sort if filters are visible, otherwise keep default order (relevance/database order)
+    if (!showFilters) return 0;
+
     if (sortBy === "price_asc") return a.price - b.price;
     if (sortBy === "price_desc") return b.price - a.price;
     if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
@@ -219,6 +225,8 @@ const Marketplace = () => {
           setMinQuantity={setMinQuantity}
           sortBy={sortBy}
           setSortBy={setSortBy}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
         />
 
         <AIRecommendationsBanner />

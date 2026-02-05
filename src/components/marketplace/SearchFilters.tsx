@@ -1,5 +1,4 @@
 
-import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +20,8 @@ interface SearchFiltersProps {
   setMinQuantity: (quantity: string) => void;
   sortBy: string;
   setSortBy: (sort: string) => void;
+  showFilters: boolean;
+  setShowFilters: (show: boolean) => void;
 }
 
 const SearchFilters = ({
@@ -38,9 +39,11 @@ const SearchFilters = ({
   minQuantity,
   setMinQuantity,
   sortBy,
-  setSortBy
+  setSortBy,
+  showFilters,
+  setShowFilters
 }: SearchFiltersProps) => {
-  const [showFilters, setShowFilters] = React.useState(false);
+
 
   return (
     <div className="mb-8">
