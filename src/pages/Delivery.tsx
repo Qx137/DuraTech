@@ -23,9 +23,49 @@ const Delivery = () => {
   const [pickupName, setPickupName] = useState('');
   const [destinationName, setDestinationName] = useState('');
 
+  const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
+  const [destinationSuggestions, setDestinationSuggestions] = useState<any[]>([]);
+  const [searching, setSearching] = useState<'pickup' | 'destination' | null>(null);
+
   const [distance, setDistance] = useState<number | null>(null);
   const [price, setPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Search logic for Nominatim (Debounced)
+  useEffect(() => {
+    const searchLocation = async (query: string, type: 'pickup' | 'destination') => {
+      if (query.length < 3) {
+        if (type === 'pickup') setPickupSuggestions([]);
+        else setDestinationSuggestions([]);
+        return;
+      }
+
+      setSearching(type);
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`
+        );
+        const data = await response.json();
+        if (type === 'pickup') setPickupSuggestions(data);
+        else setDestinationSuggestions(data);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+      } finally {
+        setSearching(null);
+      }
+    };
+
+    const delayDebounceFn = setTimeout(() => {
+      if (pickupName && !pickupName.includes('My Location')) {
+        searchLocation(pickupName, 'pickup');
+      }
+      if (destinationName && destinationName !== 'Destination') {
+        searchLocation(destinationName, 'destination');
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [pickupName, destinationName]);
 
   // Update distance and price when locations change
   useEffect(() => {
@@ -38,6 +78,19 @@ const Delivery = () => {
       setPrice(null);
     }
   }, [pickup, destination]);
+
+  const handleSelectSuggestion = (suggestion: any, type: 'pickup' | 'destination') => {
+    const loc = { lat: parseFloat(suggestion.lat), lng: parseFloat(suggestion.lon) };
+    if (type === 'pickup') {
+      setPickup(loc);
+      setPickupName(suggestion.display_name);
+      setPickupSuggestions([]);
+    } else {
+      setDestination(loc);
+      setDestinationName(suggestion.display_name);
+      setDestinationSuggestions([]);
+    }
+  };
 
   const handleRequest = async () => {
     if (!user) {
@@ -151,6 +204,10 @@ const Delivery = () => {
           onRequest={handleRequest}
           loading={loading}
           isValid={isValid}
+          pickupSuggestions={pickupSuggestions}
+          destinationSuggestions={destinationSuggestions}
+          onSelectSuggestion={handleSelectSuggestion}
+          searching={searching}
         />
       </div>
     </div>

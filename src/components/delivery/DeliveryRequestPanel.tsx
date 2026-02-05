@@ -15,6 +15,10 @@ interface DeliveryRequestPanelProps {
     onRequest: () => void;
     loading: boolean;
     isValid: boolean;
+    pickupSuggestions?: any[];
+    destinationSuggestions?: any[];
+    onSelectSuggestion: (suggestion: any, type: 'pickup' | 'destination') => void;
+    searching: 'pickup' | 'destination' | null;
 }
 
 export const DeliveryRequestPanel = ({
@@ -26,7 +30,11 @@ export const DeliveryRequestPanel = ({
     price,
     onRequest,
     loading,
-    isValid
+    isValid,
+    pickupSuggestions = [],
+    destinationSuggestions = [],
+    onSelectSuggestion,
+    searching
 }: DeliveryRequestPanelProps) => {
     return (
         <div className="w-full md:w-[400px] pointer-events-auto">
@@ -52,7 +60,7 @@ export const DeliveryRequestPanel = ({
                                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center border-2 border-background shadow-sm">
                                     <MapPin className="w-5 h-5 text-green-600" />
                                 </div>
-                                <div className="flex-1 space-y-1">
+                                <div className="flex-1 space-y-1 relative">
                                     <Label htmlFor="pickup" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pickup Point</Label>
                                     <Input
                                         id="pickup"
@@ -61,6 +69,25 @@ export const DeliveryRequestPanel = ({
                                         onChange={(e) => onPickupNameChange(e.target.value)}
                                         className="border-none bg-muted/30 focus-visible:ring-1 focus-visible:ring-green-500"
                                     />
+                                    {pickupSuggestions.length > 0 && (
+                                        <div className="absolute left-0 right-0 top-full mt-1 bg-background border rounded-md shadow-xl z-50 max-h-48 overflow-y-auto">
+                                            {pickupSuggestions.map((s, i) => (
+                                                <button
+                                                    key={i}
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors border-b last:border-0"
+                                                    onClick={() => onSelectSuggestion(s, 'pickup')}
+                                                >
+                                                    <p className="font-medium truncate">{s.display_name}</p>
+                                                    <p className="text-[10px] text-muted-foreground truncate">{s.type} • {s.address?.city || s.address?.state}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {searching === 'pickup' && (
+                                        <div className="absolute right-2 top-[34px]">
+                                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -70,7 +97,7 @@ export const DeliveryRequestPanel = ({
                                 <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center border-2 border-background shadow-sm">
                                     <Navigation className="w-5 h-5 text-red-600" />
                                 </div>
-                                <div className="flex-1 space-y-1">
+                                <div className="flex-1 space-y-1 relative">
                                     <Label htmlFor="destination" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Destination</Label>
                                     <Input
                                         id="destination"
@@ -79,6 +106,25 @@ export const DeliveryRequestPanel = ({
                                         onChange={(e) => onDestinationNameChange(e.target.value)}
                                         className="border-none bg-muted/30 focus-visible:ring-1 focus-visible:ring-red-500"
                                     />
+                                    {destinationSuggestions.length > 0 && (
+                                        <div className="absolute left-0 right-0 top-full mt-1 bg-background border rounded-md shadow-xl z-50 max-h-48 overflow-y-auto">
+                                            {destinationSuggestions.map((s, i) => (
+                                                <button
+                                                    key={i}
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors border-b last:border-0"
+                                                    onClick={() => onSelectSuggestion(s, 'destination')}
+                                                >
+                                                    <p className="font-medium truncate">{s.display_name}</p>
+                                                    <p className="text-[10px] text-muted-foreground truncate">{s.type} • {s.address?.city || s.address?.state}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {searching === 'destination' && (
+                                        <div className="absolute right-2 top-[34px]">
+                                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
