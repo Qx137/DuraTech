@@ -56,7 +56,7 @@ const Index = () => {
           <img
             src="/logo.png"
             alt="Durahub Logo"
-            className="h-12"
+            className="h-16"
           />
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
@@ -256,7 +256,7 @@ const Index = () => {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="mb-4">
-                <img src="/logo.png" alt="Durahub Logo" className="h-10" />
+                <img src="/logo.png" alt="Durahub Logo" className="h-14" />
               </div>
               <p className="text-gray-400">
                 Connecting farmers and consumers for a sustainable agricultural future.
