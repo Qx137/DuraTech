@@ -407,7 +407,7 @@ const Checkout = () => {
             <img
               src="/logo.png"
               alt="Durahub Logo"
-              className="h-12"
+              className="h-16"
             />
           </Link>
           <div className="flex items-center space-x-4">

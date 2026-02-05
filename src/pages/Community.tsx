@@ -228,7 +228,7 @@ const Community = () => {
             <img
               src="/logo.png"
               alt="Durahub Logo"
-              className="h-12"
+              className="h-16"
             />
           </Link>
           <nav className="hidden md:flex items-center space-x-6">

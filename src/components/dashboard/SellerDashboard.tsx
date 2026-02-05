@@ -794,7 +794,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             <img
               src="/logo.png"
               alt="Durahub Logo"
-              className="h-12"
+              className="h-16"
             />
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
@@ -1177,8 +1177,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             <button
               onClick={() => setActiveSection('overview')}
               className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'overview'
-                  ? 'border-green-600 text-green-600'
-                  : 'border-transparent text-gray-600 hover:text-green-600'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-600 hover:text-green-600'
                 }`}
             >
               Overview
@@ -1186,8 +1186,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             <button
               onClick={() => setActiveSection('analytics')}
               className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'analytics'
-                  ? 'border-green-600 text-green-600'
-                  : 'border-transparent text-gray-600 hover:text-green-600'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-600 hover:text-green-600'
                 }`}
             >
               Analytics
@@ -1195,8 +1195,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             <button
               onClick={() => setActiveSection('customers')}
               className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'customers'
-                  ? 'border-green-600 text-green-600'
-                  : 'border-transparent text-gray-600 hover:text-green-600'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-600 hover:text-green-600'
                 }`}
             >
               Customers
@@ -1204,8 +1204,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             <button
               onClick={() => setActiveSection('inventory')}
               className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'inventory'
-                  ? 'border-green-600 text-green-600'
-                  : 'border-transparent text-gray-600 hover:text-green-600'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-600 hover:text-green-600'
                 }`}
             >
               Inventory
@@ -1213,8 +1213,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             <button
               onClick={() => setActiveSection('orders')}
               className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'orders'
-                  ? 'border-green-600 text-green-600'
-                  : 'border-transparent text-gray-600 hover:text-green-600'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-600 hover:text-green-600'
                 }`}
             >
               Orders
