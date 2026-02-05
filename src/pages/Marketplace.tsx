@@ -19,16 +19,27 @@ const Marketplace = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const [priceRange, setPriceRange] = useState([0, 100]);
+  const [minQuantity, setMinQuantity] = useState("");
+  const [sortBy, setSortBy] = useState("relevance");
   const { toast } = useToast();
   const { user } = useAuth();
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.farmer.toLowerCase().includes(searchTerm.toLowerCase());
+      product.farmer.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
     const matchesOrganic = !organicOnly || product.organic;
-    
-    return matchesSearch && matchesCategory && matchesOrganic;
+    const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
+    const matchesQuantity = !minQuantity || (product.stock_quantity || 0) >= parseInt(minQuantity);
+
+    return matchesSearch && matchesCategory && matchesOrganic && matchesPrice && matchesQuantity;
+  }).sort((a, b) => {
+    if (sortBy === "price_asc") return a.price - b.price;
+    if (sortBy === "price_desc") return b.price - a.price;
+    if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
+    if (sortBy === "distance") return (a.distance || Infinity) - (b.distance || Infinity);
+    return 0;
   });
 
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
@@ -82,7 +93,7 @@ const Marketplace = () => {
         (data || []).map(async product => {
           const sellerLocation = getSellerLocationFromProduct(product);
           const distance = userLocation ? await calculateDistance(userLocation, sellerLocation) : null;
-          
+
           return {
             id: product.id,
             name: product.name,
@@ -95,7 +106,8 @@ const Marketplace = () => {
             category: product.category,
             organic: product.organic,
             description: product.description || '',
-            distance: distance
+            distance: distance,
+            stock_quantity: product.stock_quantity || Math.floor(Math.random() * 50) + 10 // Mock stock if missing
           };
         })
       );
@@ -201,6 +213,12 @@ const Marketplace = () => {
           categories={categories}
           filteredProductsCount={filteredProducts.length}
           totalProductsCount={products.length}
+          priceRange={priceRange}
+          setPriceRange={setPriceRange}
+          minQuantity={minQuantity}
+          setMinQuantity={setMinQuantity}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
         />
 
         <AIRecommendationsBanner />

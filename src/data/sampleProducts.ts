@@ -12,6 +12,7 @@ export interface Product {
   organic: boolean;
   description: string | null;
   distance?: number;
+  stock_quantity: number;
 }
 
 export const products: Product[] = [
@@ -26,10 +27,11 @@ export const products: Product[] = [
     image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400&h=300&fit=crop",
     category: "grains",
     organic: true,
-    description: "Premium white maize grown using traditional methods"
+    description: "Premium white maize grown using traditional methods",
+    stock_quantity: 500
   },
   {
-    id: "2", 
+    id: "2",
     name: "Sweet Potatoes",
     price: 1.80,
     unit: "kg",
@@ -39,20 +41,22 @@ export const products: Product[] = [
     image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&h=300&fit=crop",
     category: "vegetables",
     organic: false,
-    description: "Fresh orange-fleshed sweet potatoes rich in vitamins"
+    description: "Fresh orange-fleshed sweet potatoes rich in vitamins",
+    stock_quantity: 120
   },
   {
     id: "3",
     name: "Groundnuts",
     price: 4.20,
-    unit: "kg", 
+    unit: "kg",
     farmer: "Joseph Sibanda",
     location: "Matabeleland South",
     rating: 4.9,
     image: "https://images.unsplash.com/photo-1582082932251-5b56b6b8b1a2?w=400&h=300&fit=crop",
     category: "legumes",
     organic: true,
-    description: "High-quality Valencia groundnuts perfect for cooking"
+    description: "High-quality Valencia groundnuts perfect for cooking",
+    stock_quantity: 80
   },
   {
     id: "4",
@@ -65,7 +69,8 @@ export const products: Product[] = [
     image: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=400&h=300&fit=crop",
     category: "vegetables",
     organic: false,
-    description: "Ripe red tomatoes perfect for cooking and salads"
+    description: "Ripe red tomatoes perfect for cooking and salads",
+    stock_quantity: 200
   },
   {
     id: "5",
@@ -73,12 +78,13 @@ export const products: Product[] = [
     price: 5.80,
     unit: "kg",
     farmer: "Patrick Moyo",
-    location: "Mashonaland Central", 
+    location: "Mashonaland Central",
     rating: 4.7,
     image: "https://images.unsplash.com/photo-1583757807696-bc8d3c7d81de?w=400&h=300&fit=crop",
     category: "legumes",
     organic: true,
-    description: "Premium white sugar beans, high in protein"
+    description: "Premium white sugar beans, high in protein",
+    stock_quantity: 150
   },
   {
     id: "6",
@@ -91,7 +97,8 @@ export const products: Product[] = [
     image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=400&h=300&fit=crop",
     category: "vegetables",
     organic: false,
-    description: "Large butternut squash perfect for soups and stews"
+    description: "Large butternut squash perfect for soups and stews",
+    stock_quantity: 60
   },
   {
     id: "7",
@@ -101,10 +108,11 @@ export const products: Product[] = [
     farmer: "David Nhamo",
     location: "Matabeleland North",
     rating: 4.3,
-    image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop", 
+    image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop",
     category: "grains",
     organic: true,
-    description: "Drought-resistant sorghum grain, great for porridge"
+    description: "Drought-resistant sorghum grain, great for porridge",
+    stock_quantity: 300
   },
   {
     id: "8",
@@ -115,9 +123,10 @@ export const products: Product[] = [
     location: "Harare",
     rating: 4.6,
     image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&h=300&fit=crop",
-    category: "vegetables", 
+    category: "vegetables",
     organic: true,
-    description: "Fresh green spinach leaves, rich in iron and vitamins"
+    description: "Fresh green spinach leaves, rich in iron and vitamins",
+    stock_quantity: 40
   },
   {
     id: "9",
@@ -130,7 +139,8 @@ export const products: Product[] = [
     image: "https://images.unsplash.com/photo-1574490599867-84a0df8c3b23?w=400&h=300&fit=crop",
     category: "grains",
     organic: false,
-    description: "High-quality yellow maize suitable for animal feed and human consumption"
+    description: "High-quality yellow maize suitable for animal feed and human consumption",
+    stock_quantity: 450
   },
   {
     id: "10",
@@ -143,7 +153,8 @@ export const products: Product[] = [
     image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop",
     category: "roots",
     organic: true,
-    description: "Fresh cassava roots, perfect for traditional meals"
+    description: "Fresh cassava roots, perfect for traditional meals",
+    stock_quantity: 75
   },
   {
     id: "11",
@@ -156,7 +167,8 @@ export const products: Product[] = [
     image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&h=300&fit=crop",
     category: "vegetables",
     organic: false,
-    description: "Fresh red onions with strong flavor"
+    description: "Fresh red onions with strong flavor",
+    stock_quantity: 180
   },
   {
     id: "12",
@@ -169,6 +181,7 @@ export const products: Product[] = [
     image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400&h=300&fit=crop",
     category: "vegetables",
     organic: true,
-    description: "Fresh sweet corn on the cob, perfect for roasting"
+    description: "Fresh sweet corn on the cob, perfect for roasting",
+    stock_quantity: 100
   }
 ];
