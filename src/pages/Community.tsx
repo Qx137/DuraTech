@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Heart, Share2, Search, Plus, User, LogOut, TrendingUp, Users, Award, Clock, MessageSquare } from "lucide-react";
+import { MessageCircle, Heart, Share2, Search, Plus, User, LogOut, TrendingUp, Users, Award, Clock, MessageSquare, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -37,11 +37,19 @@ interface ForumTopic {
   profiles?: { name: string };
 }
 
+interface Member {
+  id: string;
+  name: string;
+  user_type: string;
+  business_name?: string;
+}
+
 const Community = () => {
   const [newPost, setNewPost] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [posts, setPosts] = useState<Post[]>([]);
   const [topics, setTopics] = useState<ForumTopic[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
@@ -50,6 +58,7 @@ const Community = () => {
     checkUser();
     fetchPosts();
     fetchTopics();
+    fetchMembers();
     subscribeToChanges();
   }, []);
 
@@ -112,6 +121,19 @@ const Community = () => {
       }));
       setTopics(topicsWithProfiles);
     }
+  };
+
+  const fetchMembers = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, name, user_type, business_name")
+      .limit(30);
+
+    if (error) {
+      console.error("Error fetching members:", error);
+      return;
+    }
+    setMembers(data || []);
   };
 
   const subscribeToChanges = () => {
@@ -451,17 +473,64 @@ const Community = () => {
           </TabsContent>
 
           <TabsContent value="network" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Featured Members</CardTitle>
-                <CardDescription>Connect with active community members</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-8 text-muted-foreground">
-                  Network feature coming soon! You'll be able to connect with other farmers and buyers.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input placeholder="Search members..." className="pl-10" />
+              </div>
+              <div className="flex gap-2">
+                <select className="px-3 py-2 border rounded-md text-sm">
+                  <option value="all">All Roles</option>
+                  <option value="farmer">Farmers</option>
+                  <option value="buyer">Buyers</option>
+                  <option value="driver">Drivers</option>
+                </select>
+              </div>
+            </div>
+
+            {members.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No members found yet. Be the first to join!</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {members.map((member) => (
+                  <Card key={member.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
+                      <Avatar className="h-20 w-20">
+                        <AvatarFallback className="text-xl bg-green-100 text-green-700">
+                          {member.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1 w-full">
+                        <h3 className="font-semibold text-lg truncate" title={member.name}>
+                          {member.name}
+                        </h3>
+                        <Badge variant="secondary" className="capitalize">
+                          {member.user_type}
+                        </Badge>
+                        {member.business_name && (
+                          <p className="text-xs text-muted-foreground truncate w-full" title={member.business_name}>
+                            {member.business_name}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        onClick={() => handleConnect(member.id)}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Connect
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
