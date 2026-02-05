@@ -42,6 +42,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
   const [myBids, setMyBids] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDeliveryForBid, setSelectedDeliveryForBid] = useState<string | null>(null);
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const { location, updateLocation } = useDriverLocation(driver?.id || null);
 
   useEffect(() => {
@@ -57,8 +58,24 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
         .eq('user_id', userId)
         .single();
 
-      if (driverError) throw driverError;
-      setDriver(driverData);
+      if (driverError && driverError.code !== 'PGRST116') throw driverError;
+
+      if (driverData) {
+        setDriver(driverData);
+      } else {
+        // If no driver profile, check for pending application
+        const { data: applicationData } = await supabase
+          .from('driver_applications')
+          .select('status')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (applicationData) {
+          setApplicationStatus(applicationData.status);
+        }
+        setLoading(false);
+        return;
+      }
 
       // Fetch assigned deliveries
       const { data: assignedDeliveries, error: deliveriesError } = await supabase
@@ -133,7 +150,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
     if (!driver) return;
 
     const newStatus = driver.status === 'available' ? 'offline' : 'available';
-    
+
     try {
       const { error } = await supabase
         .from('drivers')
@@ -143,7 +160,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
       if (error) throw error;
       setDriver({ ...driver, status: newStatus });
       toast.success(`Status changed to ${newStatus}`);
-      
+
       if (newStatus === 'available') {
         fetchDriverData();
       }
@@ -159,14 +176,14 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
     try {
       const { error } = await supabase
         .from('deliveries')
-        .update({ 
+        .update({
           driver_id: driver.id,
           status: 'assigned'
         })
         .eq('id', deliveryId);
 
       if (error) throw error;
-      
+
       toast.success('Delivery accepted!');
       fetchDriverData();
     } catch (error) {
@@ -178,7 +195,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
   const updateDeliveryStatus = async (deliveryId: string, newStatus: string) => {
     try {
       const updates: any = { status: newStatus };
-      
+
       if (newStatus === 'delivered') {
         updates.actual_delivery_time = new Date().toISOString();
       }
@@ -189,7 +206,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
         .eq('id', deliveryId);
 
       if (error) throw error;
-      
+
       toast.success(`Delivery status updated to ${newStatus}`);
       fetchDriverData();
     } catch (error) {
@@ -233,13 +250,69 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
   }
 
   if (!driver) {
+    if (loading) return null; // Should be handled by main loading state, but safety check
+
+    if (applicationStatus === 'pending') {
+      return (
+        <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <div className="mx-auto bg-yellow-100 p-3 rounded-full mb-4">
+                <Clock className="h-8 w-8 text-yellow-600" />
+              </div>
+              <CardTitle className="text-center">Application Under Review</CardTitle>
+              <CardDescription className="text-center">
+                Your driver application is currently being reviewed by our team. This process usually takes 24-48 hours.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center text-sm text-muted-foreground">
+              We'll notify you via email once your application status changes.
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    if (applicationStatus === 'rejected') {
+      return (
+        <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <div className="mx-auto bg-red-100 p-3 rounded-full mb-4">
+                <Gavel className="h-8 w-8 text-red-600" />
+              </div>
+              <CardTitle className="text-center">Application Update</CardTitle>
+              <CardDescription className="text-center">
+                Unfortunately, your driver application could not be approved at this time.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <Button onClick={() => window.location.href = '/driver-registration'}>
+                Submit New Application
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
     return (
-      <div className="min-h-screen bg-background p-6">
-        <Card>
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle>Driver Registration Required</CardTitle>
-            <CardDescription>You need to register as a driver to access this dashboard</CardDescription>
+            <div className="mx-auto bg-blue-100 p-3 rounded-full mb-4">
+              <CheckCircle className="h-8 w-8 text-blue-600" />
+            </div>
+            <CardTitle className="text-center">Complete Your Registration</CardTitle>
+            <CardDescription className="text-center">
+              To start accepting deliveries, we need some additional details about you and your vehicle.
+            </CardDescription>
           </CardHeader>
+          <CardContent className="flex justify-center">
+            <Button onClick={() => window.location.href = '/driver-registration'} className="w-full">
+              Complete Driver Profile
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );
@@ -446,11 +519,10 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
                     ) : (
                       <div className="space-y-4">
                         {biddableDeliveries.map((delivery) => (
-                          <Card 
+                          <Card
                             key={delivery.id}
-                            className={`cursor-pointer transition-all ${
-                              selectedDeliveryForBid === delivery.id ? 'ring-2 ring-primary' : ''
-                            }`}
+                            className={`cursor-pointer transition-all ${selectedDeliveryForBid === delivery.id ? 'ring-2 ring-primary' : ''
+                              }`}
                             onClick={() => setSelectedDeliveryForBid(delivery.id)}
                           >
                             <CardContent className="pt-6">
