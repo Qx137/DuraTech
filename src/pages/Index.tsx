@@ -53,9 +53,9 @@ const Index = () => {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <img 
-            src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-            alt="Durahub Logo" 
+          <img
+            src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png"
+            alt="Durahub Logo"
             className="h-12"
           />
           <nav className="hidden md:flex items-center space-x-6">
@@ -122,7 +122,7 @@ const Index = () => {
               Connecting farmers and buyers with innovative technology and sustainable practices
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -131,7 +131,7 @@ const Index = () => {
               <h3 className="text-xl font-semibold mb-2">Fresh Marketplace</h3>
               <p className="text-gray-600">Direct access to farm-fresh produce with transparent pricing</p>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Cpu className="h-8 w-8 text-blue-600" />
@@ -139,7 +139,7 @@ const Index = () => {
               <h3 className="text-xl font-semibold mb-2">AI-Powered Tools</h3>
               <p className="text-gray-600">Smart recommendations and market insights powered by AI</p>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="h-8 w-8 text-purple-600" />
@@ -147,7 +147,7 @@ const Index = () => {
               <h3 className="text-xl font-semibold mb-2">Community Hub</h3>
               <p className="text-gray-600">Connect with farmers, buyers, and agriculture enthusiasts</p>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Shield className="h-8 w-8 text-emerald-600" />
@@ -270,7 +270,7 @@ const Index = () => {
                 <li><Link to="/community" className="hover:text-green-500 transition-colors">Community</Link></li>
                 <li><Link to="/ai-tools" className="hover:text-green-500 transition-colors">AI Tools</Link></li>
                 <li>
-                  <button 
+                  <button
                     onClick={() => document.querySelector('#about-section')?.scrollIntoView({ behavior: 'smooth' })}
                     className="hover:text-green-500 transition-colors text-left"
                   >
@@ -278,7 +278,7 @@ const Index = () => {
                   </button>
                 </li>
                 <li>
-                  <button 
+                  <button
                     onClick={() => document.querySelector('#newsletter-section')?.scrollIntoView({ behavior: 'smooth' })}
                     className="hover:text-green-500 transition-colors text-left"
                   >
@@ -293,7 +293,7 @@ const Index = () => {
                 <li><Link to="/register?type=seller" className="hover:text-green-500 transition-colors">Sell Produce</Link></li>
                 <li><Link to="/ai-tools" className="hover:text-green-500 transition-colors">Farmer Resources</Link></li>
                 <li>
-                  <button 
+                  <button
                     onClick={() => document.querySelector('#newsletter-section')?.scrollIntoView({ behavior: 'smooth' })}
                     className="hover:text-green-500 transition-colors text-left"
                   >
@@ -306,14 +306,14 @@ const Index = () => {
               <h4 className="font-bold mb-4">Support</h4>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <button 
+                  <button
                     onClick={() => document.querySelector('#newsletter-section')?.scrollIntoView({ behavior: 'smooth' })}
                     className="hover:text-green-500 transition-colors text-left"
                   >
                     Help Center
                   </button>
                 </li>
-                <li><Link to="/delivery-tracking" className="hover:text-green-500 transition-colors">Shipping Info</Link></li>
+                <li><Link to="/delivery" className="hover:text-green-500 transition-colors">Request Delivery</Link></li>
                 <li><Link to="/marketplace" className="hover:text-green-500 transition-colors">Returns</Link></li>
               </ul>
             </div>
