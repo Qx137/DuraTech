@@ -103,10 +103,10 @@ const Index = () => {
                 Sell Your Produce
               </Button>
             </Link>
-            <Link to="/driver-registration">
-              <Button size="lg" variant="outline" className="text-lg px-8 py-3 border-emerald-600 text-emerald-600 hover:bg-emerald-50">
+            <Link to="/delivery">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-3 border-orange-500 text-orange-600 hover:bg-orange-50">
                 <Truck className="mr-2 h-5 w-5" />
-                Become a Driver
+                DuraHub Delivery
               </Button>
             </Link>
           </div>
