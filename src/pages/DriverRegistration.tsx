@@ -255,7 +255,7 @@ const DriverRegistration = () => {
             <img
               src="/logo.png"
               alt="Durahub Logo"
-              className="h-12"
+              className="h-16"
             />
           </Link>
           <nav className="flex items-center space-x-6">

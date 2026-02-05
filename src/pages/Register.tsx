@@ -117,7 +117,7 @@ const Register = () => {
             <img
               src="/logo.png"
               alt="Durahub Logo"
-              className="h-12"
+              className="h-16"
             />
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Create Your Account</h1>
