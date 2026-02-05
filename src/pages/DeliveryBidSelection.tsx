@@ -140,7 +140,7 @@ const DeliveryBidSelection = () => {
                   </p>
                 </div>
               </div>
-              
+
               {delivery.distance_km && (
                 <div className="flex items-start gap-3">
                   <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -181,7 +181,7 @@ const DeliveryBidSelection = () => {
               </div>
               <div className="mt-4 flex gap-3">
                 <Button asChild>
-                  <Link to={`/delivery/${delivery.id}`}>Track Delivery</Link>
+                  <Link to={`/delivery-tracking?orderId=${delivery.order.id}`}>Track Delivery</Link>
                 </Button>
                 <Button variant="outline" asChild>
                   <Link to="/dashboard">Go to Dashboard</Link>

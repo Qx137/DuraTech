@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { MapPin, Package, Clock, Phone, User, Star, ArrowLeft, Navigation } from 'lucide-react';
+import { MapPin, Package, Clock, Phone, User, Star, ArrowLeft, Navigation, Gavel } from 'lucide-react';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import TrackingMap from '@/components/delivery/TrackingMap';
+import { formatAddress, calculateETA } from '@/utils/delivery';
 
 interface Driver {
   id: string;
@@ -24,12 +26,14 @@ interface Driver {
 const DeliveryTracking = () => {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const { user } = useAuth();
   const { orderStatus, loading } = useOrderStatus(orderId);
-  
+
   const [deliveryStatus, setDeliveryStatus] = useState<'pending' | 'scanning' | 'assigned' | 'pickup' | 'delivery' | 'delivered'>('scanning');
   const [driver, setDriver] = useState<Driver | null>(null);
   const [driverId, setDriverId] = useState<string | null>(null);
-  const { location: driverLocation } = useDriverLocation(driverId);
+  const [deliveryId, setDeliveryId] = useState<string | null>(null);
+  const { location: driverLocation, driverName: fetchedDriverName } = useDriverLocation(driverId);
 
   useEffect(() => {
     if (!orderId) return;
@@ -48,29 +52,35 @@ const DeliveryTracking = () => {
               license_number,
               phone,
               rating,
-              current_location
+              current_location,
+              profiles:user_id (name)
             )
           `)
           .eq('order_id', orderId)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 
-        if (delivery && delivery.drivers) {
-          const driverData = delivery.drivers as any;
-          setDriverId(driverData.id);
-          setDriver({
-            id: driverData.id,
-            name: 'Driver',
-            rating: driverData.rating || 5,
-            vehicle: `${driverData.vehicle_type} - ${driverData.license_number}`,
-            eta: delivery.estimated_delivery_time ? 
-              new Date(delivery.estimated_delivery_time).toLocaleTimeString() : 'Calculating...',
-            phone: driverData.phone,
-            distance: delivery.distance_km ? `${delivery.distance_km.toFixed(1)} km` : 'Calculating...',
-            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Driver'
-          });
+        if (delivery) {
+          setDeliveryId(delivery.id);
           setDeliveryStatus(delivery.status as any);
+
+          if (delivery.drivers) {
+            const driverData = delivery.drivers as any;
+            setDriverId(driverData.id);
+            setDriver({
+              id: driverData.id,
+              name: driverData.profiles?.name || fetchedDriverName || 'Driver',
+              rating: driverData.rating || 5,
+              vehicle: `${driverData.vehicle_type} - ${driverData.license_number}`,
+              eta: delivery.estimated_delivery_time ?
+                new Date(delivery.estimated_delivery_time).toLocaleTimeString() :
+                calculateETA(delivery.distance_km),
+              phone: driverData.phone,
+              distance: delivery.distance_km ? `${delivery.distance_km.toFixed(1)} km` : 'Calculating...',
+              avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${driverData.id}`
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching delivery data:', error);
@@ -81,7 +91,7 @@ const DeliveryTracking = () => {
 
     // Subscribe to delivery updates
     const channel = supabase
-      .channel(`delivery-${orderId}`)
+      .channel(`delivery-order-${orderId}`)
       .on(
         'postgres_changes',
         {
@@ -92,6 +102,9 @@ const DeliveryTracking = () => {
         },
         (payload) => {
           setDeliveryStatus(payload.new.status as any);
+          if (payload.new.driver_id && !driverId) {
+            fetchDeliveryData(); // Re-fetch to get driver details
+          }
         }
       )
       .subscribe();
@@ -99,7 +112,7 @@ const DeliveryTracking = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orderId]);
+  }, [orderId, driverId, fetchedDriverName]);
 
   const getStatusColor = (currentStatus: string) => {
     switch (currentStatus) {
@@ -150,6 +163,10 @@ const DeliveryTracking = () => {
     );
   }
 
+  // Check if current user is the buyer for this order
+  const isBuyer = user?.id === orderStatus?.user_id;
+  const showBiddingLink = isBuyer && (deliveryStatus === 'pending' || deliveryStatus === 'scanning') && deliveryId;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -190,7 +207,7 @@ const DeliveryTracking = () => {
                     {deliveryStatus}
                   </Badge>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Progress value={getProgressPercentage()} />
                   <div className="grid grid-cols-5 gap-1 text-xs text-center">
@@ -211,6 +228,21 @@ const DeliveryTracking = () => {
                     </div>
                   </div>
                 </div>
+
+                {showBiddingLink && (
+                  <div className="pt-4 border-t mt-4">
+                    <div className="bg-primary/5 rounded-lg p-4 flex items-start gap-3">
+                      <Gavel className="h-5 w-5 text-primary mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Bidding is active</p>
+                        <p className="text-xs text-muted-foreground">Drivers are submitting bids for your delivery.</p>
+                      </div>
+                      <Link to={`/delivery-bids/${deliveryId}`}>
+                        <Button size="sm">View Bids</Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -233,6 +265,11 @@ const DeliveryTracking = () => {
                       </div>
                     </div>
                     <p className="text-muted-foreground">Scanning for available drivers in your area...</p>
+                    {isBuyer && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        You can select from available bids once they arrive.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -249,7 +286,7 @@ const DeliveryTracking = () => {
                     <img
                       src={driver.avatar}
                       alt={driver.name}
-                      className="w-16 h-16 rounded-full object-cover"
+                      className="w-16 h-16 rounded-full object-cover bg-muted"
                     />
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg">{driver.name}</h3>
@@ -275,9 +312,11 @@ const DeliveryTracking = () => {
                         <span>ETA: {driver.eta}</span>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
-                      <Phone className="h-4 w-4 mr-1" />
-                      Call
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={`tel:${driver.phone}`}>
+                        <Phone className="h-4 w-4 mr-1" />
+                        Call
+                      </a>
                     </Button>
                   </div>
                 </CardContent>
@@ -297,27 +336,38 @@ const DeliveryTracking = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Status</span>
+                      <span className="text-sm text-muted-foreground">Status</span>
                       <Badge variant="outline">{orderStatus.status}</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Payment Status</span>
+                      <span className="text-sm text-muted-foreground">Payment Status</span>
                       <Badge variant={orderStatus.payment_status === 'completed' ? 'default' : 'secondary'}>
                         {orderStatus.payment_status}
                       </Badge>
                     </div>
                   </div>
-                  <div className="border-t pt-4">
+                  <div className="border-t pt-4 space-y-4">
                     <div className="flex items-start gap-2 text-sm">
                       <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
                       <div className="flex-1">
                         <p className="font-medium mb-1">Delivery Address</p>
                         <p className="text-muted-foreground">
-                          {/* Address would come from order data */}
-                          Delivery location from order
+                          {formatAddress(orderStatus.delivery_address)}
                         </p>
                       </div>
                     </div>
+
+                    {orderStatus.deliveries?.[0]?.pickup_address && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <Package className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div className="flex-1">
+                          <p className="font-medium mb-1">Pickup Address</p>
+                          <p className="text-muted-foreground">
+                            {formatAddress(orderStatus.deliveries[0].pickup_address)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -329,7 +379,7 @@ const DeliveryTracking = () => {
                 <CardTitle>Live Tracking</CardTitle>
                 <CardDescription>Real-time driver location</CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-hidden">
                 <div className="h-96">
                   {orderStatus?.delivery_address ? (
                     <TrackingMap
