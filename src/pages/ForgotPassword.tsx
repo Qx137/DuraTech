@@ -15,13 +15,13 @@ const ForgotPassword = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Simulate password reset
     toast({
       title: "Reset Link Sent!",
       description: "Check your email for password reset instructions.",
     });
-    
+
     setIsSubmitted(true);
   };
 
@@ -30,9 +30,9 @@ const ForgotPassword = () => {
       <div className="container mx-auto px-4 max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center mb-6 text-green-600 hover:text-green-700">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/logo.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>

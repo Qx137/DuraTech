@@ -44,7 +44,7 @@ const PaymentSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const orderId = location.state?.orderId;
-  
+
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [delivery, setDelivery] = useState<any>(null);
@@ -145,15 +145,15 @@ const PaymentSuccess = () => {
   const handleDriverSelection = (driver: Driver) => {
     setSelectedDriver(driver);
     toast.success(`${driver.profiles?.name || 'Driver'} selected for your delivery!`);
-    
+
     // Navigate to delivery tracking after selection
     setTimeout(() => {
-      navigate('/delivery-tracking', { 
-        state: { 
+      navigate('/delivery-tracking', {
+        state: {
           orderId,
           orderTotal: order?.total || 0,
           selectedDriver: driver
-        } 
+        }
       });
     }, 1000);
   };
@@ -164,9 +164,9 @@ const PaymentSuccess = () => {
       <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/logo.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>
@@ -179,7 +179,7 @@ const PaymentSuccess = () => {
             <CheckCircle className="h-24 w-24 text-green-600 mx-auto mb-4" />
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Payment Successful!</h1>
             <p className="text-gray-600">
-              {delivery?.bidding_enabled 
+              {delivery?.bidding_enabled
                 ? "Thank you for your order. Drivers and companies will submit bids for your delivery."
                 : "Thank you for your order. We're now finding the best driver for your delivery."
               }
@@ -259,11 +259,11 @@ const PaymentSuccess = () => {
                 <h3 className="text-xl font-semibold text-green-800 mb-2">Select Your Driver</h3>
                 <p className="text-green-700">Choose from available drivers in your area</p>
               </div>
-              
+
               <div className="grid gap-4">
                 {availableDrivers.map((driver) => (
-                  <Card 
-                    key={driver.id} 
+                  <Card
+                    key={driver.id}
                     className="hover:shadow-md transition-shadow cursor-pointer border-2 hover:border-green-300"
                     onClick={() => handleDriverSelection(driver)}
                   >
@@ -338,7 +338,7 @@ const PaymentSuccess = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6 text-center">
                 <Truck className="h-12 w-12 text-blue-600 mx-auto mb-4" />

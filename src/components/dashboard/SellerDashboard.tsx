@@ -87,17 +87,17 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   const uploadFile = async (file: File): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    
+
     const { data, error } = await supabase.storage
       .from('product-media')
       .upload(fileName, file);
 
     if (error) throw error;
-    
+
     const { data: { publicUrl } } = supabase.storage
       .from('product-media')
       .getPublicUrl(fileName);
-    
+
     return publicUrl;
   };
 
@@ -114,7 +114,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         });
         return;
       }
-      
+
       // Check file size (max 50MB)
       if (file.size > 50 * 1024 * 1024) {
         toast({
@@ -124,7 +124,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         });
         return;
       }
-      
+
       setSelectedFile(file);
     }
   };
@@ -134,7 +134,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
       setUploading(true);
       try {
         let mediaUrl = newProduct.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop';
-        
+
         // Upload file if selected
         if (selectedFile) {
           mediaUrl = await uploadFile(selectedFile);
@@ -143,20 +143,20 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         const { error } = await supabase
           .from('products')
           .insert([
-             {
-               seller_id: user.id,
-               name: newProduct.name,
-               price: parseFloat(newProduct.price),
-               unit: newProduct.unit,
-               category: newProduct.category,
-               stock_quantity: parseInt(newProduct.stock),
-               description: newProduct.description,
-               location: newProduct.location,
-               organic: newProduct.organic,
-               image: mediaUrl,
-               pickup_latitude: newProduct.pickup_latitude,
-               pickup_longitude: newProduct.pickup_longitude
-             }
+            {
+              seller_id: user.id,
+              name: newProduct.name,
+              price: parseFloat(newProduct.price),
+              unit: newProduct.unit,
+              category: newProduct.category,
+              stock_quantity: parseInt(newProduct.stock),
+              description: newProduct.description,
+              location: newProduct.location,
+              organic: newProduct.organic,
+              image: mediaUrl,
+              pickup_latitude: newProduct.pickup_latitude,
+              pickup_longitude: newProduct.pickup_longitude
+            }
           ]);
 
         if (error) throw error;
@@ -165,15 +165,15 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           title: "Product Added Successfully!",
           description: `${newProduct.name} has been added to your inventory.`,
         });
-        setNewProduct({ 
-          name: '', 
-          price: '', 
-          unit: '', 
-          category: '', 
-          stock: '', 
-          description: '', 
-          location: '', 
-          organic: false, 
+        setNewProduct({
+          name: '',
+          price: '',
+          unit: '',
+          category: '',
+          stock: '',
+          description: '',
+          location: '',
+          organic: false,
           image: '',
           pickup_latitude: null,
           pickup_longitude: null
@@ -224,7 +224,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
       setUploading(true);
       try {
         let mediaUrl = newProduct.image;
-        
+
         // Upload new file if selected
         if (selectedFile) {
           mediaUrl = await uploadFile(selectedFile);
@@ -254,16 +254,16 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           title: "Product Updated Successfully!",
           description: `${newProduct.name} has been updated.`,
         });
-        
-        setNewProduct({ 
-          name: '', 
-          price: '', 
-          unit: '', 
-          category: '', 
-          stock: '', 
-          description: '', 
-          location: '', 
-          organic: false, 
+
+        setNewProduct({
+          name: '',
+          price: '',
+          unit: '',
+          category: '',
+          stock: '',
+          description: '',
+          location: '',
+          organic: false,
           image: '',
           pickup_latitude: null,
           pickup_longitude: null
@@ -306,7 +306,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           title: "Product Deleted",
           description: `${product.name} has been removed from your inventory.`,
         });
-        
+
         fetchProducts(); // Refresh the products list
       } catch (error) {
         console.error('Error deleting product:', error);
@@ -388,9 +388,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         buyer: item.orders.profiles.name,
         quantity: item.quantity,
         total: item.price * item.quantity,
-        status: item.orders.status === 'pending' ? 'Processing' : 
-                item.orders.status === 'completed' ? 'Delivered' : 
-                item.orders.status === 'shipped' ? 'Shipped' : 'Processing',
+        status: item.orders.status === 'pending' ? 'Processing' :
+          item.orders.status === 'completed' ? 'Delivered' :
+            item.orders.status === 'shipped' ? 'Shipped' : 'Processing',
         order_id: item.orders.id,
         created_at: item.orders.created_at
       })) || [];
@@ -432,7 +432,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
       if (monthlyError) throw monthlyError;
 
-      const monthlyRevenue = monthlyOrdersData?.reduce((sum, item) => 
+      const monthlyRevenue = monthlyOrdersData?.reduce((sum, item) =>
         sum + (Number(item.price) * item.quantity), 0) || 0;
 
       // Count products listed by this seller
@@ -547,7 +547,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   const renderAnalytics = () => {
     const avgOrderValue = stats.ordersThisMonth > 0 ? (stats.monthlyRevenue / stats.ordersThisMonth) : 0;
-    
+
     return (
       <div className="space-y-6">
         {statsLoading ? (
@@ -603,7 +603,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 </CardContent>
               </Card>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -643,9 +643,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                         <span>${stats.monthlyRevenue.toFixed(2)}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-600 h-2 rounded-full" 
-                          style={{width: `${Math.min((stats.monthlyRevenue / 1000) * 100, 100)}%`}}
+                        <div
+                          className="bg-green-600 h-2 rounded-full"
+                          style={{ width: `${Math.min((stats.monthlyRevenue / 1000) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>
@@ -655,9 +655,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                         <span>{stats.ordersThisMonth}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full" 
-                          style={{width: `${Math.min((stats.ordersThisMonth / 50) * 100, 100)}%`}}
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: `${Math.min((stats.ordersThisMonth / 50) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>
@@ -791,9 +791,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/logo.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>
@@ -842,7 +842,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Product Name*</label>
-                  <Input 
+                  <Input
                     value={newProduct.name}
                     onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                     placeholder="e.g. Organic Tomatoes"
@@ -850,7 +850,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Price ($)*</label>
-                  <Input 
+                  <Input
                     type="number"
                     step="0.01"
                     value={newProduct.price}
@@ -862,7 +862,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Unit*</label>
-                  <Input 
+                  <Input
                     value={newProduct.unit}
                     onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
                     placeholder="e.g. lb, kg, dozen"
@@ -888,7 +888,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Stock Quantity*</label>
-                  <Input 
+                  <Input
                     type="number"
                     value={newProduct.stock}
                     onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
@@ -898,19 +898,19 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 <div>
                   <label className="block text-sm font-medium mb-2">Pickup Location*</label>
                   <div className="space-y-2">
-                    <LocationMap 
+                    <LocationMap
                       onLocationSelect={handleLocationSelect}
                       selectedLocation={
-                        newProduct.pickup_latitude && newProduct.pickup_longitude 
-                          ? { 
-                              lat: newProduct.pickup_latitude, 
-                              lng: newProduct.pickup_longitude, 
-                              address: newProduct.location 
-                            }
+                        newProduct.pickup_latitude && newProduct.pickup_longitude
+                          ? {
+                            lat: newProduct.pickup_latitude,
+                            lng: newProduct.pickup_longitude,
+                            address: newProduct.location
+                          }
                           : null
                       }
                     />
-                    <Input 
+                    <Input
                       value={newProduct.location}
                       onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
                       placeholder="Selected location will appear here"
@@ -923,7 +923,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <div>
                 <label className="block text-sm font-medium mb-2">Product Media (Image or Video)</label>
                 <div className="space-y-2">
-                  <Input 
+                  <Input
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/mov"
                     onChange={handleFileChange}
@@ -938,11 +938,11 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <p className="text-xs text-gray-500">
                     Upload images (JPEG, PNG, WebP) or videos (MP4, WebM, MOV). Max size: 50MB
                   </p>
-                  
+
                   {/* Alternative URL input */}
                   <div className="border-t pt-2 mt-2">
                     <label className="block text-xs font-medium mb-1 text-gray-500">Or provide image URL</label>
-                    <Input 
+                    <Input
                       value={newProduct.image}
                       onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
                       placeholder="https://example.com/image.jpg"
@@ -953,7 +953,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Description</label>
-                <Textarea 
+                <Textarea
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                   placeholder="Describe your product..."
@@ -970,8 +970,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 <label htmlFor="organic" className="text-sm font-medium">Organic Product</label>
               </div>
               <div className="flex space-x-2">
-                <Button 
-                  onClick={handleSaveProduct} 
+                <Button
+                  onClick={handleSaveProduct}
                   disabled={uploading}
                   className="bg-green-600 hover:bg-green-700"
                 >
@@ -987,8 +987,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                     </>
                   )}
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowAddProductForm(false)}
                   disabled={uploading}
                 >
@@ -1010,7 +1010,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Product Name*</label>
-                  <Input 
+                  <Input
                     value={newProduct.name}
                     onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                     placeholder="e.g. Organic Tomatoes"
@@ -1018,7 +1018,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Price ($)*</label>
-                  <Input 
+                  <Input
                     type="number"
                     step="0.01"
                     value={newProduct.price}
@@ -1030,7 +1030,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Unit*</label>
-                  <Input 
+                  <Input
                     value={newProduct.unit}
                     onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
                     placeholder="e.g. lb, kg, dozen"
@@ -1056,7 +1056,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Stock Quantity*</label>
-                  <Input 
+                  <Input
                     type="number"
                     value={newProduct.stock}
                     onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
@@ -1066,19 +1066,19 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 <div>
                   <label className="block text-sm font-medium mb-2">Pickup Location*</label>
                   <div className="space-y-2">
-                    <LocationMap 
+                    <LocationMap
                       onLocationSelect={handleLocationSelect}
                       selectedLocation={
-                        newProduct.pickup_latitude && newProduct.pickup_longitude 
-                          ? { 
-                              lat: newProduct.pickup_latitude, 
-                              lng: newProduct.pickup_longitude, 
-                              address: newProduct.location 
-                            }
+                        newProduct.pickup_latitude && newProduct.pickup_longitude
+                          ? {
+                            lat: newProduct.pickup_latitude,
+                            lng: newProduct.pickup_longitude,
+                            address: newProduct.location
+                          }
                           : null
                       }
                     />
-                    <Input 
+                    <Input
                       value={newProduct.location}
                       onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
                       placeholder="Selected location will appear here"
@@ -1091,7 +1091,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <div>
                 <label className="block text-sm font-medium mb-2">Product Media (Image or Video)</label>
                 <div className="space-y-2">
-                  <Input 
+                  <Input
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/mov"
                     onChange={handleFileChange}
@@ -1106,11 +1106,11 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <p className="text-xs text-gray-500">
                     Upload images (JPEG, PNG, WebP) or videos (MP4, WebM, MOV). Max size: 50MB
                   </p>
-                  
+
                   {/* Alternative URL input */}
                   <div className="border-t pt-2 mt-2">
                     <label className="block text-xs font-medium mb-1 text-gray-500">Or provide image URL</label>
-                    <Input 
+                    <Input
                       value={newProduct.image}
                       onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
                       placeholder="https://example.com/image.jpg"
@@ -1121,7 +1121,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Description</label>
-                <Textarea 
+                <Textarea
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                   placeholder="Describe your product..."
@@ -1138,8 +1138,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 <label htmlFor="organic-edit" className="text-sm font-medium">Organic Product</label>
               </div>
               <div className="flex space-x-2">
-                <Button 
-                  onClick={handleUpdateProduct} 
+                <Button
+                  onClick={handleUpdateProduct}
                   disabled={uploading}
                   className="bg-green-600 hover:bg-green-700"
                 >
@@ -1155,8 +1155,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                     </>
                   )}
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setShowEditForm(false);
                     setEditingProduct(null);
@@ -1176,51 +1176,46 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           <div className="flex space-x-4 border-b">
             <button
               onClick={() => setActiveSection('overview')}
-              className={`px-4 py-2 border-b-2 transition-colors ${
-                activeSection === 'overview' 
-                  ? 'border-green-600 text-green-600' 
+              className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'overview'
+                  ? 'border-green-600 text-green-600'
                   : 'border-transparent text-gray-600 hover:text-green-600'
-              }`}
+                }`}
             >
               Overview
             </button>
             <button
               onClick={() => setActiveSection('analytics')}
-              className={`px-4 py-2 border-b-2 transition-colors ${
-                activeSection === 'analytics' 
-                  ? 'border-green-600 text-green-600' 
+              className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'analytics'
+                  ? 'border-green-600 text-green-600'
                   : 'border-transparent text-gray-600 hover:text-green-600'
-              }`}
+                }`}
             >
               Analytics
             </button>
             <button
               onClick={() => setActiveSection('customers')}
-              className={`px-4 py-2 border-b-2 transition-colors ${
-                activeSection === 'customers' 
-                  ? 'border-green-600 text-green-600' 
+              className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'customers'
+                  ? 'border-green-600 text-green-600'
                   : 'border-transparent text-gray-600 hover:text-green-600'
-              }`}
+                }`}
             >
               Customers
             </button>
             <button
               onClick={() => setActiveSection('inventory')}
-              className={`px-4 py-2 border-b-2 transition-colors ${
-                activeSection === 'inventory' 
-                  ? 'border-green-600 text-green-600' 
+              className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'inventory'
+                  ? 'border-green-600 text-green-600'
                   : 'border-transparent text-gray-600 hover:text-green-600'
-              }`}
+                }`}
             >
               Inventory
             </button>
             <button
               onClick={() => setActiveSection('orders')}
-              className={`px-4 py-2 border-b-2 transition-colors ${
-                activeSection === 'orders' 
-                  ? 'border-green-600 text-green-600' 
+              className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'orders'
+                  ? 'border-green-600 text-green-600'
                   : 'border-transparent text-gray-600 hover:text-green-600'
-              }`}
+                }`}
             >
               Orders
             </button>
@@ -1252,7 +1247,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -1273,7 +1268,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -1294,7 +1289,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -1398,8 +1393,8 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                       ))}
                     </div>
                   )}
-                  <Button 
-                    className="w-full mt-4" 
+                  <Button
+                    className="w-full mt-4"
                     variant="outline"
                     onClick={() => setActiveSection('orders')}
                   >
@@ -1418,7 +1413,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <p className="text-gray-600 text-sm">Track your sales performance and trends</p>
                 </CardContent>
               </Card>
-              
+
               <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveSection('customers')}>
                 <CardContent className="p-6 text-center">
                   <Users className="h-12 w-12 text-blue-600 mx-auto mb-4" />
@@ -1426,7 +1421,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <p className="text-gray-600 text-sm">Manage customer relationships and feedback</p>
                 </CardContent>
               </Card>
-              
+
               <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveSection('inventory')}>
                 <CardContent className="p-6 text-center">
                   <Database className="h-12 w-12 text-purple-600 mx-auto mb-4" />

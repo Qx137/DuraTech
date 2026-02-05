@@ -150,7 +150,7 @@ const Community = () => {
       toast.error("Please log in to create a post");
       return;
     }
-    
+
     const { error } = await supabase.from("community_posts").insert({
       user_id: user.id,
       content: newPost,
@@ -162,7 +162,7 @@ const Community = () => {
       toast.error("Failed to create post");
       return;
     }
-    
+
     setNewPost("");
     toast.success("Post created successfully!");
   };
@@ -215,7 +215,7 @@ const Community = () => {
     toast.success("Connection request sent");
   };
 
-  const filteredTopics = topics.filter(topic => 
+  const filteredTopics = topics.filter(topic =>
     (selectedCategory === "all" || topic.category.toLowerCase().includes(selectedCategory)) &&
     (searchTerm === "" || topic.title.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -225,9 +225,9 @@ const Community = () => {
       <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/logo.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>
@@ -319,9 +319,9 @@ const Community = () => {
                           </div>
                           <p className="text-foreground">{post.content}</p>
                           {post.image_url && (
-                            <img 
-                              src={post.image_url} 
-                              alt="Post" 
+                            <img
+                              src={post.image_url}
+                              alt="Post"
                               className="rounded-lg max-h-96 w-full object-cover"
                             />
                           )}
@@ -333,8 +333,8 @@ const Community = () => {
                             ))}
                           </div>
                           <div className="flex gap-4 pt-2">
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="sm"
                               onClick={() => handleLike(post.id)}
                               className="gap-2"
@@ -342,8 +342,8 @@ const Community = () => {
                               <Heart className="w-4 h-4" />
                               {post.likes_count}
                             </Button>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="sm"
                               onClick={() => handleComment(post.id)}
                               className="gap-2"
@@ -351,8 +351,8 @@ const Community = () => {
                               <MessageCircle className="w-4 h-4" />
                               {post.comments_count}
                             </Button>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="sm"
                               onClick={() => handleShare(post.id)}
                               className="gap-2"
@@ -375,14 +375,14 @@ const Community = () => {
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input 
-                    placeholder="Search forums..." 
+                  <Input
+                    placeholder="Search forums..."
                     className="pl-10 w-64"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <select 
+                <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="px-3 py-2 border rounded-md"
@@ -394,7 +394,7 @@ const Community = () => {
                   <option value="technology">Technology</option>
                 </select>
               </div>
-              <Button 
+              <Button
                 className="bg-green-600 hover:bg-green-700"
                 onClick={handleCreateTopic}
               >
@@ -436,7 +436,7 @@ const Community = () => {
                             <span>{topic.views_count} views</span>
                           </div>
                         </div>
-                        <Button 
+                        <Button
                           onClick={() => handleJoinForum(topic.id)}
                           className="w-full"
                         >

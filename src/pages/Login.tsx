@@ -34,7 +34,7 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate input
     const validation = loginSchema.safeParse(formData);
     if (!validation.success) {
@@ -45,12 +45,12 @@ const Login = () => {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       const { error } = await login(validation.data.email, validation.data.password);
-      
+
       if (error) {
         toast({
           title: "Login Failed",
@@ -99,9 +99,9 @@ const Login = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center mb-6 text-green-600 hover:text-green-700">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/logo.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>
@@ -162,8 +162,8 @@ const Login = () => {
                 </Link>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-green-600 hover:bg-green-700 text-lg py-3"
                 disabled={isLoading}
               >

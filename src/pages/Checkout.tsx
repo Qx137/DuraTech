@@ -57,7 +57,7 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('stripe');
-  
+
   const [deliveryLocation, setDeliveryLocation] = useState<Location & { address: string } | null>(null);
   const [shippingDetails, setShippingDetails] = useState<{
     totalShipping: number;
@@ -65,7 +65,7 @@ const Checkout = () => {
   } | null>(null);
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState<any>(null);
   const [biddingEnabled, setBiddingEnabled] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -83,7 +83,7 @@ const Checkout = () => {
       const nameParts = user.name?.split(' ') || [];
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-      
+
       setFormData(prev => ({
         ...prev,
         email: user.email || prev.email,
@@ -96,7 +96,7 @@ const Checkout = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     // Clear the error for this field when user starts typing
     if (formErrors[name as keyof FormErrors]) {
       setFormErrors(prev => ({ ...prev, [name]: undefined }));
@@ -109,7 +109,7 @@ const Checkout = () => {
 
   const fetchCartItems = async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('cart_items')
@@ -142,7 +142,7 @@ const Checkout = () => {
 
   const handleLocationSelect = async (location: { lat: number; lng: number; address: string }) => {
     setDeliveryLocation(location);
-    
+
     if (cartItems.length > 0) {
       const shippingCalc = await calculateTotalShipping(cartItems, location);
       setShippingDetails(shippingCalc);
@@ -175,7 +175,7 @@ const Checkout = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -227,7 +227,7 @@ const Checkout = () => {
 
     try {
       const { subtotal, shipping, tax, total } = calculateTotal();
-      
+
       // Sanitize form data before sending to database
       const sanitizedData = {
         email: formData.email.trim(),
@@ -235,7 +235,7 @@ const Checkout = () => {
         lastName: formData.lastName.trim(),
         phone: formData.phone.trim(),
       };
-      
+
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -285,7 +285,7 @@ const Checkout = () => {
       if (clearCartError) throw clearCartError;
 
       // Create delivery with bidding settings
-      const biddingDeadline = biddingEnabled 
+      const biddingDeadline = biddingEnabled
         ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
         : null;
 
@@ -363,9 +363,9 @@ const Checkout = () => {
 
         if (paymentError || !paymentData.success) {
           const errorMessage = paymentData?.error || paymentError?.message || 'Failed to create payment';
-          
+
           let userMessage = "There was an error processing your order. Please try again.";
-          
+
           if (errorMessage.includes('Unable to connect to payment gateway')) {
             userMessage = "The payment gateway is temporarily unavailable. Your order has been created. Please try again in a few moments or contact support with your order ID: " + order.id;
           } else if (errorMessage.includes('credentials')) {
@@ -373,7 +373,7 @@ const Checkout = () => {
           } else if (errorMessage.includes('Amount mismatch')) {
             userMessage = "There was an issue with the order amount. Please refresh and try again.";
           }
-          
+
           throw new Error(userMessage);
         }
 
@@ -382,9 +382,9 @@ const Checkout = () => {
       }
     } catch (error) {
       console.error('Error creating order:', error);
-      
+
       const errorMessage = error instanceof Error ? error.message : "There was an error processing your order. Please try again.";
-      
+
       toast({
         title: "Order Failed",
         description: errorMessage,
@@ -404,9 +404,9 @@ const Checkout = () => {
       <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/logo.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>
@@ -566,7 +566,7 @@ const Checkout = () => {
                         {biddingEnabled && (
                           <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm">
                             <p className="text-amber-800">
-                              <strong>How it works:</strong> After placing your order, drivers and delivery companies will submit bids. 
+                              <strong>How it works:</strong> After placing your order, drivers and delivery companies will submit bids.
                               You'll have 24 hours to review and select the best offer before delivery begins.
                             </p>
                           </div>
@@ -606,7 +606,7 @@ const Checkout = () => {
                         </div>
                       </Label>
                     </div>
-                    
+
                     <div className={`flex items-center space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${paymentMethod === 'paynow' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/50'}`}>
                       <RadioGroupItem value="paynow" id="paynow" />
                       <Label htmlFor="paynow" className="flex-1 cursor-pointer">
@@ -626,7 +626,7 @@ const Checkout = () => {
 
                   <div className="bg-muted/50 rounded-lg p-4 mt-4">
                     <p className="text-sm text-muted-foreground">
-                      {paymentMethod === 'stripe' 
+                      {paymentMethod === 'stripe'
                         ? "You will be redirected to Stripe's secure checkout to complete your payment."
                         : "You will be redirected to Paynow to complete your payment with mobile money or card."
                       }

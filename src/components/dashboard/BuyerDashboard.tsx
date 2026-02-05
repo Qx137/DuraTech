@@ -37,7 +37,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [stats, setStats] = useState({
     totalOrders: 0,
     activeOrders: 0,
@@ -131,8 +131,8 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
       const transformedRecentPurchases = recentOrdersData?.map(order => ({
         id: order.id,
         product: order.order_items?.[0]?.products?.name || 'Unknown Product',
-        farmer: order.order_items?.[0]?.products?.profiles?.business_name || 
-               order.order_items?.[0]?.products?.profiles?.name || 'Unknown Farmer',
+        farmer: order.order_items?.[0]?.products?.profiles?.business_name ||
+          order.order_items?.[0]?.products?.profiles?.name || 'Unknown Farmer',
         price: order.total,
         status: order.status.charAt(0).toUpperCase() + order.status.slice(1)
       })) || [];
@@ -145,8 +145,8 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
           quantity: item.quantity,
           price: item.price
         })) || [],
-        farmer: order.order_items?.[0]?.products?.profiles?.business_name || 
-               order.order_items?.[0]?.products?.profiles?.name || 'Unknown Farmer',
+        farmer: order.order_items?.[0]?.products?.profiles?.business_name ||
+          order.order_items?.[0]?.products?.profiles?.name || 'Unknown Farmer',
         total: order.total,
         status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
         paymentStatus: order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1),
@@ -166,7 +166,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
       setRecentPurchases(transformedRecentPurchases);
       setAllOrders(transformedAllOrders);
       setCartCount(totalCartItems);
-      
+
       // Set placeholder favorite products for now
       setFavoriteProducts([]);
 
@@ -232,9 +232,9 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/logo.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>
@@ -287,7 +287,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center space-x-2">
@@ -299,7 +299,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center space-x-2">
@@ -311,7 +311,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center space-x-2">
@@ -331,7 +331,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
             <TabsTrigger value="orders">My Orders</TabsTrigger>
             <TabsTrigger value="favorites">Favorites</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="overview">
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Recent Purchases */}
@@ -450,7 +450,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                                 </Badge>
                               </div>
                             </div>
-                            <OrderCancellation 
+                            <OrderCancellation
                               orderId={order.id}
                               currentStatus={order.status.toLowerCase()}
                               onCancelled={fetchDashboardData}
@@ -504,7 +504,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                             <span>{product.rating}</span>
                           </div>
                         </div>
-                        <Button 
+                        <Button
                           size="sm"
                           onClick={() => handleOrderAgain(product.name)}
                         >

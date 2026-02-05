@@ -42,7 +42,7 @@ const DriverRegistration = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [existingApplication, setExistingApplication] = useState<boolean>(false);
-  
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -146,7 +146,7 @@ const DriverRegistration = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -167,7 +167,7 @@ const DriverRegistration = () => {
 
     // Validate form data
     const result = driverApplicationSchema.safeParse(formData);
-    
+
     if (!result.success) {
       const fieldErrors: FormErrors = {};
       result.error.errors.forEach((err) => {
@@ -177,7 +177,7 @@ const DriverRegistration = () => {
         }
       });
       setErrors(fieldErrors);
-      
+
       toast({
         title: "Validation Error",
         description: "Please correct the highlighted fields.",
@@ -211,8 +211,8 @@ const DriverRegistration = () => {
           bank_name: result.data.bankName,
           account_holder_name: result.data.accountHolderName,
           account_number_masked: maskAccountNumber(result.data.accountNumber),
-          mobile_money_number_masked: result.data.mobileMoneyNumber 
-            ? maskAccountNumber(result.data.mobileMoneyNumber) 
+          mobile_money_number_masked: result.data.mobileMoneyNumber
+            ? maskAccountNumber(result.data.mobileMoneyNumber)
             : null,
         });
 
@@ -252,9 +252,9 @@ const DriverRegistration = () => {
       <header className="bg-background/80 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-              alt="Durahub Logo" 
+            <img
+              src="/logo.png"
+              alt="Durahub Logo"
               className="h-12"
             />
           </Link>

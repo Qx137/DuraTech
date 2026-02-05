@@ -12,9 +12,9 @@ const MarketplaceHeader = ({ cartCount }: MarketplaceHeaderProps) => {
     <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center">
-          <img 
-            src="/lovable-uploads/a2db2940-ded3-4e46-9144-25350c853d8d.png" 
-            alt="Durahub Logo" 
+          <img
+            src="/logo.png"
+            alt="Durahub Logo"
             className="h-12"
           />
         </Link>
