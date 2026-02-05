@@ -44,11 +44,7 @@ const MarketplaceHeader = ({ cartCount }: MarketplaceHeaderProps) => {
               <Settings className="h-4 w-4" />
             </Button>
           </Link>
-          <Link to="/login">
-            <Button size="sm" className="bg-green-600 hover:bg-green-700">
-              Account
-            </Button>
-          </Link>
+
         </div>
       </div>
     </header>
