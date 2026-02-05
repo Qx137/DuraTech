@@ -26,7 +26,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  userType: 'buyer' | 'seller';
+  userType: 'buyer' | 'seller' | 'driver';
 }
 
 interface BuyerDashboardProps {

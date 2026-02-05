@@ -32,7 +32,7 @@ const Settings = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedRole, setSelectedRole] = useState<'buyer' | 'seller'>(user?.userType || 'buyer');
+  const [selectedRole, setSelectedRole] = useState<'buyer' | 'seller' | 'driver'>(user?.userType || 'buyer');
   const [isUpdating, setIsUpdating] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showSellerFormDialog, setShowSellerFormDialog] = useState(false);
