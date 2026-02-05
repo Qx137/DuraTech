@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/community_service.dart';
 import '../../theme/app_colors.dart';
 import 'post_detail_screen.dart';
+import 'topic_detail_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -215,7 +216,12 @@ class _CommunityScreenState extends State<CommunityScreen>
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // TODO: View topic details
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TopicDetailScreen(topic: topic),
+                      ),
+                    );
                   },
                 ),
               );

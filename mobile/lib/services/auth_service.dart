@@ -34,12 +34,16 @@ class AuthService {
     );
   }
 
+  Future<void> resetPassword(String email) async {
+    await _client.auth.resetPasswordForEmail(email);
+  }
+
   Future<void> signOut() async {
     await _client.auth.signOut();
   }
 
   User? get currentUser => _client.auth.currentUser;
-  
+
   Session? get currentSession => _client.auth.currentSession;
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;

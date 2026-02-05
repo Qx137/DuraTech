@@ -3,6 +3,7 @@ import '../../services/marketplace_service.dart';
 import '../../models/product.dart';
 import '../../core/supabase_client.dart';
 import '../../theme/app_colors.dart';
+import 'add_product_screen.dart';
 
 class SellerInventoryScreen extends StatefulWidget {
   const SellerInventoryScreen({super.key});
@@ -73,7 +74,10 @@ class _SellerInventoryScreenState extends State<SellerInventoryScreen> {
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Navigate to Add Product screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddProductScreen()),
+          ).then((_) => _loadInventory()); // Refresh on return
         },
         backgroundColor: AppColors.emerald,
         child: const Icon(Icons.add),

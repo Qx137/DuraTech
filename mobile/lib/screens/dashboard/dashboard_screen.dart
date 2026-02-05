@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import 'seller_inventory_screen.dart';
 import 'driver_deliveries_screen.dart';
+import 'add_product_screen.dart';
+import 'driver_docs_screen.dart';
+import 'delivery_history_screen.dart';
+import 'earnings_screen.dart';
 import '../../theme/app_colors.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -173,7 +177,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icons.add_box,
           'Add Product',
           onTap: () {
-            // TODO: Implement Add Product screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddProductScreen()),
+            );
           },
         ),
         _actionCard(
@@ -219,21 +226,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icons.history,
           'Delivery History',
           onTap: () {
-            /* TODO: Implement Delivery History screen */
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const DeliveryHistoryScreen(),
+              ),
+            );
           },
         ),
         _actionCard(
           Icons.account_balance_wallet,
           'Earnings',
           onTap: () {
-            /* TODO: Implement Earnings screen */
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const EarningsScreen()),
+            );
           },
         ),
         _actionCard(
           Icons.verified,
           'Driver Docs',
           onTap: () {
-            /* TODO: Implement Driver Docs screen */
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const DriverDocsScreen(),
+              ),
+            );
           },
         ),
       ],
