@@ -3,7 +3,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
 
 interface SearchFiltersProps {
   searchTerm: string;
@@ -89,16 +88,27 @@ const SearchFilters = ({
           {/* Price Range */}
           <div className="md:col-span-2 space-y-2">
             <label className="text-sm font-medium text-gray-700">
-              Price Range: ${priceRange[0]} - ${priceRange[1]}
+              Price Range
             </label>
-            <Slider
-              defaultValue={[0, 100]}
-              max={100}
-              step={1}
-              value={priceRange}
-              onValueChange={setPriceRange}
-              className="py-4"
-            />
+            <div className="flex items-center space-x-2">
+              <Input
+                type="number"
+                min="0"
+                placeholder="Min"
+                value={priceRange[0]}
+                onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                className="w-full"
+              />
+              <span className="text-gray-500">-</span>
+              <Input
+                type="number"
+                min="0"
+                placeholder="Max"
+                value={priceRange[1]}
+                onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 0])}
+                className="w-full"
+              />
+            </div>
           </div>
 
           {/* Min Quantity */}
