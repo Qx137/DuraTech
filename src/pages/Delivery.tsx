@@ -128,8 +128,14 @@ const Delivery = () => {
         <LocationPicker
           pickup={pickup}
           destination={destination}
-          onPickupChange={setPickup}
-          onDestinationChange={setDestination}
+          onPickupChange={(loc) => {
+            setPickup(loc);
+            if (!pickupName) setPickupName('My Location');
+          }}
+          onDestinationChange={(loc) => {
+            setDestination(loc);
+            if (!destinationName) setDestinationName('Destination');
+          }}
         />
       </div>
 
