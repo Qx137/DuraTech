@@ -255,9 +255,8 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Store className="h-6 w-6 text-green-500" />
-                <span className="text-xl font-bold">Durahub</span>
+              <div className="mb-4">
+                <img src="/logo.png" alt="Durahub Logo" className="h-10" />
               </div>
               <p className="text-gray-400">
                 Connecting farmers and consumers for a sustainable agricultural future.
