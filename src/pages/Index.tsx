@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Store, ShoppingBag, Users, TrendingUp, Cpu, Database, Shield, Monitor, UserCheck, ArrowRight, Star } from "lucide-react";
+import { Truck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,6 +101,12 @@ const Index = () => {
               <Button size="lg" variant="outline" className="text-lg px-8 py-3">
                 <Store className="mr-2 h-5 w-5" />
                 Sell Your Produce
+              </Button>
+            </Link>
+            <Link to="/driver-registration">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-3 border-emerald-600 text-emerald-600 hover:bg-emerald-50">
+                <Truck className="mr-2 h-5 w-5" />
+                Become a Driver
               </Button>
             </Link>
           </div>
