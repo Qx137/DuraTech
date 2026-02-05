@@ -42,11 +42,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     try {
       await _service.addComment(widget.post['id'], _commentController.text);
       _commentController.clear();
-      _loadComments();
+      if (mounted) {
+        _loadComments();
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 

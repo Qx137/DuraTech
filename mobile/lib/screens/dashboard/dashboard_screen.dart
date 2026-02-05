@@ -75,7 +75,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ElevatedButton(
               onPressed: () async {
                 await _authService.signOut();
-                if (mounted) Navigator.pushReplacementNamed(context, '/login');
+                if (mounted) {
+                  // ignore: use_build_context_synchronously
+                  Navigator.pushReplacementNamed(context, '/login');
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[50],

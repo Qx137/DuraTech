@@ -36,9 +36,11 @@ class _AIToolsScreenState extends State<AIToolsScreen> {
       );
       setState(() => _recommendations = results);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -55,9 +57,11 @@ class _AIToolsScreenState extends State<AIToolsScreen> {
       );
       setState(() => _priceAnalysis = results);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -219,7 +223,7 @@ class _AIToolsScreenState extends State<AIToolsScreen> {
               subtitle: Text(rec['reason']),
               trailing: Chip(
                 label: Text('${rec['confidence']}%'),
-                backgroundColor: AppColors.emerald.withOpacity(0.1),
+                backgroundColor: AppColors.emerald.withValues(alpha: 0.1),
               ),
             ),
           ),

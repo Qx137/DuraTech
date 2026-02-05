@@ -169,7 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: 2),
           borderRadius: BorderRadius.circular(8),
           color: isSelected
-              ? AppColors.emerald.withOpacity(0.05)
+              ? AppColors.emerald.withValues(alpha: 0.05)
               : Colors.transparent,
         ),
         child: Row(

@@ -52,16 +52,18 @@ class _CommunityScreenState extends State<CommunityScreen>
     try {
       await _service.createPost(_postController.text);
       _postController.clear();
-      _loadData();
       if (mounted) {
+        _loadData();
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Post shared!')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 

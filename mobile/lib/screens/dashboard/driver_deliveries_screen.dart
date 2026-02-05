@@ -28,9 +28,11 @@ class _DriverDeliveriesScreenState extends State<DriverDeliveriesScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -41,79 +43,79 @@ class _DriverDeliveriesScreenState extends State<DriverDeliveriesScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _deliveries.isEmpty
-          ? const Center(child: Text('No active deliveries'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _deliveries.length,
-              itemBuilder: (context, index) {
-                final delivery = _deliveries[index];
-                final order = delivery['orders'];
-                final status = delivery['status'];
+              ? const Center(child: Text('No active deliveries'))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _deliveries.length,
+                  itemBuilder: (context, index) {
+                    final delivery = _deliveries[index];
+                    final order = delivery['orders'];
+                    final status = delivery['status'];
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Order #${order['id'].toString().substring(0, 8)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Order #${order['id'].toString().substring(0, 8)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                _statusChip(status),
+                              ],
                             ),
-                            _statusChip(status),
+                            const Divider(height: 24),
+                            Text(
+                              'Delivery to: ${order['delivery_address']['address']}',
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Customer: ${order['delivery_address']['firstName']} ${order['delivery_address']['lastName']}',
+                            ),
+                            const SizedBox(height: 16),
+                            if (status == 'pending')
+                              ElevatedButton(
+                                onPressed: () async {
+                                  await _service.updateDeliveryStatus(
+                                    delivery['id'],
+                                    'in_transit',
+                                  );
+                                  _loadDeliveries();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Start Delivery'),
+                              ),
+                            if (status == 'in_transit')
+                              ElevatedButton(
+                                onPressed: () async {
+                                  await _service.updateDeliveryStatus(
+                                    delivery['id'],
+                                    'delivered',
+                                  );
+                                  _loadDeliveries();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Mark as Delivered'),
+                              ),
                           ],
                         ),
-                        const Divider(height: 24),
-                        Text(
-                          'Delivery to: ${order['delivery_address']['address']}',
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Customer: ${order['delivery_address']['firstName']} ${order['delivery_address']['lastName']}',
-                        ),
-                        const SizedBox(height: 16),
-                        if (status == 'pending')
-                          ElevatedButton(
-                            onPressed: () async {
-                              await _service.updateDeliveryStatus(
-                                delivery['id'],
-                                'in_transit',
-                              );
-                              _loadDeliveries();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Start Delivery'),
-                          ),
-                        if (status == 'in_transit')
-                          ElevatedButton(
-                            onPressed: () async {
-                              await _service.updateDeliveryStatus(
-                                delivery['id'],
-                                'delivered',
-                              );
-                              _loadDeliveries();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Mark as Delivered'),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 
