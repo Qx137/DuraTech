@@ -78,7 +78,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.eco, size: 48, color: AppColors.emerald),
+                      Image.asset(
+                        'assets/images/logo.png',
+                        height: 64,
+                        semanticLabel: 'DuraHub Logo',
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Create Account',

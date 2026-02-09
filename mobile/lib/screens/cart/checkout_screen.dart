@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/cart_service.dart';
 import '../../theme/app_colors.dart';
+import 'package:provider/provider.dart';
+import '../../providers/cart_provider.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final List<Map<String, dynamic>> items;
@@ -212,6 +214,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         paymentMethod: _paymentMethod,
         total: widget.totalPrice,
       );
+      if (mounted) {
+        context.read<CartProvider>().refreshCount();
+      }
 
       if (mounted) {
         showDialog(

@@ -6,41 +6,26 @@ class CommunityService {
   Future<List<Map<String, dynamic>>> fetchPosts() async {
     final response = await _client
         .from('community_posts')
-        .select('*, profiles(name)')
+        .select('*')
         .order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(response);
+    return _joinProfiles(response);
   }
 
   Future<List<Map<String, dynamic>>> fetchTopics() async {
     final response = await _client
         .from('forum_topics')
-        .select('*, profiles(name)')
+        .select('*')
         .order('updated_at', ascending: false);
-    return List<Map<String, dynamic>>.from(response);
+    return _joinProfiles(response);
   }
 
   Future<List<Map<String, dynamic>>> fetchTopicPosts(String topicId) async {
-    // Assuming topics are handled via tags or a specific column.
-    // If 'forum_topics' are just categories, we might query 'community_posts' where tags contains topic title or similar.
-    // For now, let's assume we filter by a 'topic_id' if we added it, or stick to tags.
-    // Given the previous code used tags: ['general'], let's assume filtering by tags.
-    // However, to make it robust based on the "View Topic Details" requirement:
-
-    // Ideally community_posts should have a topic_id.
-    // Checking schema from code inference: no explicit topic_id column seen in createPost.
-    // Let's assume we filter by matching tags to the topic title for now,
-    // OR we just fetch all posts and client-side filter if the data model isn't strict.
-    // BUT efficient way:
-
     final response = await _client
         .from('community_posts')
-        .select('*, profiles(name)')
-        //.eq('topic_id', topicId) // schema uncertain
+        .select('*')
         .order('created_at', ascending: false);
 
-    // Temporary: return all, can refine if we see schema.
-    // Actually, let's try to filter if we can.
-    return List<Map<String, dynamic>>.from(response);
+    return _joinProfiles(response);
   }
 
   Future<void> createPost(String content) async {
@@ -65,10 +50,32 @@ class CommunityService {
   Future<List<Map<String, dynamic>>> fetchComments(String postId) async {
     final response = await _client
         .from('post_comments')
-        .select('*, profiles(name)')
+        .select('*')
         .eq('post_id', postId)
         .order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(response);
+    return _joinProfiles(response);
+  }
+
+  Future<List<Map<String, dynamic>>> _joinProfiles(List<dynamic> data) async {
+    if (data.isEmpty) return [];
+
+    final list = List<Map<String, dynamic>>.from(data);
+    final userIds =
+        list.map((item) => item['user_id'] as String).toSet().toList();
+
+    final profilesResponse = await _client
+        .from('profiles')
+        .select('id, name')
+        .filter('id', 'in', userIds);
+
+    final profiles = List<Map<String, dynamic>>.from(profilesResponse);
+    final profileMap = {for (var p in profiles) p['id']: p};
+
+    return list.map((item) {
+      final newItem = Map<String, dynamic>.from(item);
+      newItem['profiles'] = profileMap[item['user_id']];
+      return newItem;
+    }).toList();
   }
 
   Future<void> addComment(String postId, String content) async {

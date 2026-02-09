@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'ai_chatbot_screen.dart';
 import '../../services/ai_service.dart';
 import '../../theme/app_colors.dart';
 
@@ -82,6 +83,8 @@ class _AIToolsScreenState extends State<AIToolsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildChatbotLink(),
+            const SizedBox(height: 24),
             _buildToolSelector(),
             const SizedBox(height: 24),
             if (_selectedTool == 'recommendations') _buildRecommendationForm(),
@@ -96,6 +99,52 @@ class _AIToolsScreenState extends State<AIToolsScreen> {
                 _selectedTool == 'pricing' &&
                 _priceAnalysis != null)
               _buildPriceAnalysisResult(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatbotLink() {
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AIChatbotScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.blue, Colors.purple],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.chat_bubble_outline, color: Colors.white, size: 32),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Chat with AI Assistant',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Get instant answers to your farming questions',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
           ],
         ),
       ),

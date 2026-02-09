@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/supabase_client.dart';
 import '../../services/storage_service.dart';
 import '../../theme/app_colors.dart';
 
@@ -33,6 +34,35 @@ class _DriverDocsScreenState extends State<DriverDocsScreen> {
     'vehicle_reg': false,
   };
 
+  @override
+  void initState() {
+    super.initState();
+    _loadVerificationStatus();
+  }
+
+  Future<void> _loadVerificationStatus() async {
+    final user = SupabaseConfig.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await SupabaseConfig.client
+          .from('drivers')
+          .select('license_url, insurance_url, vehicle_reg_url')
+          .eq('user_id', user.id)
+          .single();
+
+      if (mounted) {
+        setState(() {
+          _completed['license'] = response['license_url'] != null;
+          _completed['insurance'] = response['insurance_url'] != null;
+          _completed['vehicle_reg'] = response['vehicle_reg_url'] != null;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading docs: $e');
+    }
+  }
+
   Future<void> _uploadDoc(String type) async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
@@ -44,8 +74,14 @@ class _DriverDocsScreenState extends State<DriverDocsScreen> {
     });
 
     try {
-      // In a real app, we'd also save the URL to the driver's profile in the DB
-      await _storageService.uploadDriverDoc(file, type);
+      final url = await _storageService.uploadDriverDoc(file, type);
+      final user = SupabaseConfig.client.auth.currentUser;
+
+      if (user != null) {
+        await SupabaseConfig.client.from('drivers').update({
+          '${type}_url': url,
+        }).eq('user_id', user.id);
+      }
 
       if (mounted) {
         setState(() {

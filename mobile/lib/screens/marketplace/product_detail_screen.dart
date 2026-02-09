@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/product.dart';
 import '../../services/marketplace_service.dart';
 import '../../theme/app_colors.dart';
+import 'package:provider/provider.dart';
+import '../../providers/cart_provider.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;
@@ -23,6 +25,22 @@ class ProductDetailScreen extends StatelessWidget {
                 child: Image.network(product.image, fit: BoxFit.cover),
               ),
             ),
+            actions: [
+              Consumer<CartProvider>(
+                builder: (context, cart, child) => IconButton(
+                  icon: Badge(
+                    label: Text(cart.itemCount.toString()),
+                    isLabelVisible: cart.itemCount > 0,
+                    backgroundColor: AppColors.emerald,
+                    child: const Icon(
+                      Icons.shopping_cart_outlined,
+                      color: Colors.white,
+                    ),
+                  ),
+                  onPressed: () => Navigator.pushNamed(context, '/cart'),
+                ),
+              ),
+            ],
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -155,11 +173,14 @@ class ProductDetailScreen extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    _service.addToCart(product.id, 1);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Added to cart')),
-                    );
+                  onPressed: () async {
+                    await _service.addToCart(product.id, 1);
+                    if (context.mounted) {
+                      context.read<CartProvider>().refreshCount();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Added to cart')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.emerald,

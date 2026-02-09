@@ -42,6 +42,47 @@ class AuthService {
     await _client.auth.signOut();
   }
 
+  Future<void> updateProfile({
+    String? name,
+    String? businessName,
+    String? description,
+  }) async {
+    final user = currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    final updates = {
+      if (name != null) 'name': name,
+      if (businessName != null) 'business_name': businessName,
+      if (description != null) 'description': description,
+    };
+
+    if (updates.isEmpty) return;
+
+    // 1. Update Auth Metadata
+    await _client.auth.updateUser(UserAttributes(data: updates));
+
+    // 2. Update Profiles Table
+    await _client.from('profiles').update(updates).eq('id', user.id);
+  }
+
+  Future<void> updateRole(String newRole) async {
+    final user = currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    // 1. Update user_roles table
+    await _client
+        .from('user_roles')
+        .update({'role': newRole}).eq('user_id', user.id);
+
+    // 2. Update profiles table
+    await _client
+        .from('profiles')
+        .update({'user_type': newRole}).eq('id', user.id);
+
+    // 3. Update Auth Metadata
+    await _client.auth.updateUser(UserAttributes(data: {'user_type': newRole}));
+  }
+
   User? get currentUser => _client.auth.currentUser;
 
   Session? get currentSession => _client.auth.currentSession;

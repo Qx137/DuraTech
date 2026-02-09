@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../services/cart_service.dart';
 import '../../theme/app_colors.dart';
 import '../cart/checkout_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/cart_provider.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -80,7 +82,12 @@ class _CartScreenState extends State<CartScreen> {
                                       item['id'],
                                       item['quantity'] - 1,
                                     );
-                                    _loadCart();
+                                    if (mounted) {
+                                      context
+                                          .read<CartProvider>()
+                                          .refreshCount();
+                                      _loadCart();
+                                    }
                                   },
                                 ),
                                 Text('${item['quantity']}'),
@@ -91,7 +98,12 @@ class _CartScreenState extends State<CartScreen> {
                                       item['id'],
                                       item['quantity'] + 1,
                                     );
-                                    _loadCart();
+                                    if (mounted) {
+                                      context
+                                          .read<CartProvider>()
+                                          .refreshCount();
+                                      _loadCart();
+                                    }
                                   },
                                 ),
                               ],
