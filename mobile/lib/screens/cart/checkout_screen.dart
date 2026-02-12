@@ -26,7 +26,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
 
-  String _paymentMethod = 'stripe';
+  String _paymentMethod = 'contipay';
   bool _isLoading = false;
 
   @override
@@ -88,13 +88,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 24),
             _sectionTitle('Payment Method'),
             const SizedBox(height: 12),
-            _paymentOption('stripe', 'Credit / Debit Card', Icons.credit_card),
-            const SizedBox(height: 8),
             _paymentOption(
-              'paynow',
-              'Mobile Money (EcoCash/OneMoney)',
-              Icons.smartphone,
-            ),
+                'contipay',
+                'ContiPay (EcoCash, OneMoney, InnBucks, ZIPIT, Card)',
+                Icons.payment),
             const SizedBox(height: 32),
             _orderSummary(),
             const SizedBox(height: 32),
