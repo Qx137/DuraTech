@@ -128,6 +128,7 @@ serve(async (req: Request) => {
 
         // Create payment request to ContiPay
         const returnUrl = `${(globalThis as any).Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '') || 'https://wutfcyskvfkunmvrvafz.lovable.app'}/payment-success?orderId=${orderId}`;
+        const resultUrl = `${(globalThis as any).Deno.env.get('SUPABASE_URL')}/functions/v1/contipay-webhook`;
 
         const paymentData = {
             apiKey: apiKey,
