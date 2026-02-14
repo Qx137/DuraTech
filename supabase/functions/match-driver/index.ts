@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -245,9 +245,9 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
     } catch (err) {
       const internalError = err instanceof Error ? err.message : String(err);
       console.error('Error in match-driver function:', internalError);
-      
+
       const safeMessage = getSafeErrorMessage(internalError);
-      
+
       return new Response(
         JSON.stringify({ error: safeMessage }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }

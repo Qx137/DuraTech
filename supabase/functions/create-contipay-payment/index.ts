@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
+
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -32,7 +32,7 @@ function getSafeErrorMessage(error: string): string {
     return errorMap[error] || 'Payment processing failed. Please try again.';
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });

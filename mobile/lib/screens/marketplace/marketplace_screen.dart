@@ -259,7 +259,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _sortBy,
+            initialValue: _sortBy,
             decoration: InputDecoration(
               isDense: true,
               border:

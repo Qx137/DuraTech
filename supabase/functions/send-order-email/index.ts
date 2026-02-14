@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,7 +31,7 @@ function getSafeErrorMessage(error: string): string {
   return 'Unable to process request. Please try again.';
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -150,32 +150,32 @@ serve(async (req) => {
     }
 
     console.log('Email prepared successfully');
-    
+
     // Note: To actually send emails, integrate with a service like Resend
     // For now, we just log the email content
-    
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         message: 'Email notification prepared'
       }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        status: 200
       }
     );
 
   } catch (error: any) {
     const internalError = error.message || String(error);
     console.error('Error in send-order-email:', internalError);
-    
+
     const safeMessage = getSafeErrorMessage(internalError);
-    
+
     return new Response(
       JSON.stringify({ error: safeMessage }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: 500
       }
     );
   }

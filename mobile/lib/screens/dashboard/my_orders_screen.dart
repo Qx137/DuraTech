@@ -174,7 +174,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
             const Divider(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

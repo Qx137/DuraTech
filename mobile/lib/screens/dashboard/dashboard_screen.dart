@@ -113,7 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onChanged: (val) {
               _updateDriverStatus(val ? 'available' : 'offline');
             },
-            activeColor: AppColors.emerald,
+            activeThumbColor: AppColors.emerald,
           ),
         ],
       ),
