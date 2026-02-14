@@ -21,12 +21,11 @@ class CartService {
     } else {
       await _client
           .from('cart_items')
-          .update({'quantity': quantity})
-          .eq('id', itemId);
+          .update({'quantity': quantity}).eq('id', itemId);
     }
   }
 
-  Future<void> createOrder({
+  Future<String> createOrder({
     required String email,
     required String firstName,
     required String lastName,
@@ -91,5 +90,7 @@ class CartService {
 
     // 5. Clear Cart
     await _client.from('cart_items').delete().eq('user_id', user.id);
+
+    return orderId;
   }
 }

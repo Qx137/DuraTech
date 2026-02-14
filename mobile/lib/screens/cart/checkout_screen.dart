@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/cart_service.dart';
+import '../../services/contipay_service.dart';
 import '../../theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
@@ -20,6 +21,7 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _service = CartService();
+  final _contipayService = ContiPayService();
   final _emailController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -108,7 +110,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text(
-                      'Complete Order',
+                      'Complete Order & Pay',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -142,20 +144,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           borderRadius: BorderRadius.circular(12),
           color: isSelected
-              ? AppColors.emerald.withValues(alpha: 0.05)
+              ? AppColors.emerald.withOpacity(0.05)
               : Colors.transparent,
         ),
         child: Row(
           children: [
             Icon(icon, color: isSelected ? AppColors.emerald : Colors.grey),
             const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
             ),
-            const Spacer(),
             if (isSelected)
               const Icon(Icons.check_circle, color: AppColors.emerald),
           ],
@@ -202,7 +205,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await _service.createOrder(
+      // 1. Create the order
+      final orderId = await _service.createOrder(
         email: _emailController.text,
         firstName: _firstNameController.text,
         lastName: _lastNameController.text,
@@ -211,8 +215,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         paymentMethod: _paymentMethod,
         total: widget.totalPrice,
       );
+
       if (mounted) {
         context.read<CartProvider>().refreshCount();
+      }
+
+      // 2. Initiate Payment if ContiPay is selected
+      if (_paymentMethod == 'contipay') {
+        await _contipayService.initiatePayment(
+          orderId: orderId,
+          amount: widget.totalPrice,
+          email: _emailController.text,
+          customerName:
+              '${_firstNameController.text} ${_lastNameController.text}',
+          phone: _phoneController.text,
+        );
       }
 
       if (mounted) {
@@ -222,7 +239,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           builder: (context) => AlertDialog(
             title: const Text('Order Placed!'),
             content: const Text(
-              'Your order has been successfully placed. You can track your delivery in the dashboard.',
+              'Your order has been initiated. Please complete the payment in the browser window that opened. You can track your delivery in the dashboard once payment is confirmed.',
             ),
             actions: [
               TextButton(
@@ -242,7 +259,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
