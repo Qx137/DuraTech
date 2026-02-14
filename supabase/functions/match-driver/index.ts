@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
@@ -53,8 +54,8 @@ function getSafeErrorMessage(error: string): string {
   return 'Unable to process request. Please try again.';
 }
 
-if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
-  (Deno as any).serve(async (req: Request) => {
+if (typeof (globalThis as any).Deno !== 'undefined' && typeof ((globalThis as any).Deno as any).serve === 'function') {
+  ((globalThis as any).Deno as any).serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
@@ -72,8 +73,8 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
 
       // Client for verifying user auth
       const supabaseAuth = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        (globalThis as any).Deno.env.get('SUPABASE_URL') ?? '',
+        (globalThis as any).Deno.env.get('SUPABASE_ANON_KEY') ?? '',
         { global: { headers: { Authorization: authHeader } } }
       );
 
@@ -91,8 +92,8 @@ if (typeof Deno !== 'undefined' && typeof (Deno as any).serve === 'function') {
 
       // Service role client for privileged operations
       const supabaseAdmin = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        (globalThis as any).Deno.env.get('SUPABASE_URL') ?? '',
+        (globalThis as any).Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
 
       const { deliveryId, pickupLocation } = await req.json();

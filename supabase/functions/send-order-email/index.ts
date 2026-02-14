@@ -1,5 +1,7 @@
+// @ts-nocheck
 
 import { createClient } from '@supabase/supabase-js';
+import { serve } from 'https://deno.land/std@0.201.0/http/server.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,7 +33,7 @@ function getSafeErrorMessage(error: string): string {
   return 'Unable to process request. Please try again.';
 }
 
-Deno.serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -49,8 +51,8 @@ Deno.serve(async (req) => {
 
     // Client for verifying user auth
     const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      (globalThis as any).Deno.env.get('SUPABASE_URL') ?? '',
+      (globalThis as any).Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -68,8 +70,8 @@ Deno.serve(async (req) => {
 
     // Service role client for privileged operations
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      (globalThis as any).Deno.env.get('SUPABASE_URL') ?? '',
+      (globalThis as any).Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const { orderId, type }: EmailRequest = await req.json();

@@ -1,12 +1,13 @@
-
+// @ts-nocheck
 import { createClient } from '@supabase/supabase-js';
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+serve(async (req: Request) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
@@ -16,8 +17,8 @@ Deno.serve(async (req) => {
         console.log('ContiPay webhook received');
 
         // Initialize Supabase with service role key for webhook processing
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        const supabaseUrl = (globalThis as any).Deno.env.get('SUPABASE_URL');
+        const supabaseServiceKey = (globalThis as any).Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
         if (!supabaseUrl || !supabaseServiceKey) {
             console.error('Supabase configuration missing');
@@ -40,8 +41,7 @@ Deno.serve(async (req) => {
             );
         }
 
-        // Verify signature
-        const apiSecret = Deno.env.get('CONTIPAY_API_SECRET');
+        const apiSecret = (globalThis as any).Deno.env.get('CONTIPAY_API_SECRET');
         if (!apiSecret) {
             console.error('ContiPay API secret not configured');
             throw new Error('Configuration error');
