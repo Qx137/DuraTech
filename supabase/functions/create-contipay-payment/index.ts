@@ -1,10 +1,11 @@
 // @ts-nocheck
-
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 interface PaymentRequest {
@@ -33,12 +34,10 @@ function getSafeErrorMessage(error: string): string {
     return errorMap[error] || 'Payment processing failed. Please try again.';
 }
 
-const serve = (globalThis as any).Deno?.serve || require('http').createServer;
-
 serve(async (req: Request) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response(null, { headers: corsHeaders });
+        return new Response('ok', { headers: corsHeaders });
     }
 
     try {
