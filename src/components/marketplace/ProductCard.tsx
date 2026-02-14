@@ -27,7 +27,7 @@ interface ProductCardProps {
 const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   return (
     <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md overflow-hidden">
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-36 overflow-hidden">
         <img 
           src={product.image || "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=400&h=300&fit=crop"} 
           alt={product.name}
@@ -39,9 +39,9 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           </Badge>
         )}
       </div>
-      <CardHeader className="pb-3">
+      <CardHeader className="p-3 pb-0">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-lg">{product.name}</CardTitle>
+          <CardTitle className="text-base font-semibold line-clamp-1" title={product.name}>{product.name}</CardTitle>
           <div className="flex items-center space-x-1">
             <Star className="h-4 w-4 text-yellow-400 fill-current" />
             <span className="text-sm text-gray-600">{product.rating?.toFixed(1) || '0.0'}</span>
@@ -49,8 +49,8 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         </div>
         <CardDescription>{product.description || 'Fresh, quality produce'}</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="p-3 pt-2">
+        <div className="space-y-2">
           <div className="flex items-center text-sm text-gray-600">
             <MapPin className="h-4 w-4 mr-1" />
             {product.farmer} {product.distance ? `• ${product.distance.toFixed(1)} km away` : ''}
@@ -58,12 +58,12 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-2xl font-bold text-green-600">${product.price}</span>
+              <span className="text-lg font-bold text-green-600">${product.price}</span>
               <span className="text-gray-500 ml-1">{product.unit}</span>
             </div>
             <Button 
               size="sm" 
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 h-8 px-3 text-xs"
               onClick={onAddToCart}
             >
               <ShoppingBag className="h-4 w-4 mr-1" />

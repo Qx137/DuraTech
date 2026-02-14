@@ -144,7 +144,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           borderRadius: BorderRadius.circular(12),
           color: isSelected
-              ? AppColors.emerald.withOpacity(0.05)
+              ? AppColors.emerald.withValues(alpha: 0.05)
               : Colors.transparent,
         ),
         child: Row(
