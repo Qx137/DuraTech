@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/dashboard/order_tracking_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/marketplace/cart_screen.dart';
 import 'screens/main_navigation.dart';
@@ -42,6 +43,15 @@ class DuraHubApp extends StatelessWidget {
         useMaterial3: true,
       ),
       initialRoute: AuthService().currentUser == null ? '/login' : '/',
+      onGenerateRoute: (settings) {
+        if (settings.name == '/order-tracking') {
+          final orderId = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => OrderTrackingScreen(orderId: orderId),
+          );
+        }
+        return null; // Let the routes table handle others
+      },
       routes: {
         '/': (context) => const MainNavigation(),
         '/login': (context) => const LoginScreen(),

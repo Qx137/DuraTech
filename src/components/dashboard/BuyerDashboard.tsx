@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Leaf, ShoppingCart, Star, MapPin, Package, Heart, User, LogOut, MessageSquare, Trash2 } from "lucide-react";
+import { Leaf, ShoppingCart, Star, MapPin, Package, Heart, User, LogOut, MessageSquare, Trash2, Truck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -450,11 +450,21 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                                 </Badge>
                               </div>
                             </div>
-                            <OrderCancellation
-                              orderId={order.id}
-                              currentStatus={order.status.toLowerCase()}
-                              onCancelled={fetchDashboardData}
-                            />
+                            <div className="flex gap-2 items-center">
+                              {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
+                                <Link to={`/delivery-tracking?orderId=${order.id}`}>
+                                  <Button variant="outline" size="sm">
+                                    <Truck className="h-4 w-4 mr-2" />
+                                    Track Order
+                                  </Button>
+                                </Link>
+                              )}
+                              <OrderCancellation
+                                orderId={order.id}
+                                currentStatus={order.status.toLowerCase()}
+                                onCancelled={fetchDashboardData}
+                              />
+                            </div>
                           </div>
                         </div>
                         <div className="border-t pt-2 mt-2">

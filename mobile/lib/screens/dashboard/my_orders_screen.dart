@@ -191,6 +191,31 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 ),
               ],
             ),
+            if (status.toLowerCase() != 'delivered' &&
+                status.toLowerCase() != 'cancelled') ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/order-tracking',
+                      arguments: order['id'],
+                    );
+                  },
+                  icon: const Icon(Icons.local_shipping_outlined),
+                  label: const Text('Track Order'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.emerald,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
