@@ -11,6 +11,7 @@ class Product {
   final bool organic;
   final String description;
   final int stockQuantity;
+  final String kycStatus;
 
   Product({
     required this.id,
@@ -25,6 +26,7 @@ class Product {
     required this.organic,
     required this.description,
     required this.stockQuantity,
+    required this.kycStatus,
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
@@ -44,6 +46,7 @@ class Product {
       organic: map['organic'] ?? false,
       description: map['description'] ?? '',
       stockQuantity: map['stock_quantity'] ?? 0,
+      kycStatus: map['profiles']?['kyc_status'] ?? 'none',
     );
   }
 }

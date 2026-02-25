@@ -438,11 +438,23 @@ class _ProductCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  'By ${product.farmer}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'By ${product.farmer}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (product.kycStatus == 'verified')
+                      const Icon(
+                        Icons.verified,
+                        size: 14,
+                        color: Colors.blue,
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Row(

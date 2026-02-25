@@ -7,7 +7,7 @@ class MarketplaceService {
   Future<List<Product>> fetchProducts() async {
     final response = await _client
         .from('products')
-        .select('*, profiles(name, business_name)')
+        .select('*, profiles(name, business_name, kyc_status)')
         .order('created_at', ascending: false);
 
     return (response as List).map((data) => Product.fromMap(data)).toList();
@@ -42,7 +42,7 @@ class MarketplaceService {
   Future<List<Product>> fetchSellerProducts(String sellerId) async {
     final response = await _client
         .from('products')
-        .select('*, profiles(name, business_name)')
+        .select('*, profiles(name, business_name, kyc_status)')
         .eq('seller_id', sellerId)
         .order('created_at', ascending: false);
 
