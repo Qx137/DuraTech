@@ -13,6 +13,7 @@ export interface Product {
   description: string | null;
   distance?: number;
   stock_quantity: number;
+  kycStatus?: 'none' | 'pending' | 'verified' | 'rejected';
 }
 
 export const products: Product[] = [
@@ -182,6 +183,7 @@ export const products: Product[] = [
     category: "vegetables",
     organic: true,
     description: "Fresh sweet corn on the cob, perfect for roasting",
-    stock_quantity: 100
+    stock_quantity: 100,
+    kycStatus: "verified"
   }
 ];

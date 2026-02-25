@@ -11,6 +11,7 @@ import {
   TrendingUp, MapPin, Clock, Gavel, Plus 
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { KycVerification } from './KycVerification';
 
 interface CompanyDashboardProps {
   userId: string;
@@ -232,6 +233,7 @@ export const CompanyDashboard = ({ userId }: CompanyDashboardProps) => {
             <TabsTrigger value="deliveries">Available Deliveries</TabsTrigger>
             <TabsTrigger value="bids">My Bids</TabsTrigger>
             <TabsTrigger value="drivers">Drivers</TabsTrigger>
+            <TabsTrigger value="verification">Verification</TabsTrigger>
           </TabsList>
 
           <TabsContent value="deliveries" className="space-y-4">
@@ -405,6 +407,10 @@ export const CompanyDashboard = ({ userId }: CompanyDashboardProps) => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="verification">
+            <KycVerification />
           </TabsContent>
         </Tabs>
       </div>

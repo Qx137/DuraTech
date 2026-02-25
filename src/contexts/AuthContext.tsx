@@ -10,6 +10,7 @@ interface UserProfile {
   userType: 'buyer' | 'seller' | 'driver';
   businessName?: string;
   description?: string;
+  kycStatus: 'none' | 'pending' | 'verified' | 'rejected';
 }
 
 interface AuthContextType {
@@ -73,6 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 userType: userType as 'buyer' | 'seller' | 'driver',
                 businessName: profileResult.data.business_name || undefined,
                 description: profileResult.data.description || undefined,
+                kycStatus: (profileResult.data as any).kyc_status || 'none',
               });
             } else {
               console.error("Error fetching profile:", profileResult.error);
@@ -82,6 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 name: session.user.user_metadata?.name || session.user.email || 'User',
                 email: session.user.email || '',
                 userType: 'buyer', // default type
+                kycStatus: 'none',
               });
             }
           }, 0);

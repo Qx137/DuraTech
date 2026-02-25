@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import LocationMap from "@/components/checkout/LocationMap";
 import { OrderManagement } from "@/components/orders/OrderManagement";
+import { KycVerification } from "./KycVerification";
 
 interface User {
   id: string;
@@ -1219,6 +1220,15 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             >
               Orders
             </button>
+            <button
+              onClick={() => setActiveSection('verification')}
+              className={`px-4 py-2 border-b-2 transition-colors ${activeSection === 'verification'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-600 hover:text-green-600'
+                }`}
+            >
+              Verification
+            </button>
           </div>
         </div>
 
@@ -1447,6 +1457,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         {activeSection === 'customers' && renderCustomers()}
         {activeSection === 'inventory' && renderInventory()}
         {activeSection === 'orders' && renderOrders()}
+        {activeSection === 'verification' && <KycVerification />}
       </div>
     </>
   );

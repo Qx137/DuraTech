@@ -89,14 +89,15 @@ const Marketplace = () => {
           *,
           profiles (
             name,
-            business_name
+            business_name,
+            kyc_status
           )
         `);
 
       if (error) throw error;
 
       const formattedProducts = await Promise.all(
-        (data || []).map(async product => {
+        (data || []).map(async (product: any) => {
           const sellerLocation = getSellerLocationFromProduct(product);
           const distance = userLocation ? await calculateDistance(userLocation, sellerLocation) : null;
 
@@ -113,7 +114,8 @@ const Marketplace = () => {
             organic: product.organic,
             description: product.description || '',
             distance: distance,
-            stock_quantity: product.stock_quantity || Math.floor(Math.random() * 50) + 10 // Mock stock if missing
+            stock_quantity: product.stock_quantity || Math.floor(Math.random() * 50) + 10,
+            kycStatus: product.profiles?.kyc_status || 'none'
           };
         })
       );

@@ -35,4 +35,20 @@ class StorageService {
 
     return _client.storage.from('driver-docs').getPublicUrl(fileName);
   }
+
+  Future<String> uploadKycDoc(File file, String docType) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    final fileName =
+        '${user.id}/$docType-${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    await _client.storage.from('kyc-documents').upload(
+          fileName,
+          file,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+        );
+
+    return _client.storage.from('kyc-documents').getPublicUrl(fileName);
+  }
 }

@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { CreateBidForm } from '@/components/delivery/CreateBidForm';
-import { MapPin, Package, Clock, DollarSign, CheckCircle, Navigation, Gavel, Building2 } from 'lucide-react';
+import { MapPin, Package, Clock, DollarSign, CheckCircle, Navigation, Gavel, Building2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { KycVerification } from './KycVerification';
 
 interface Driver {
   id: string;
@@ -446,6 +447,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
               <TabsTrigger value="instant">Instant Accept</TabsTrigger>
               <TabsTrigger value="bidding">Open for Bidding</TabsTrigger>
               <TabsTrigger value="mybids">My Bids ({myBids.filter(b => b.status === 'pending').length})</TabsTrigger>
+              <TabsTrigger value="verification">Verification</TabsTrigger>
             </TabsList>
 
             <TabsContent value="instant">
@@ -639,6 +641,10 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="verification">
+              <KycVerification />
             </TabsContent>
           </Tabs>
         )}

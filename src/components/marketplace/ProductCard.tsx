@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, ShoppingBag } from "lucide-react";
+import { Star, MapPin, ShoppingBag, CheckCircle2 } from "lucide-react";
 
 interface Product {
   id: string;
@@ -17,6 +17,7 @@ interface Product {
   organic: boolean;
   description: string | null;
   distance?: number;
+  kycStatus?: 'none' | 'pending' | 'verified' | 'rejected';
 }
 
 interface ProductCardProps {
@@ -53,7 +54,13 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         <div className="space-y-2">
           <div className="flex items-center text-sm text-gray-600">
             <MapPin className="h-4 w-4 mr-1" />
-            {product.farmer} {product.distance ? `• ${product.distance.toFixed(1)} km away` : ''}
+            <span className="flex items-center">
+              {product.farmer}
+              {product.kycStatus === 'verified' && (
+                <CheckCircle2 className="h-3 w-3 ml-1 text-blue-500 fill-blue-50" />
+              )}
+            </span>
+            {product.distance ? ` • ${product.distance.toFixed(1)} km away` : ''}
           </div>
           
           <div className="flex items-center justify-between">

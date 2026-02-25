@@ -9,6 +9,8 @@ import 'delivery_history_screen.dart';
 import 'earnings_screen.dart';
 import 'my_orders_screen.dart';
 import 'coming_soon_screen.dart';
+import 'kyc_screen.dart';
+import '../../services/kyc_service.dart';
 import '../../theme/app_colors.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,7 +22,9 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _authService = AuthService();
+  final _kycService = KycService();
   Map<String, dynamic>? _profile;
+  String _kycStatus = 'none';
   bool _isLoading = true;
   String _driverStatus = 'offline';
 
@@ -39,6 +43,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'user_type': user?.userMetadata?['user_type'] ?? 'buyer',
       };
     });
+
+    try {
+      final status = await _kycService.getKycStatus();
+      setState(() => _kycStatus = status);
+    } catch (e) {
+      debugPrint('Error loading KYC status: $e');
+    }
 
     if (_profile?['user_type'] == 'driver') {
       await _loadDriverStatus();
@@ -231,6 +242,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (_kycStatus != 'none') ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        _kycStatus == 'verified'
+                            ? Icons.verified
+                            : (_kycStatus == 'pending'
+                                ? Icons.hourglass_top
+                                : Icons.error_outline),
+                        size: 14,
+                        color: _kycStatus == 'verified'
+                            ? AppColors.emerald
+                            : (_kycStatus == 'pending'
+                                ? Colors.orange
+                                : Colors.red),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'KYC: ${_kycStatus.toUpperCase()}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: _kycStatus == 'verified'
+                              ? AppColors.emerald
+                              : (_kycStatus == 'pending'
+                                  ? Colors.orange
+                                  : Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ],
@@ -346,14 +390,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _actionCard(
           Icons.verified_user,
           'Verification',
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            await Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    const ComingSoonScreen(title: 'Verification'),
-              ),
+              MaterialPageRoute(builder: (context) => const KycScreen()),
             );
+            _loadProfile(); // Refresh status after returning
           },
         ),
       ],
