@@ -89,8 +89,7 @@ const Marketplace = () => {
           *,
           profiles (
             name,
-            business_name,
-            kyc_status
+            business_name
           )
         `);
 
@@ -114,8 +113,8 @@ const Marketplace = () => {
             organic: product.organic,
             description: product.description || '',
             distance: distance,
-            stock_quantity: product.stock_quantity || Math.floor(Math.random() * 50) + 10,
-            kycStatus: product.profiles?.kyc_status || 'none'
+            stock_quantity: product.stock_quantity || 0,
+            kycStatus: 'none' as const
           };
         })
       );
