@@ -8,7 +8,7 @@ import SearchFilters from "@/components/marketplace/SearchFilters";
 import AIRecommendationsBanner from "@/components/marketplace/AIRecommendationsBanner";
 import ProductCard from "@/components/marketplace/ProductCard";
 import NoProductsFound from "@/components/marketplace/NoProductsFound";
-import { products as sampleProducts, Product } from "@/data/sampleProducts";
+import { Product } from "@/data/sampleProducts";
 import { calculateDistance, getSellerLocationFromProduct, Location } from "@/utils/distanceCalculator";
 
 const Marketplace = () => {
@@ -123,8 +123,7 @@ const Marketplace = () => {
       setProducts(formattedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
-      // Use sample products as fallback
-      setProducts(sampleProducts);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
