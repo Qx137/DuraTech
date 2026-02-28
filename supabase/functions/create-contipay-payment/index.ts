@@ -148,26 +148,27 @@ serve(async (req: Request) => {
         const lastName = nameParts.slice(1).join(' ') || '';
 
         const paymentData = {
-            merchantId: merchantId,
             webhookUrl: resultUrl,
             successUrl: returnUrl,
             cancelUrl: returnUrl,
+            description: `Payment for order ${orderId}`.substring(0, 100),
+            amount: parseFloat(amount.toFixed(2)),
+            reference: orderId,
+            merchantId: merchantId,
+            currencyCode: 'USD',
             customer: {
-                firstName: firstName,
-                surname: lastName,
-                phone: phone || '',
-                countryCode: 'ZW',
+                firstName: firstName || 'Customer',
+                surname: lastName || 'N/A',
+                middleName: '',
                 email: email,
-            },
-            transaction: {
-                amount: parseFloat(amount.toFixed(2)),
-                currencyCode: 'USD',
-                description: `Payment for order ${orderId}`,
-                reference: orderId,
+                cell: phone && phone.trim() !== '' ? phone : '0000000000',
+                countryCode: 'ZW',
+                nationalId: '', // Optional/Placeholder
             },
         };
 
         console.log('Sending request to ContiPay:', baseUrl);
+        console.log('Final Payment Data:', JSON.stringify(paymentData));
 
         // Use Basic Auth with token (apiKey) and secret (apiSecret) per ContiPay JS client
         const basicAuth = btoa(`${apiKey}:${apiSecret}`);
@@ -238,7 +239,9 @@ serve(async (req: Request) => {
         return new Response(
             JSON.stringify({
                 success: false,
-                error: safeMessage
+                error: safeMessage,
+                details: internalError,
+                payloadSent: paymentData // Include this for debugging
             }),
             {
                 status,
