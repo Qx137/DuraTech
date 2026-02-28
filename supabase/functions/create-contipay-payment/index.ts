@@ -122,7 +122,9 @@ serve(async (req: Request) => {
         const apiKey = (globalThis as any).Deno.env.get('CONTIPAY_API_KEY');
         const apiSecret = (globalThis as any).Deno.env.get('CONTIPAY_API_SECRET');
         // Correct ContiPay URLs: DEV=https://api2-test.contipay.co.zw LIVE=https://api-v2.contipay.co.zw
-        const baseUrl = (globalThis as any).Deno.env.get('CONTIPAY_BASE_URL') || 'https://api2-test.contipay.co.zw';
+        const rawBaseUrl = (globalThis as any).Deno.env.get('CONTIPAY_BASE_URL') || 'https://api2-test.contipay.co.zw';
+        // Ensure baseUrl has a protocol and remove trailing slash
+        const baseUrl = (rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl}`).replace(/\/$/, '');
 
         if (!apiKey || !apiSecret) {
             console.error('ContiPay credentials not configured');
@@ -229,8 +231,7 @@ serve(async (req: Request) => {
         return new Response(
             JSON.stringify({
                 success: false,
-                error: safeMessage,
-                details: internalError // Temporarily include full error for easier debugging
+                error: safeMessage
             }),
             {
                 status,
