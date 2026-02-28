@@ -122,8 +122,10 @@ serve(async (req: Request) => {
         const apiKey = (globalThis as any).Deno.env.get('CONTIPAY_API_KEY');
         const apiSecret = (globalThis as any).Deno.env.get('CONTIPAY_API_SECRET');
         const merchantIdRaw = (globalThis as any).Deno.env.get('CONTIPAY_MERCHANT_ID');
-        // Correct ContiPay URLs: DEV=https://api2-test.contipay.co.zw LIVE=https://api-v2.contipay.co.zw
-        const rawBaseUrl = (globalThis as any).Deno.env.get('CONTIPAY_BASE_URL') || 'https://api2-test.contipay.co.zw';
+        // Official ContiPay URLs: 
+        // TEST: https://api-uat.contipay.net
+        // LIVE: https://api.contipay.net (or https://api-v2.contipay.co.zw)
+        const rawBaseUrl = (globalThis as any).Deno.env.get('CONTIPAY_BASE_URL') || 'https://api-uat.contipay.net';
         // Ensure baseUrl has a protocol and remove trailing slash
         const baseUrl = (rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl}`).replace(/\/$/, '');
 
