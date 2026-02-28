@@ -121,13 +121,20 @@ serve(async (req: Request) => {
         // Get ContiPay credentials from environment
         const apiKey = (globalThis as any).Deno.env.get('CONTIPAY_API_KEY');
         const apiSecret = (globalThis as any).Deno.env.get('CONTIPAY_API_SECRET');
+        const merchantIdRaw = (globalThis as any).Deno.env.get('CONTIPAY_MERCHANT_ID');
         // Correct ContiPay URLs: DEV=https://api2-test.contipay.co.zw LIVE=https://api-v2.contipay.co.zw
         const rawBaseUrl = (globalThis as any).Deno.env.get('CONTIPAY_BASE_URL') || 'https://api2-test.contipay.co.zw';
         // Ensure baseUrl has a protocol and remove trailing slash
         const baseUrl = (rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl}`).replace(/\/$/, '');
 
-        if (!apiKey || !apiSecret) {
-            console.error('ContiPay credentials not configured');
+        if (!apiKey || !apiSecret || !merchantIdRaw) {
+            console.error('ContiPay credentials not configured correctly. Missing:', !apiKey ? 'API_KEY' : '', !apiSecret ? 'API_SECRET' : '', !merchantIdRaw ? 'MERCHANT_ID' : '');
+            throw new Error('ContiPay credentials not configured');
+        }
+
+        const merchantId = parseInt(merchantIdRaw, 10);
+        if (isNaN(merchantId)) {
+            console.error('Invalid CONTIPAY_MERCHANT_ID: must be a number');
             throw new Error('ContiPay credentials not configured');
         }
 
@@ -141,7 +148,7 @@ serve(async (req: Request) => {
         const lastName = nameParts.slice(1).join(' ') || '';
 
         const paymentData = {
-            merchantId: apiKey,
+            merchantId: merchantId,
             webhookUrl: resultUrl,
             successUrl: returnUrl,
             cancelUrl: returnUrl,
