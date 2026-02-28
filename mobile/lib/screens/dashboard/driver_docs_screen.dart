@@ -16,12 +16,6 @@ class _DriverDocsScreenState extends State<DriverDocsScreen> {
   final _storageService = StorageService();
   final _picker = ImagePicker();
 
-  final Map<String, File?> _files = {
-    'license': null,
-    'insurance': null,
-    'vehicle_reg': null,
-  };
-
   final Map<String, bool> _uploading = {
     'license': false,
     'insurance': false,
@@ -69,7 +63,6 @@ class _DriverDocsScreenState extends State<DriverDocsScreen> {
 
     final file = File(pickedFile.path);
     setState(() {
-      _files[type] = file;
       _uploading[type] = true;
     });
 
@@ -148,7 +141,6 @@ class _DriverDocsScreenState extends State<DriverDocsScreen> {
   Widget _buildDocItem(String label, String key) {
     final isCompleted = _completed[key]!;
     final isUploading = _uploading[key]!;
-    final file = _files[key];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),

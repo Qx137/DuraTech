@@ -80,8 +80,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         } else if (_sortBy == 'price_desc') {
           _filteredProducts.sort((a, b) => b.price.compareTo(a.price));
         } else if (_sortBy == 'rating') {
-          _filteredProducts
-              .sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+          _filteredProducts.sort((a, b) => b.rating.compareTo(a.rating));
         }
       }
     });
@@ -109,7 +108,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               ),
               onPressed: () => Navigator.pushNamed(context, '/cart').then((_) {
                 // Refresh count when returning from cart
-                context.read<CartProvider>().refreshCount();
+                if (context.mounted) {
+                  context.read<CartProvider>().refreshCount();
+                }
               }),
             ),
           ),
