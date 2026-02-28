@@ -71,6 +71,7 @@ serve(async (req: Request) => {
 
         // Parse and validate input
         const body = await req.json();
+        console.log('Request body:', JSON.stringify(body));
         let { orderId, amount, email, phone, customerName } = body as PaymentRequest;
         if (typeof amount === 'string') {
             amount = parseFloat(amount);
@@ -92,9 +93,11 @@ serve(async (req: Request) => {
         const orderError = orderRes.error;
 
         if (orderError || !order) {
-            console.error('Order lookup failed:', orderError);
+            console.error('Order lookup failed:', orderError, 'for orderId:', orderId);
             throw new Error('Order not found');
         }
+
+        console.log('Order found:', JSON.stringify(order));
 
         // 5. Verify user owns this order
         if (order.user_id !== user.id) {
