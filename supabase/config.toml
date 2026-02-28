@@ -21,5 +21,8 @@ verify_jwt = true
 [functions.get-contipay-status]
 verify_jwt = true
 
+[functions.create-contipay-disbursement]
+verify_jwt = true
+
 [functions.create-stripe-checkout]
 verify_jwt = true
