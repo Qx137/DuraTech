@@ -27,6 +27,7 @@ function getSafeErrorMessage(error: string): string {
         'Order already paid': 'This order has already been paid',
         'Amount mismatch': 'Unable to process payment',
         'ContiPay credentials not configured': 'Payment service temporarily unavailable',
+        'Payment gateway temporarily unavailable': 'The payment gateway is temporarily unavailable. Please try again in a few moments.',
     };
 
     // Return mapped message or generic error
@@ -228,7 +229,8 @@ serve(async (req: Request) => {
         return new Response(
             JSON.stringify({
                 success: false,
-                error: safeMessage
+                error: safeMessage,
+                details: internalError // Temporarily include full error for easier debugging
             }),
             {
                 status,
