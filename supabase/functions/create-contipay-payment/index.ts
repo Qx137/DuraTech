@@ -4,8 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface PaymentRequest {
@@ -118,63 +117,57 @@ serve(async (req: Request) => {
         // Get ContiPay credentials from environment
         const apiKey = (globalThis as any).Deno.env.get('CONTIPAY_API_KEY');
         const apiSecret = (globalThis as any).Deno.env.get('CONTIPAY_API_SECRET');
-        const baseUrl = (globalThis as any).Deno.env.get('CONTIPAY_BASE_URL') || 'https://api.contipay.co.zw';
+        // Correct ContiPay URLs: DEV=https://api2-test.contipay.co.zw LIVE=https://api-v2.contipay.co.zw
+        const baseUrl = (globalThis as any).Deno.env.get('CONTIPAY_BASE_URL') || 'https://api2-test.contipay.co.zw';
 
         if (!apiKey || !apiSecret) {
             console.error('ContiPay credentials not configured');
             throw new Error('ContiPay credentials not configured');
         }
 
-        // Create payment request to ContiPay
+        // Build redirect payment payload per ContiPay API spec
         const returnUrl = `${(globalThis as any).Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '') || 'https://wutfcyskvfkunmvrvafz.lovable.app'}/payment-success?orderId=${orderId}`;
         const resultUrl = `${(globalThis as any).Deno.env.get('SUPABASE_URL')}/functions/v1/contipay-webhook`;
 
+        // Split customer name into first/last
+        const nameParts = customerName.trim().split(' ');
+        const firstName = nameParts[0] || 'Customer';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
         const paymentData = {
-            apiKey: apiKey,
-            amount: amount.toFixed(2),
-            reference: orderId,
-            email: email,
-            phone: phone || '',
-            customerName: customerName,
-            returnUrl: returnUrl,
-            resultUrl: resultUrl,
-            description: `Payment for order ${orderId}`
-        };
-
-        // Create HMAC signature
-        const dataToSign = `${apiKey}${amount.toFixed(2)}${orderId}${email}`;
-        const encoder = new TextEncoder();
-        const keyData = encoder.encode(apiSecret);
-        const messageData = encoder.encode(dataToSign);
-
-        const cryptoKey = await crypto.subtle.importKey(
-            'raw',
-            keyData,
-            { name: 'HMAC', hash: 'SHA-256' },
-            false,
-            ['sign']
-        );
-
-        const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-        const signatureArray = Array.from(new Uint8Array(signature));
-        const signatureHex = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-        // Add signature to payment data
-        const finalPaymentData = {
-            ...paymentData,
-            signature: signatureHex
+            merchantCode: 0,
+            webhookUrl: resultUrl,
+            successUrl: returnUrl,
+            cancelUrl: returnUrl,
+            customer: {
+                firstName: firstName,
+                lastName: lastName,
+                phone: phone || '',
+                countryCode: 'ZW',
+                email: email,
+            },
+            transaction: {
+                amount: parseFloat(amount.toFixed(2)),
+                currencyCode: 'USD',
+                description: `Payment for order ${orderId}`,
+                reference: orderId,
+            },
         };
 
         console.log('Sending request to ContiPay:', baseUrl);
 
-        // Send request to ContiPay
+        // Use Basic Auth with token (apiKey) and secret (apiSecret) per ContiPay JS client
+        const basicAuth = btoa(`${apiKey}:${apiSecret}`);
+
+        // Send redirect payment request to ContiPay
         const contiPayResponse = await fetch(`${baseUrl}/acquire/payment`, {
-            method: 'POST',
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'Authorization': `Basic ${basicAuth}`,
             },
-            body: JSON.stringify(finalPaymentData)
+            body: JSON.stringify(paymentData)
         });
 
         if (!contiPayResponse.ok) {
@@ -184,9 +177,12 @@ serve(async (req: Request) => {
         }
 
         const responseData = await contiPayResponse.json();
-        console.log('ContiPay response received');
+        console.log('ContiPay response received:', JSON.stringify(responseData));
 
-        if (responseData.success && responseData.paymentUrl) {
+        // ContiPay redirect responses may return a URL in different fields
+        const paymentUrl = responseData.paymentUrl || responseData.url || responseData.redirectUrl || responseData.redirect_url;
+
+        if (paymentUrl) {
             // Update order with ContiPay reference
             await supabase
                 .from('orders')
@@ -196,7 +192,7 @@ serve(async (req: Request) => {
             return new Response(
                 JSON.stringify({
                     success: true,
-                    paymentUrl: responseData.paymentUrl,
+                    paymentUrl: paymentUrl,
                     reference: orderId
                 }),
                 {
@@ -204,11 +200,11 @@ serve(async (req: Request) => {
                 }
             );
         } else {
-            console.error('ContiPay returned error:', responseData.error || responseData.message);
+            console.error('ContiPay returned no payment URL:', JSON.stringify(responseData));
             return new Response(
                 JSON.stringify({
                     success: false,
-                    error: 'Payment initialization failed. Please try again.'
+                    error: responseData.message || responseData.error || 'Payment initialization failed. Please try again.'
                 }),
                 {
                     status: 400,

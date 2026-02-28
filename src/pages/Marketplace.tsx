@@ -8,7 +8,7 @@ import SearchFilters from "@/components/marketplace/SearchFilters";
 import AIRecommendationsBanner from "@/components/marketplace/AIRecommendationsBanner";
 import ProductCard from "@/components/marketplace/ProductCard";
 import NoProductsFound from "@/components/marketplace/NoProductsFound";
-import { products as sampleProducts, Product } from "@/data/sampleProducts";
+import { Product } from "@/data/sampleProducts";
 import { calculateDistance, getSellerLocationFromProduct, Location } from "@/utils/distanceCalculator";
 
 const Marketplace = () => {
@@ -89,8 +89,7 @@ const Marketplace = () => {
           *,
           profiles (
             name,
-            business_name,
-            kyc_status
+            business_name
           )
         `);
 
@@ -114,8 +113,8 @@ const Marketplace = () => {
             organic: product.organic,
             description: product.description || '',
             distance: distance,
-            stock_quantity: product.stock_quantity || Math.floor(Math.random() * 50) + 10,
-            kycStatus: product.profiles?.kyc_status || 'none'
+            stock_quantity: product.stock_quantity || 0,
+            kycStatus: 'none' as const
           };
         })
       );
@@ -123,8 +122,7 @@ const Marketplace = () => {
       setProducts(formattedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
-      // Use sample products as fallback
-      setProducts(sampleProducts);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
