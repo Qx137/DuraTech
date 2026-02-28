@@ -141,13 +141,13 @@ serve(async (req: Request) => {
         const lastName = nameParts.slice(1).join(' ') || '';
 
         const paymentData = {
-            merchantCode: 0,
+            merchantId: apiKey,
             webhookUrl: resultUrl,
             successUrl: returnUrl,
             cancelUrl: returnUrl,
             customer: {
                 firstName: firstName,
-                lastName: lastName,
+                surname: lastName,
                 phone: phone || '',
                 countryCode: 'ZW',
                 email: email,
