@@ -186,41 +186,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* About Us Section */}
-      <section id="about-section" className="py-16 md:py-24">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <Card className="overflow-hidden rounded-2xl border-0 shadow-xl bg-gradient-to-r from-green-600 to-emerald-600">
-            <CardContent className="p-8 md:p-12 text-white">
-              <div className="grid md:grid-cols-2 gap-10 items-center">
-                <div>
-                  <UserCheck className="h-14 w-14 mb-6 opacity-90" />
-                  <h3 className="text-3xl font-bold mb-4">About Durahub</h3>
-                  <p className="text-lg opacity-90 mb-6 leading-relaxed">
-                    Founded with a mission to bridge the gap between farmers and consumers, Durahub revolutionizes agricultural commerce through innovative technology and sustainable practices.
-                  </p>
-                  <Button size="lg" variant="outline" className="text-green-600 border-white bg-white hover:bg-gray-100 rounded-xl">
-                    Learn More
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { icon: Shield, label: "Trusted Platform" },
-                    { icon: Users, label: "Community Driven" },
-                    { icon: Cpu, label: "AI Powered" },
-                    { icon: TrendingUp, label: "Growth Focused" }
-                  ].map(({ icon: Icon, label }) => (
-                    <div key={label} className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
-                      <Icon className="h-10 w-10 mx-auto mb-2 opacity-80" />
-                      <p className="text-sm opacity-90">{label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
       {/* Stats Section - Bento */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4 max-w-6xl">
@@ -285,11 +250,6 @@ const Index = () => {
                 <li><Link to="/marketplace" className="hover:text-green-500 transition-colors">Marketplace</Link></li>
                 <li><Link to="/community" className="hover:text-green-500 transition-colors">Community</Link></li>
                 <li><Link to="/ai-tools" className="hover:text-green-500 transition-colors">AI Tools</Link></li>
-                <li>
-                  <button onClick={() => document.querySelector('#about-section')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-green-500 transition-colors text-left">
-                    About Us
-                  </button>
-                </li>
                 <li>
                   <button onClick={() => document.querySelector('#newsletter-section')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-green-500 transition-colors text-left">
                     Contact
