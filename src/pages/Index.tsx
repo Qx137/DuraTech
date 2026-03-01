@@ -51,8 +51,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50 font-sans">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/80 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-6xl">
+      <header className="sticky top-0 z-50 pt-4 px-4">
+        <div className="container mx-auto px-6 py-3 flex items-center justify-between max-w-5xl bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-200/60">
           <img src="/logo.png" alt="Durahub Logo" className="h-14" />
           <nav className="hidden md:flex items-center gap-8">
             <Link to="/marketplace" className="text-gray-600 hover:text-green-600 transition-colors">
