@@ -4,6 +4,9 @@ import '../../services/contipay_service.dart';
 import '../../theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../services/auth_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final List<Map<String, dynamic>> items;
@@ -22,6 +25,7 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _service = CartService();
   final _contipayService = ContiPayService();
+  final _authService = AuthService();
   final _emailController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -30,6 +34,74 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   String _paymentMethod = 'contipay';
   bool _isLoading = false;
+  bool _isLocating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _autoFillCredentials();
+  }
+
+  Future<void> _autoFillCredentials() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      setState(() {
+        _emailController.text = user.email ?? '';
+        final name = user.userMetadata?['name'] as String? ?? '';
+        final nameParts = name.split(' ');
+        if (nameParts.isNotEmpty) {
+          _firstNameController.text = nameParts.first;
+          if (nameParts.length > 1) {
+            _lastNameController.text = nameParts.sublist(1).join(' ');
+          }
+        }
+      });
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLocating = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Location services are disabled.');
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Location permissions are denied');
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception(
+            'Location permissions are permanently denied, we cannot request permissions.');
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        setState(() {
+          _addressController.text =
+              '${place.street}, ${place.locality}, ${place.country}';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error getting location: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,10 +152,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _addressController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Shipping Address',
-                prefixIcon: Icon(Icons.location_on_outlined),
+                prefixIcon: const Icon(Icons.location_on_outlined),
                 hintText: 'Unit number, street, city...',
+                suffixIcon: IconButton(
+                  icon: _isLocating
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.my_location, color: AppColors.emerald),
+                  onPressed: _isLocating ? null : _getCurrentLocation,
+                  tooltip: 'Use current location',
+                ),
               ),
               maxLines: 2,
             ),
