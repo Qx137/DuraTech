@@ -107,7 +107,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     const file = e.target.files?.[0];
     if (file) {
       // Check file type (images and videos)
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/mov'];
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime', 'video/mov'];
       if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
@@ -133,6 +133,27 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   const handleSaveProduct = async () => {
     if (newProduct.name && newProduct.price && newProduct.stock && newProduct.unit && newProduct.category) {
+      const price = parseFloat(newProduct.price);
+      const stock = parseInt(newProduct.stock);
+
+      if (isNaN(price) || price < 0) {
+        toast({
+          title: "Invalid Price",
+          description: "Please enter a valid price.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (isNaN(stock) || stock < 0) {
+        toast({
+          title: "Invalid Stock",
+          description: "Please enter a valid stock quantity.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       setUploading(true);
       try {
         let mediaUrl = newProduct.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop';
@@ -148,10 +169,10 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             {
               seller_id: user.id,
               name: newProduct.name,
-              price: parseFloat(newProduct.price),
+              price: price,
               unit: newProduct.unit,
               category: newProduct.category,
-              stock_quantity: parseInt(newProduct.stock),
+              stock_quantity: stock,
               description: newProduct.description,
               location: newProduct.location,
               organic: newProduct.organic,
@@ -183,11 +204,11 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         setSelectedFile(null);
         setShowAddProductForm(false);
         fetchProducts(); // Refresh the products list
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error adding product:', error);
         toast({
           title: "Error",
-          description: "Failed to add product. Please try again.",
+          description: error.message || "Failed to add product. Please try again.",
           variant: "destructive"
         });
       } finally {
@@ -223,6 +244,27 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   const handleUpdateProduct = async () => {
     if (newProduct.name && newProduct.price && newProduct.stock && newProduct.unit && newProduct.category && editingProduct) {
+      const price = parseFloat(newProduct.price);
+      const stock = parseInt(newProduct.stock);
+
+      if (isNaN(price) || price < 0) {
+        toast({
+          title: "Invalid Price",
+          description: "Please enter a valid price.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (isNaN(stock) || stock < 0) {
+        toast({
+          title: "Invalid Stock",
+          description: "Please enter a valid stock quantity.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       setUploading(true);
       try {
         let mediaUrl = newProduct.image;
@@ -236,10 +278,10 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           .from('products')
           .update({
             name: newProduct.name,
-            price: parseFloat(newProduct.price),
+            price: price,
             unit: newProduct.unit,
             category: newProduct.category,
-            stock_quantity: parseInt(newProduct.stock),
+            stock_quantity: stock,
             description: newProduct.description,
             location: newProduct.location,
             organic: newProduct.organic,
@@ -274,11 +316,11 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         setShowEditForm(false);
         setEditingProduct(null);
         fetchProducts(); // Refresh the products list
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error updating product:', error);
         toast({
           title: "Error",
-          description: "Failed to update product. Please try again.",
+          description: error.message || "Failed to update product. Please try again.",
           variant: "destructive"
         });
       } finally {
@@ -344,11 +386,11 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
       if (error) throw error;
       setProducts(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
         title: "Error",
-        description: "Failed to load products.",
+        description: error.message || "Failed to load products.",
         variant: "destructive"
       });
     } finally {
@@ -911,7 +953,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 <div className="space-y-2">
                   <Input
                     type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/mov"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/quicktime,video/mov"
                     onChange={handleFileChange}
                     className="cursor-pointer"
                   />
