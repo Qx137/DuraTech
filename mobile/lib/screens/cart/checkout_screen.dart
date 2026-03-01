@@ -81,7 +81,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
 
       Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+          locationSettings: LocationSettings(accuracy: LocationAccuracy.high));
 
       List<Placemark> placemarks =
           await placemarkFromCoordinates(position.latitude, position.longitude);
