@@ -78,6 +78,22 @@ serve(async (req: Request) => {
             );
         }
 
+        // Idempotency check: prevent replay attacks
+        const { data: existingLog } = await supabase
+            .from('webhook_log')
+            .select('id')
+            .eq('webhook_reference', reference)
+            .eq('webhook_status', status || String(statusCode))
+            .maybeSingle();
+
+        if (existingLog) {
+            console.log('Webhook already processed for reference:', reference, 'status:', status || statusCode);
+            return new Response(
+                JSON.stringify({ success: true, message: 'Webhook already processed' }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+
         // Map ContiPay status/statusCode to our order status
         let paymentStatus = 'pending';
         let orderStatus = 'pending';
@@ -133,6 +149,15 @@ serve(async (req: Request) => {
             console.error('Error updating order:', updateError);
             throw updateError;
         }
+
+        // Log webhook as processed to prevent replays
+        await supabase
+            .from('webhook_log')
+            .insert({
+                webhook_reference: reference,
+                webhook_status: status || String(statusCode),
+            })
+            .single();
 
         // If payment successful, send confirmation email
         if (paymentStatus === 'completed') {

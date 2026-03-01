@@ -930,6 +930,27 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_log: {
+        Row: {
+          id: string
+          processed_at: string
+          webhook_reference: string
+          webhook_status: string
+        }
+        Insert: {
+          id?: string
+          processed_at?: string
+          webhook_reference: string
+          webhook_status: string
+        }
+        Update: {
+          id?: string
+          processed_at?: string
+          webhook_reference?: string
+          webhook_status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       public_drivers: {
