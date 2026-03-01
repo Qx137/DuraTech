@@ -65,22 +65,20 @@ class AuthService {
     await _client.from('profiles').update(updates).eq('id', user.id);
   }
 
-  Future<void> updateRole(String newRole) async {
+  Future<void> updateRole(String newRole, {String? businessName, String? description}) async {
     final user = currentUser;
     if (user == null) throw Exception('User not logged in');
 
-    // 1. Update user_roles table
-    await _client
-        .from('user_roles')
-        .update({'role': newRole}).eq('user_id', user.id);
+    // Use edge function for secure role change
+    final response = await _client.functions.invoke('update-user-role', body: {
+      'role': newRole,
+      if (businessName != null) 'business_name': businessName,
+      if (description != null) 'description': description,
+    });
 
-    // 2. Update profiles table
-    await _client
-        .from('profiles')
-        .update({'user_type': newRole}).eq('id', user.id);
-
-    // 3. Update Auth Metadata
-    await _client.auth.updateUser(UserAttributes(data: {'user_type': newRole}));
+    if (response.status != 200) {
+      throw Exception('Failed to update role');
+    }
   }
 
   User? get currentUser => _client.auth.currentUser;
