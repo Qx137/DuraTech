@@ -238,12 +238,17 @@ serve(async (req: Request) => {
         const status = internalError.includes('Access denied') ? 403 :
             internalError.includes('Unauthorized') ? 401 : 400;
 
+        // Log detailed error server-side for debugging
+        console.error('Payment error context:', JSON.stringify({
+            internalError,
+            userId: typeof user !== 'undefined' ? user?.id : 'unknown',
+            timestamp: new Date().toISOString()
+        }));
+
         return new Response(
             JSON.stringify({
                 success: false,
-                error: safeMessage,
-                details: internalError,
-                payloadSent: paymentData // Include this for debugging
+                error: safeMessage
             }),
             {
                 status,
