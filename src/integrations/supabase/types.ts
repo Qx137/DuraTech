@@ -552,6 +552,53 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_verifications: {
+        Row: {
+          created_at: string
+          id: string
+          id_back_url: string | null
+          id_front_url: string
+          id_type: string
+          rejection_reason: string | null
+          selfie_url: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url: string
+          id_type: string
+          rejection_reason?: string | null
+          selfie_url: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string
+          id_type?: string
+          rejection_reason?: string | null
+          selfie_url?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -845,6 +892,7 @@ export type Database = {
           description: string | null
           email: string
           id: string
+          kyc_status: string
           name: string
           updated_at: string
           user_type: string
@@ -855,6 +903,7 @@ export type Database = {
           description?: string | null
           email: string
           id: string
+          kyc_status?: string
           name: string
           updated_at?: string
           user_type: string
@@ -865,6 +914,7 @@ export type Database = {
           description?: string | null
           email?: string
           id?: string
+          kyc_status?: string
           name?: string
           updated_at?: string
           user_type?: string
