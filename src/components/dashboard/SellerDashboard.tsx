@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Leaf, Package, DollarSign, Users, TrendingUp, Plus, Edit, Eye, LogOut, MessageSquare, BarChart3, Settings, Database, Upload, FileText, Building, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import NotchHeader from "@/components/layout/NotchHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
@@ -788,31 +789,15 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   return (
     <>
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img
-              src="/logo.png"
-              alt="Durahub Logo"
-              className="h-16"
-            />
-          </Link>
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/dashboard" className="text-green-600 font-medium">
-              Dashboard
-            </Link>
-            <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
-              Marketplace
-            </Link>
-            <Link to="/community" className="text-gray-700 hover:text-green-600 transition-colors">
-              Community
-            </Link>
-            <Link to="/ai-tools" className="text-gray-700 hover:text-green-600 transition-colors">
-              AI Tools
-            </Link>
-          </nav>
-          <div className="flex items-center space-x-3">
+      <NotchHeader
+        navItems={[
+          { label: "Dashboard", to: "/dashboard", active: true },
+          { label: "Marketplace", to: "/marketplace" },
+          { label: "Community", to: "/community" },
+          { label: "AI Tools", to: "/ai-tools" },
+        ]}
+        actions={
+          <>
             <Button onClick={handleAddProduct} size="sm" className="bg-green-600 hover:bg-green-700">
               <Plus className="h-4 w-4 mr-1" />
               Add Product
@@ -821,9 +806,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <LogOut className="h-4 w-4 mr-1" />
               Logout
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
