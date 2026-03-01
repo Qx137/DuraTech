@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import NotchHeader from "@/components/layout/NotchHeader";
 
 interface Post {
   id: string;
@@ -244,37 +245,20 @@ const Community = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
-      <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img
-              src="/logo.png"
-              alt="Durahub Logo"
-              className="h-16"
-            />
-          </Link>
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/dashboard" className="text-gray-700 hover:text-green-600 transition-colors">
-              Dashboard
-            </Link>
-            <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
-              Marketplace
-            </Link>
-            <Link to="/community" className="text-green-600 font-medium">
-              Community
-            </Link>
-            <Link to="/ai-tools" className="text-gray-700 hover:text-green-600 transition-colors">
-              AI Tools
-            </Link>
-          </nav>
-          <div className="flex items-center space-x-3">
-            <Button onClick={handleLogout} variant="outline" size="sm">
-              <LogOut className="h-4 w-4 mr-1" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
+      <NotchHeader
+        navItems={[
+          { label: "Dashboard", to: "/dashboard" },
+          { label: "Marketplace", to: "/marketplace" },
+          { label: "Community", to: "/community", active: true },
+          { label: "AI Tools", to: "/ai-tools" },
+        ]}
+        actions={
+          <Button onClick={handleLogout} variant="outline" size="sm">
+            <LogOut className="h-4 w-4 mr-1" />
+            Logout
+          </Button>
+        }
+      />
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">

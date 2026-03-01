@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Minus, Plus, Trash2, ShoppingCart, Leaf, ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import NotchHeader from "@/components/layout/NotchHeader";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -158,35 +159,21 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img
-              src="/logo.png"
-              alt="Durahub Logo"
-              className="h-16"
-            />
-          </Link>
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
-              Marketplace
-            </Link>
-            <Link to="/community" className="text-gray-700 hover:text-green-600 transition-colors">
-              Community
-            </Link>
-            <Link to="/cart" className="text-green-600 font-medium">
-              Cart
-            </Link>
-          </nav>
+      <NotchHeader
+        navItems={[
+          { label: "Marketplace", to: "/marketplace" },
+          { label: "Community", to: "/community" },
+          { label: "Cart", to: "/cart", active: true },
+        ]}
+        actions={
           <Link to="/marketplace">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-1" />
               Continue Shopping
             </Button>
           </Link>
-        </div>
-      </header>
+        }
+      />
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
