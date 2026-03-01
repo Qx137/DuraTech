@@ -87,25 +87,17 @@ const Settings = () => {
     
     setIsUpdating(true);
     try {
-      // Update user_roles table
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .update({ role: 'seller' })
-        .eq('user_id', user.id);
-
-      if (roleError) throw roleError;
-
-      // Update profiles table with seller info
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          user_type: 'seller',
+      // Use edge function for secure role change
+      const { data, error } = await supabase.functions.invoke('update-user-role', {
+        body: {
+          role: 'seller',
           business_name: sellerInfo.businessName.trim(),
           description: sellerInfo.description?.trim() || null,
-        })
-        .eq('id', user.id);
+        },
+      });
 
-      if (profileError) throw profileError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Welcome, Seller!",
@@ -131,21 +123,13 @@ const Settings = () => {
   const handleSwitchToBuyer = async () => {
     setIsUpdating(true);
     try {
-      // Update user_roles table
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .update({ role: 'buyer' })
-        .eq('user_id', user.id);
+      // Use edge function for secure role change
+      const { data, error } = await supabase.functions.invoke('update-user-role', {
+        body: { role: 'buyer' },
+      });
 
-      if (roleError) throw roleError;
-
-      // Update profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ user_type: 'buyer' })
-        .eq('id', user.id);
-
-      if (profileError) throw profileError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Role Updated",
