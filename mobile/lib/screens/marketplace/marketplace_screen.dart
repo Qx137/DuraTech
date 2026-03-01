@@ -459,6 +459,23 @@ class _ProductCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 14),
+                    const SizedBox(width: 2),
+                    Text(
+                      product.rating > 0
+                          ? product.rating.toStringAsFixed(1)
+                          : '—',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
