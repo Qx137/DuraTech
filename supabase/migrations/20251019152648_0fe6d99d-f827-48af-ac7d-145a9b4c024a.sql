@@ -41,7 +41,10 @@ ON CONFLICT (user_id, role) DO NOTHING;
 DROP POLICY IF EXISTS "Sellers can create their own products" ON public.products;
 CREATE POLICY "Sellers can create their own products"
 ON public.products FOR INSERT
-WITH CHECK (public.has_role(auth.uid(), 'seller'));
+WITH CHECK (
+  auth.uid() = seller_id 
+  AND public.has_role(auth.uid(), 'seller')
+);
 
 DROP POLICY IF EXISTS "Sellers can update their own products" ON public.products;
 CREATE POLICY "Sellers can update their own products"
