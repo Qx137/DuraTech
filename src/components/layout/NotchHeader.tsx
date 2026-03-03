@@ -22,7 +22,7 @@ const defaultNavItems: NavItem[] = [
 const NotchHeader = ({ navItems = defaultNavItems, actions }: NotchHeaderProps) => {
   return (
     <header className="sticky top-0 z-50 pt-4 px-4">
-      <div className="container mx-auto px-6 py-3 flex items-center justify-between max-w-5xl bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-200/60">
+      <div className="container mx-auto px-6 py-3 flex items-center justify-between max-w-5xl bg-card/95 backdrop-blur-md rounded-full shadow-lg border border-border">
         <Link to="/" className="flex items-center">
           <img src="/logo.png" alt="Durahub Logo" className="h-14" />
         </Link>
@@ -33,8 +33,8 @@ const NotchHeader = ({ navItems = defaultNavItems, actions }: NotchHeaderProps) 
               to={item.to}
               className={
                 item.active
-                  ? "text-green-600 font-medium"
-                  : "text-gray-600 hover:text-green-600 transition-colors"
+                  ? "text-primary font-medium"
+                  : "text-muted-foreground hover:text-primary transition-colors"
               }
             >
               {item.label}
