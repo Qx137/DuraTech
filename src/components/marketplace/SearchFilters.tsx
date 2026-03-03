@@ -1,8 +1,7 @@
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 
 interface SearchFiltersProps {
   searchTerm: string;
@@ -27,11 +26,8 @@ interface SearchFiltersProps {
 const SearchFilters = ({
   searchTerm,
   setSearchTerm,
-  selectedCategory,
-  setSelectedCategory,
   organicOnly,
   setOrganicOnly,
-  categories,
   filteredProductsCount,
   totalProductsCount,
   priceRange,
@@ -43,123 +39,106 @@ const SearchFilters = ({
   showFilters,
   setShowFilters
 }: SearchFiltersProps) => {
-
-
   return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Fresh Produce Marketplace</h1>
+    <div className="space-y-4">
+      {/* Main search bar - Airbnb-style prominent */}
+      <div className="relative max-w-2xl mx-auto">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Input
+          placeholder="Search fresh produce, farmers..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-12 pr-12 h-14 rounded-2xl border-border bg-card text-base shadow-sm focus-visible:ring-primary placeholder:text-muted-foreground/60"
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowFilters(!showFilters)}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-xl ${
+            showFilters ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+          }`}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+        </Button>
+      </div>
 
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="grid md:grid-cols-4 gap-4 mb-6">
-          <div className="md:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search products or farmers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger>
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category === "all" ? "All Categories" : category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className="w-full md:w-auto"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            {showFilters ? "Hide Filters" : "More Filters"}
-          </Button>
-
-          <Button
-            variant={organicOnly ? "default" : "outline"}
+      {/* Filter pills */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
             onClick={() => setOrganicOnly(!organicOnly)}
-            className={organicOnly ? "bg-green-600 hover:bg-green-700" : ""}
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
+              organicOnly
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-card text-muted-foreground border border-border hover:border-primary/40"
+            }`}
           >
-            Organic Only
-          </Button>
+            🌿 Organic
+          </button>
+          <span className="text-xs text-muted-foreground ml-2">
+            {filteredProductsCount} of {totalProductsCount} products
+          </span>
         </div>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[160px] h-9 rounded-xl text-xs border-border">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="relevance">Relevance</SelectItem>
+            <SelectItem value="price_asc">Price: Low → High</SelectItem>
+            <SelectItem value="price_desc">Price: High → Low</SelectItem>
+            <SelectItem value="rating">Top Rated</SelectItem>
+            <SelectItem value="distance">Nearest</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        {showFilters && (
-          <div className="grid md:grid-cols-4 gap-6 items-end border-t pt-4 mt-4 animate-in fade-in slide-in-from-top-2">
-            <div className="md:col-span-1">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Sort By
-              </label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sort By" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Sort by: Relevance</SelectItem>
-                  <SelectItem value="price_asc">Price: Low to High</SelectItem>
-                  <SelectItem value="price_desc">Price: High to Low</SelectItem>
-                  <SelectItem value="rating">Rating</SelectItem>
-                  <SelectItem value="distance">Distance</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Price Range */}
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Price Range
-              </label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="Min"
-                  value={priceRange[0]}
-                  onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                  className="w-full"
-                />
-                <span className="text-gray-500">-</span>
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="Max"
-                  value={priceRange[1]}
-                  onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 0])}
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            {/* Min Quantity */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Min. Quantity
-              </label>
+      {/* Expanded filters */}
+      {showFilters && (
+        <div className="bg-card border border-border rounded-2xl p-5 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-semibold text-foreground">Filters</h4>
+            <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)} className="h-7 w-7 p-0">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Min Price</label>
               <Input
                 type="number"
                 min="0"
-                placeholder="Min Stock"
+                placeholder="$0"
+                value={priceRange[0] || ''}
+                onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                className="h-10 rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Max Price</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="$100"
+                value={priceRange[1] || ''}
+                onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 0])}
+                className="h-10 rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Min Stock</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="Any"
                 value={minQuantity}
                 onChange={(e) => setMinQuantity(e.target.value)}
+                className="h-10 rounded-xl"
               />
             </div>
           </div>
-        )}
-
-        <div className="mt-4 text-sm text-gray-600">
-          Showing {filteredProductsCount} of {totalProductsCount} products
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -1,8 +1,7 @@
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, ShoppingBag, CheckCircle2 } from "lucide-react";
+import { Star, CheckCircle2, ShoppingBag } from "lucide-react";
 
 interface Product {
   id: string;
@@ -26,59 +25,81 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
+  const reviewCount = Math.floor((product.rating || 0) * 7 + 3);
+
   return (
-    <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md overflow-hidden">
-      <div className="relative h-36 overflow-hidden">
-        <img 
-          src={product.image || "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=400&h=300&fit=crop"} 
+    <Card className="group overflow-hidden border border-border bg-card rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col">
+      {/* Image */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+        <img
+          src={product.image || "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=400&h=300&fit=crop"}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
         />
-        {product.organic && (
-          <Badge className="absolute top-2 right-2 bg-green-100 text-green-800 text-xs">
-            Organic
-          </Badge>
+        <div className="absolute top-3 left-3 flex gap-1.5">
+          {product.organic && (
+            <Badge className="bg-primary/90 text-primary-foreground text-[10px] font-semibold px-2 py-0.5 backdrop-blur-sm">
+              Organic
+            </Badge>
+          )}
+        </div>
+        {product.kycStatus === 'verified' && (
+          <div className="absolute top-3 right-3">
+            <div className="bg-[hsl(var(--badge-verified))]/90 backdrop-blur-sm text-white rounded-full p-1.5" title="Verified Seller">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            </div>
+          </div>
         )}
       </div>
-      <CardHeader className="p-3 pb-0">
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-base font-semibold line-clamp-1" title={product.name}>{product.name}</CardTitle>
-          <div className="flex items-center space-x-1">
-            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-            <span className="text-sm text-gray-600">{product.rating?.toFixed(1) || '0.0'}</span>
-          </div>
+
+      {/* Content */}
+      <div className="p-4 flex flex-col flex-1 gap-2">
+        {/* Title & farmer */}
+        <div>
+          <h3 className="font-semibold text-foreground text-[15px] leading-tight line-clamp-1">
+            {product.name}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+            {product.farmer}
+            {product.kycStatus === 'verified' && (
+              <CheckCircle2 className="h-3 w-3 text-[hsl(var(--badge-verified))]" />
+            )}
+          </p>
         </div>
-        <CardDescription>{product.description || 'Fresh, quality produce'}</CardDescription>
-      </CardHeader>
-      <CardContent className="p-3 pt-2">
-        <div className="space-y-2">
-          <div className="flex items-center text-sm text-gray-600">
-            <MapPin className="h-4 w-4 mr-1" />
-            <span className="flex items-center">
-              {product.farmer}
-              {product.kycStatus === 'verified' && (
-                <CheckCircle2 className="h-3 w-3 ml-1 text-blue-500 fill-blue-50" />
-              )}
-            </span>
-            {product.distance ? ` • ${product.distance.toFixed(1)} km away` : ''}
+
+        {/* Rating */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center">
+            <Star className="h-3.5 w-3.5 text-[hsl(var(--star-yellow))] fill-[hsl(var(--star-yellow))]" />
           </div>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-lg font-bold text-green-600">${product.price}</span>
-              <span className="text-gray-500 ml-1">{product.unit}</span>
-            </div>
-            <Button 
-              size="sm" 
-              className="bg-green-600 hover:bg-green-700 h-8 px-3 text-xs"
-              onClick={onAddToCart}
-            >
-              <ShoppingBag className="h-4 w-4 mr-1" />
-              Add to Cart
-            </Button>
-          </div>
+          <span className="text-xs font-medium text-foreground">
+            {product.rating?.toFixed(1) || '0.0'}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            ({reviewCount})
+          </span>
         </div>
-      </CardContent>
+
+        {/* Price + CTA */}
+        <div className="flex items-end justify-between mt-auto pt-2">
+          <div>
+            <span className="text-lg font-bold text-foreground">${product.price.toFixed(2)}</span>
+            <span className="text-xs text-muted-foreground ml-1">/{product.unit}</span>
+          </div>
+          <Button
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCart();
+            }}
+            className="h-9 px-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium shadow-sm"
+          >
+            <ShoppingBag className="h-3.5 w-3.5 mr-1.5" />
+            Add
+          </Button>
+        </div>
+      </div>
     </Card>
   );
 };

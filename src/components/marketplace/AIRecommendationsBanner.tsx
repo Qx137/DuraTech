@@ -1,18 +1,27 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 
 const AIRecommendationsBanner = () => {
   return (
-    <div className="bg-gradient-to-r from-green-600 to-emerald-700 text-primary-foreground rounded-lg p-6 mb-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-bold mb-2">🤖 AI Recommendations for You</h3>
-          <p className="opacity-90">Based on seasonal trends and your location, we recommend fresh corn and tomatoes!</p>
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-primary/80 p-5 md:p-6">
+      <div className="flex items-center gap-4">
+        <div className="bg-primary-foreground/20 backdrop-blur-sm rounded-2xl p-3 shrink-0">
+          <Sparkles className="h-6 w-6 text-primary-foreground" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-primary-foreground">AI Picks for You</h3>
+          <p className="text-xs text-primary-foreground/80 mt-0.5 line-clamp-1">
+            Seasonal recommendations based on your location & trends
+          </p>
         </div>
         <Link to="/ai-tools">
-          <Button variant="outline" className="text-foreground border-primary-foreground hover:bg-primary-foreground hover:text-green-700">
-            View AI Tools
+          <Button
+            size="sm"
+            variant="secondary"
+            className="rounded-xl text-xs font-medium shrink-0"
+          >
+            Explore
           </Button>
         </Link>
       </div>
