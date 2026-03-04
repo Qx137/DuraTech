@@ -16,6 +16,7 @@ const defaultNavItems: NavItem[] = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Marketplace", to: "/marketplace" },
   { label: "Community", to: "/community" },
+  { label: "DuraGo", to: "/delivery" },
   { label: "AI Tools", to: "/ai-tools" },
 ];
 
