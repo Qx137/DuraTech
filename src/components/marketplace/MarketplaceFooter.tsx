@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Mail, Phone } from "lucide-react";
 
 const MarketplaceFooter = () => {
   return (
@@ -7,9 +8,23 @@ const MarketplaceFooter = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           <div className="col-span-2 md:col-span-1">
             <img src="/logo.png" alt="Durahub" className="h-12 mb-4 brightness-200" />
-            <p className="text-sm text-background/60 leading-relaxed">
+            <p className="text-sm text-background/60 leading-relaxed mb-4">
               Connecting farmers and consumers for a sustainable agricultural future.
             </p>
+            <div className="space-y-2 text-sm text-background/60">
+              <a href="mailto:info.durahubonline@gmail.com" className="flex items-center gap-2 hover:text-primary transition-colors">
+                <Mail className="h-4 w-4 shrink-0" />
+                info.durahubonline@gmail.com
+              </a>
+              <a href="tel:+263789613200" className="flex items-center gap-2 hover:text-primary transition-colors">
+                <Phone className="h-4 w-4 shrink-0" />
+                +263 789 613 200
+              </a>
+              <a href="tel:+263780431231" className="flex items-center gap-2 hover:text-primary transition-colors">
+                <Phone className="h-4 w-4 shrink-0" />
+                +263 780 431 231
+              </a>
+            </div>
           </div>
           <div>
             <h4 className="font-semibold text-sm mb-4 text-background/90">Shop</h4>

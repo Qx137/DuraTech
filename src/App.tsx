@@ -23,6 +23,7 @@ import DeliveryBidSelection from "./pages/DeliveryBidSelection";
 import Settings from "./pages/Settings";
 import Delivery from "./pages/Delivery";
 import NotFound from "./pages/NotFound";
+import FloatingSupportButton from "./components/layout/FloatingSupportButton";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <FloatingSupportButton />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
