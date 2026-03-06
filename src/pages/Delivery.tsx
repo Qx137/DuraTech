@@ -31,10 +31,42 @@ const Delivery = () => {
   const [price, setPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Reverse geocoding helper
+  const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+      );
+      const data = await response.json();
+      return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  };
+
+  // Auto-locate on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const loc = { lat: latitude, lng: longitude };
+          setPickup(loc);
+          const address = await reverseGeocode(latitude, longitude);
+          setPickupName(address);
+        },
+        (error) => {
+          console.error('Error getting initial location:', error);
+        }
+      );
+    }
+  }, []);
+
   // Search logic for Nominatim (Debounced)
   useEffect(() => {
     const searchLocation = async (query: string, type: 'pickup' | 'destination') => {
-      if (query.length < 3) {
+      if (query.length < 3 || query.includes(',') || query === 'My Location' || query === 'Destination') {
         if (type === 'pickup') setPickupSuggestions([]);
         else setDestinationSuggestions([]);
         return;
@@ -56,11 +88,16 @@ const Delivery = () => {
     };
 
     const delayDebounceFn = setTimeout(() => {
-      if (pickupName && !pickupName.includes('My Location')) {
-        searchLocation(pickupName, 'pickup');
+      if (pickupName && !pickupName.includes('My Location') && pickupName.length > 5) {
+        // Only search if it's not a reverse geocoded address (heuristic: contains commas)
+        if (!pickupName.includes(',')) {
+          searchLocation(pickupName, 'pickup');
+        }
       }
-      if (destinationName && destinationName !== 'Destination') {
-        searchLocation(destinationName, 'destination');
+      if (destinationName && destinationName !== 'Destination' && destinationName.length > 5) {
+        if (!destinationName.includes(',')) {
+          searchLocation(destinationName, 'destination');
+        }
       }
     }, 500);
 
@@ -106,6 +143,11 @@ const Delivery = () => {
 
     setLoading(true);
     try {
+      // Get user name parts
+      const nameParts = user.name?.split(' ') || [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
       // 1. Create a "Delivery Service" order
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -117,9 +159,14 @@ const Delivery = () => {
           payment_status: 'pending',
           order_type: 'service',
           delivery_address: {
-            latitude: destination.lat,
-            longitude: destination.lng,
-            address: destinationName
+            firstName,
+            lastName,
+            address: destinationName,
+            phone: user.phone || '',
+            coordinates: {
+              latitude: destination.lat,
+              longitude: destination.lng,
+            }
           }
         })
         .select()
@@ -133,14 +180,24 @@ const Delivery = () => {
         .insert({
           order_id: order.id,
           pickup_address: {
-            latitude: pickup.lat,
-            longitude: pickup.lng,
-            address: pickupName
+            firstName,
+            lastName,
+            address: pickupName,
+            phone: user.phone || '',
+            coordinates: {
+              latitude: pickup.lat,
+              longitude: pickup.lng,
+            }
           },
           delivery_address: {
-            latitude: destination.lat,
-            longitude: destination.lng,
-            address: destinationName
+            firstName,
+            lastName,
+            address: destinationName,
+            phone: user.phone || '',
+            coordinates: {
+              latitude: destination.lat,
+              longitude: destination.lng,
+            }
           },
           status: 'pending',
           distance_km: distance
@@ -182,13 +239,15 @@ const Delivery = () => {
         <LocationPicker
           pickup={pickup}
           destination={destination}
-          onPickupChange={(loc) => {
+          onPickupChange={async (loc) => {
             setPickup(loc);
-            if (!pickupName) setPickupName('My Location');
+            const address = await reverseGeocode(loc.lat, loc.lng);
+            setPickupName(address);
           }}
-          onDestinationChange={(loc) => {
+          onDestinationChange={async (loc) => {
             setDestination(loc);
-            if (!destinationName) setDestinationName('Destination');
+            const address = await reverseGeocode(loc.lat, loc.lng);
+            setDestinationName(address);
           }}
         />
       </div>

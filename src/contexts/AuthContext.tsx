@@ -7,6 +7,7 @@ interface UserProfile {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   userType: 'buyer' | 'seller' | 'driver';
   businessName?: string;
   description?: string;
@@ -71,6 +72,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 id: profileResult.data.id,
                 name: profileResult.data.name,
                 email: profileResult.data.email,
+                phone: (profileResult.data as any).phone || undefined,
                 userType: userType as 'buyer' | 'seller' | 'driver',
                 businessName: profileResult.data.business_name || undefined,
                 description: profileResult.data.description || undefined,
@@ -83,6 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 id: session.user.id,
                 name: session.user.user_metadata?.name || session.user.email || 'User',
                 email: session.user.email || '',
+                phone: session.user.phone || undefined,
                 userType: 'buyer', // default type
                 kycStatus: 'none',
               });
