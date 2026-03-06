@@ -255,7 +255,8 @@ const Checkout = () => {
           },
           payment_method: paymentMethod,
           status: 'pending',
-          payment_status: 'pending'
+          payment_status: 'pending',
+          order_type: 'marketplace'
         })
         .select()
         .single();
