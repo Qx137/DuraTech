@@ -157,7 +157,7 @@ const Delivery = () => {
           total: price || 0,
           payment_method: 'cash', // Default for now
           payment_status: 'pending',
-          order_type: 'service',
+          // order_type: 'service',
           delivery_address: {
             firstName,
             lastName,
