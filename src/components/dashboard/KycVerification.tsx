@@ -310,16 +310,22 @@ export const KycVerification = () => {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>First Name <span className="text-destructive">*</span></Label>
-              <Input placeholder="Enter first name" value={firstName} onChange={(e) => setFirstName(e.target.value)} maxLength={100} />
+              <Input placeholder="Enter first name" value={firstName} onChange={(e) => { setFirstName(e.target.value); clearError("firstName"); }} maxLength={100}
+                className={errors.firstName ? "border-destructive" : ""} />
+              {errors.firstName && <p className="text-xs text-destructive">{errors.firstName}</p>}
             </div>
             <div className="space-y-2">
               <Label>Surname <span className="text-destructive">*</span></Label>
-              <Input placeholder="Enter surname" value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={100} />
+              <Input placeholder="Enter surname" value={lastName} onChange={(e) => { setLastName(e.target.value); clearError("lastName"); }} maxLength={100}
+                className={errors.lastName ? "border-destructive" : ""} />
+              {errors.lastName && <p className="text-xs text-destructive">{errors.lastName}</p>}
             </div>
           </div>
           <div className="space-y-2">
             <Label>ID Number <span className="text-destructive">*</span></Label>
-            <Input placeholder="e.g. 63-123456A78" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} maxLength={50} />
+            <Input placeholder="e.g. 63-123456A78" value={idNumber} onChange={(e) => { setIdNumber(e.target.value); clearError("idNumber"); }} maxLength={50}
+              className={errors.idNumber ? "border-destructive" : ""} />
+            {errors.idNumber && <p className="text-xs text-destructive">{errors.idNumber}</p>}
           </div>
         </div>
 
