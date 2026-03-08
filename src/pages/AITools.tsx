@@ -201,9 +201,9 @@ const AITools = () => {
           <Card className="shadow-lg border-0">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                {selectedTool === "recommendations" && <Bot className="h-5 w-5 text-green-600" />}
-                {selectedTool === "pricing" && <TrendingUp className="h-5 w-5 text-blue-600" />}
-                {selectedTool === "search" && <Search className="h-5 w-5 text-purple-600" />}
+                {selectedTool === "recommendations" && <Sprout className="h-5 w-5 text-green-600" />}
+                {selectedTool === "pricing" && <BarChart3 className="h-5 w-5 text-blue-600" />}
+                {selectedTool === "search" && <SearchCheck className="h-5 w-5 text-purple-600" />}
                 <span>
                   {selectedTool === "recommendations" && "Get Crop Recommendations"}
                   {selectedTool === "pricing" && "Analyze Price Trends"}
