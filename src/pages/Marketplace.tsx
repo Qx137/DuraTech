@@ -208,8 +208,6 @@ const Marketplace = () => {
         {/* Categories */}
         <CategoryNav categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
 
-        {/* Trust indicators */}
-        <TrustBar />
 
         {/* AI Banner */}
         <AIRecommendationsBanner />
