@@ -409,6 +409,7 @@ export const KycVerification = () => {
               <span className="text-sm font-medium">Bank Account</span>
             </button>
           </div>
+          {errors.paymentMethods && <p className="text-xs text-destructive">{errors.paymentMethods}</p>}
 
           {/* Mobile Money Details */}
           {paymentMethods.includes("mobile_money") && (
@@ -419,15 +420,18 @@ export const KycVerification = () => {
                   <label key={key} className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
                       checked={mobileProviders.includes(key)}
-                      onCheckedChange={() => toggleMobileProvider(key)}
+                      onCheckedChange={() => { toggleMobileProvider(key); clearError("mobileProviders"); }}
                     />
                     <span className="text-sm">{label}</span>
                   </label>
                 ))}
               </div>
+              {errors.mobileProviders && <p className="text-xs text-destructive">{errors.mobileProviders}</p>}
               <div className="space-y-2">
                 <Label>Mobile Number <span className="text-destructive">*</span></Label>
-                <Input placeholder="e.g. 0771234567" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} maxLength={15} />
+                <Input placeholder="e.g. 0771234567" value={mobileNumber} onChange={(e) => { setMobileNumber(e.target.value); clearError("mobileNumber"); }} maxLength={15}
+                  className={errors.mobileNumber ? "border-destructive" : ""} />
+                {errors.mobileNumber && <p className="text-xs text-destructive">{errors.mobileNumber}</p>}
               </div>
             </div>
           )}
@@ -439,11 +443,15 @@ export const KycVerification = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Bank Name <span className="text-destructive">*</span></Label>
-                  <Input placeholder="e.g. CBZ Bank" value={bankName} onChange={(e) => setBankName(e.target.value)} maxLength={100} />
+                  <Input placeholder="e.g. CBZ Bank" value={bankName} onChange={(e) => { setBankName(e.target.value); clearError("bankName"); }} maxLength={100}
+                    className={errors.bankName ? "border-destructive" : ""} />
+                  {errors.bankName && <p className="text-xs text-destructive">{errors.bankName}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label>Account Number <span className="text-destructive">*</span></Label>
-                  <Input placeholder="Enter account number" value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} maxLength={30} />
+                  <Input placeholder="Enter account number" value={bankAccountNumber} onChange={(e) => { setBankAccountNumber(e.target.value); clearError("bankAccountNumber"); }} maxLength={30}
+                    className={errors.bankAccountNumber ? "border-destructive" : ""} />
+                  {errors.bankAccountNumber && <p className="text-xs text-destructive">{errors.bankAccountNumber}</p>}
                 </div>
               </div>
               <div className="space-y-2">
