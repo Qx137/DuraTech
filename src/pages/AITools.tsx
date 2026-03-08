@@ -164,7 +164,7 @@ const AITools = () => {
             onClick={() => setSelectedTool("recommendations")}
           >
             <CardHeader className="text-center">
-              <Bot className="h-12 w-12 text-green-600 mx-auto mb-2" />
+              <Sprout className="h-12 w-12 text-green-600 mx-auto mb-2" />
               <CardTitle>Crop Recommendations</CardTitle>
               <CardDescription>AI suggests best crops for your location</CardDescription>
             </CardHeader>
