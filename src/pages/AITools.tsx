@@ -295,7 +295,7 @@ const AITools = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>
-                      <Calendar className="inline h-4 w-4 mr-1" />
+                      <CalendarDays className="inline h-4 w-4 mr-1" />
                       Prediction Period
                     </Label>
                     <Select>
