@@ -176,7 +176,7 @@ const AITools = () => {
             onClick={() => setSelectedTool("pricing")}
           >
             <CardHeader className="text-center">
-              <TrendingUp className="h-12 w-12 text-blue-600 mx-auto mb-2" />
+              <BarChart3 className="h-12 w-12 text-blue-600 mx-auto mb-2" />
               <CardTitle>Price Predictions</CardTitle>
               <CardDescription>Forecast market prices with ML</CardDescription>
             </CardHeader>
