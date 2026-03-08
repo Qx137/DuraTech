@@ -136,19 +136,63 @@ export const KycVerification = () => {
     );
   };
 
-  const isFormValid = () => {
-    if (!firstName.trim() || !lastName.trim() || !idNumber.trim()) return false;
-    if (!idFront || !selfie || (idType !== "passport" && !idBack)) return false;
-    if (sellerType === "corporate" && (!certOfIncorporation || !taxClearance)) return false;
-    if (paymentMethods.length === 0) return false;
-    if (paymentMethods.includes("mobile_money") && (mobileProviders.length === 0 || !mobileNumber.trim())) return false;
-    if (paymentMethods.includes("bank") && (!bankName.trim() || !bankAccountNumber.trim())) return false;
-    return true;
+  const validateForm = (): FormErrors => {
+    const errs: FormErrors = {};
+
+    // Personal details
+    if (!firstName.trim()) errs.firstName = "First name is required";
+    else if (firstName.trim().length < 2) errs.firstName = "Must be at least 2 characters";
+    else if (!/^[a-zA-Z\s'-]+$/.test(firstName.trim())) errs.firstName = "Only letters, spaces, hyphens allowed";
+
+    if (!lastName.trim()) errs.lastName = "Surname is required";
+    else if (lastName.trim().length < 2) errs.lastName = "Must be at least 2 characters";
+    else if (!/^[a-zA-Z\s'-]+$/.test(lastName.trim())) errs.lastName = "Only letters, spaces, hyphens allowed";
+
+    if (!idNumber.trim()) errs.idNumber = "ID number is required";
+    else if (!ZW_ID_REGEX.test(idNumber.trim())) errs.idNumber = "Invalid format. Use: 63-123456A78";
+
+    // Documents
+    if (!idFront) errs.idFront = "ID front is required";
+    if (idType !== "passport" && !idBack) errs.idBack = "ID back is required";
+    if (!selfie) errs.selfie = "Selfie with ID is required";
+    if (sellerType === "corporate") {
+      if (!certOfIncorporation) errs.cert = "Certificate of Incorporation is required";
+      if (!taxClearance) errs.tax = "Tax Clearance is required";
+    }
+
+    // Payment methods
+    if (paymentMethods.length === 0) errs.paymentMethods = "Select at least one payment method";
+
+    if (paymentMethods.includes("mobile_money")) {
+      if (mobileProviders.length === 0) errs.mobileProviders = "Select at least one provider";
+      if (!mobileNumber.trim()) errs.mobileNumber = "Mobile number is required";
+      else if (!ZW_PHONE_REGEX.test(mobileNumber.trim())) errs.mobileNumber = "Invalid format. Use: 0771234567 or +2637X1234567";
+    }
+
+    if (paymentMethods.includes("bank")) {
+      if (!bankName.trim()) errs.bankName = "Bank name is required";
+      if (!bankAccountNumber.trim()) errs.bankAccountNumber = "Account number is required";
+      else if (!BANK_ACCOUNT_REGEX.test(bankAccountNumber.trim())) errs.bankAccountNumber = "Must be 6-20 digits";
+    }
+
+    return errs;
+  };
+
+  const clearError = (field: string) => {
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   const handleSubmit = async () => {
-    if (!isFormValid()) {
-      toast({ title: "Missing Information", description: "Please fill in all required fields.", variant: "destructive" });
+    const formErrors = validateForm();
+    setErrors(formErrors);
+    if (Object.keys(formErrors).length > 0) {
+      toast({ title: "Validation Errors", description: "Please fix the highlighted fields.", variant: "destructive" });
       return;
     }
     setLoading(true);
