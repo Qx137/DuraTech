@@ -72,7 +72,7 @@ export function getSellerLocationFromProduct(product: any): Location {
   }
   
   // Fallback to a default location if no coordinates are set
-  return { lat: 40.7128, lng: -74.0060 }; // New York as default
+  return { lat: -17.8292, lng: 31.0522 }; // Harare as default
 }
 
 /**
