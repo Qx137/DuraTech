@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import SearchFilters from "@/components/marketplace/SearchFilters";
 import CategoryNav from "@/components/marketplace/CategoryNav";
-import AIRecommendationsBanner from "@/components/marketplace/AIRecommendationsBanner";
+
 import ProductCard from "@/components/marketplace/ProductCard";
 import NoProductsFound from "@/components/marketplace/NoProductsFound";
 import TrustBar from "@/components/marketplace/TrustBar";
@@ -210,8 +210,6 @@ const Marketplace = () => {
       </div>
 
       <main className="flex-1 container mx-auto px-4 pt-4 pb-8 max-w-6xl space-y-6">
-        {/* AI Banner */}
-        <AIRecommendationsBanner />
 
         {/* Products */}
         {loading ? (
