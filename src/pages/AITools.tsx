@@ -160,45 +160,70 @@ const AITools = () => {
         </div>
 
         {/* Tool Selection */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <Card
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "recommendations" ? "ring-2 ring-green-500 shadow-lg" : ""
-              }`}
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "recommendations" ? "ring-2 ring-green-500 shadow-lg" : ""}`}
             onClick={() => setSelectedTool("recommendations")}
           >
-            <CardHeader className="text-center">
-              <Sprout className="h-12 w-12 text-green-600 mx-auto mb-2" />
-              <CardTitle>Crop Recommendations</CardTitle>
-              <CardDescription>AI suggests best crops for your location</CardDescription>
+            <CardHeader className="text-center p-4">
+              <Sprout className="h-10 w-10 text-green-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Crop Recommendations</CardTitle>
             </CardHeader>
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "pricing" ? "ring-2 ring-blue-500 shadow-lg" : ""
-              }`}
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "pricing" ? "ring-2 ring-blue-500 shadow-lg" : ""}`}
             onClick={() => setSelectedTool("pricing")}
           >
-            <CardHeader className="text-center">
-              <BarChart3 className="h-12 w-12 text-blue-600 mx-auto mb-2" />
-              <CardTitle>Price Predictions</CardTitle>
-              <CardDescription>Forecast market prices with ML</CardDescription>
+            <CardHeader className="text-center p-4">
+              <BarChart3 className="h-10 w-10 text-blue-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Price Predictions</CardTitle>
             </CardHeader>
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "search" ? "ring-2 ring-purple-500 shadow-lg" : ""
-              }`}
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "search" ? "ring-2 ring-purple-500 shadow-lg" : ""}`}
             onClick={() => setSelectedTool("search")}
           >
-            <CardHeader className="text-center">
-              <SearchCheck className="h-12 w-12 text-purple-600 mx-auto mb-2" />
-              <CardTitle>Smart Search</CardTitle>
-              <CardDescription>Intelligent product discovery</CardDescription>
+            <CardHeader className="text-center p-4">
+              <SearchCheck className="h-10 w-10 text-purple-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Smart Search</CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "weather" ? "ring-2 ring-amber-500 shadow-lg" : ""}`}
+            onClick={() => setSelectedTool("weather")}
+          >
+            <CardHeader className="text-center p-4">
+              <CloudSun className="h-10 w-10 text-amber-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Weather Insights</CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "profit" ? "ring-2 ring-emerald-500 shadow-lg" : ""}`}
+            onClick={() => setSelectedTool("profit")}
+          >
+            <CardHeader className="text-center p-4">
+              <CircleDollarSign className="h-10 w-10 text-emerald-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Profit Optimizer</CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "assistant" ? "ring-2 ring-violet-500 shadow-lg" : ""}`}
+            onClick={() => setSelectedTool("assistant")}
+          >
+            <CardHeader className="text-center p-4">
+              <Sparkles className="h-10 w-10 text-violet-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">AI Assistant</CardTitle>
             </CardHeader>
           </Card>
         </div>
 
         {/* Tool Content */}
+        {(selectedTool === "recommendations" || selectedTool === "pricing" || selectedTool === "search") && (
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Input Panel */}
           <Card className="shadow-lg border-0">
