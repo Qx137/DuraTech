@@ -502,30 +502,11 @@ const AITools = () => {
             </CardContent>
           </Card>
         </div>
+        )}
 
-        {/* Features Banner */}
-        <div className="mt-12 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg p-8">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold mb-4">🚀 Coming Soon: Advanced AI Features</h3>
-            <div className="grid md:grid-cols-3 gap-6 mt-6">
-              <div className="text-center">
-                <FlaskConical className="h-8 w-8 mx-auto mb-2" />
-                <h4 className="font-semibold">Weather Integration</h4>
-                <p className="text-sm opacity-90">Real-time weather-based recommendations</p>
-              </div>
-              <div className="text-center">
-                <CircleDollarSign className="h-8 w-8 mx-auto mb-2" />
-                <h4 className="font-semibold">Profit Optimization</h4>
-                <p className="text-sm opacity-90">Maximize your farming profits with AI</p>
-              </div>
-              <div className="text-center">
-                <Sparkles className="h-8 w-8 mx-auto mb-2" />
-                <h4 className="font-semibold">Personal AI Assistant</h4>
-                <p className="text-sm opacity-90">24/7 agricultural guidance</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {selectedTool === "weather" && <WeatherIntegrationTool />}
+        {selectedTool === "profit" && <ProfitOptimizationTool />}
+        {selectedTool === "assistant" && <PersonalAssistantTool />}
       </div>
     </div>
   );
