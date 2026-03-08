@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Bot, TrendingUp, Search, Leaf, MapPin, Calendar, DollarSign, Cloud, Thermometer, Loader2, Key } from "lucide-react";
+import { Sparkles, BarChart3, SearchCheck, Sprout, MapPin, CalendarDays, CircleDollarSign, Layers, Loader2, Brain, Wheat, FlaskConical, LineChart, ShieldCheck, Star, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import NotchHeader from "@/components/layout/NotchHeader";
 import { useToast } from "@/hooks/use-toast";
