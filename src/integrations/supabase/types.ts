@@ -554,6 +554,7 @@ export type Database = {
       }
       kyc_verifications: {
         Row: {
+          certificate_of_incorporation_url: string | null
           created_at: string
           id: string
           id_back_url: string | null
@@ -561,11 +562,14 @@ export type Database = {
           id_type: string
           rejection_reason: string | null
           selfie_url: string
+          seller_type: string
           status: string
+          tax_clearance_url: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          certificate_of_incorporation_url?: string | null
           created_at?: string
           id?: string
           id_back_url?: string | null
@@ -573,11 +577,14 @@ export type Database = {
           id_type: string
           rejection_reason?: string | null
           selfie_url: string
+          seller_type?: string
           status?: string
+          tax_clearance_url?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          certificate_of_incorporation_url?: string | null
           created_at?: string
           id?: string
           id_back_url?: string | null
@@ -585,7 +592,9 @@ export type Database = {
           id_type?: string
           rejection_reason?: string | null
           selfie_url?: string
+          seller_type?: string
           status?: string
+          tax_clearance_url?: string | null
           updated_at?: string
           user_id?: string
         }
