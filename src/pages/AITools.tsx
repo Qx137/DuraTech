@@ -481,7 +481,7 @@ const AITools = () => {
             <h3 className="text-2xl font-bold mb-4">🚀 Coming Soon: Advanced AI Features</h3>
             <div className="grid md:grid-cols-3 gap-6 mt-6">
               <div className="text-center">
-                <Thermometer className="h-8 w-8 mx-auto mb-2" />
+                <FlaskConical className="h-8 w-8 mx-auto mb-2" />
                 <h4 className="font-semibold">Weather Integration</h4>
                 <p className="text-sm opacity-90">Real-time weather-based recommendations</p>
               </div>
