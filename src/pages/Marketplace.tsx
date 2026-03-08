@@ -87,7 +87,7 @@ const Marketplace = () => {
           setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
         },
         () => {
-          setUserLocation({ lat: 40.7128, lng: -74.0060 });
+          setUserLocation({ lat: -17.8292, lng: 31.0522 });
         }
       );
     } else {
