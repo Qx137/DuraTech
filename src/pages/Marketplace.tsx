@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import SearchFilters from "@/components/marketplace/SearchFilters";
 import CategoryNav from "@/components/marketplace/CategoryNav";
-import AIRecommendationsBanner from "@/components/marketplace/AIRecommendationsBanner";
+
 import ProductCard from "@/components/marketplace/ProductCard";
 import NoProductsFound from "@/components/marketplace/NoProductsFound";
 import TrustBar from "@/components/marketplace/TrustBar";
