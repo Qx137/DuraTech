@@ -229,7 +229,7 @@ const AITools = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>
-                        <Calendar className="inline h-4 w-4 mr-1" />
+                        <CalendarDays className="inline h-4 w-4 mr-1" />
                         Season
                       </Label>
                       <Select>
