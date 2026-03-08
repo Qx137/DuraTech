@@ -246,7 +246,7 @@ const AITools = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>
-                        <Cloud className="inline h-4 w-4 mr-1" />
+                        <Layers className="inline h-4 w-4 mr-1" />
                         Soil Type
                       </Label>
                       <Select>
