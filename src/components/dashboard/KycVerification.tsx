@@ -94,6 +94,7 @@ export const KycVerification = () => {
   const [bankName, setBankName] = useState("");
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [bankBranch, setBankBranch] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (user) fetchKycStatus();
