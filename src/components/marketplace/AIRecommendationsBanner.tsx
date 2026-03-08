@@ -4,7 +4,7 @@ import { Sparkles } from "lucide-react";
 
 const AIRecommendationsBanner = () => {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-primary/80 p-5 md:p-6">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-primary/80 p-4 md:p-5 max-w-2xl mx-auto">
       <div className="flex items-center gap-4">
         <div className="bg-primary-foreground/20 backdrop-blur-sm rounded-2xl p-3 shrink-0">
           <Sparkles className="h-6 w-6 text-primary-foreground" />
