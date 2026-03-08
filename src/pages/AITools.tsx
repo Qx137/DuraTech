@@ -277,7 +277,7 @@ const AITools = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="cropType">
-                      <Leaf className="inline h-4 w-4 mr-1" />
+                      <Wheat className="inline h-4 w-4 mr-1" />
                       Crop Type
                     </Label>
                     <Select value={cropType} onValueChange={setCropType}>
