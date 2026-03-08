@@ -188,7 +188,7 @@ const AITools = () => {
             onClick={() => setSelectedTool("search")}
           >
             <CardHeader className="text-center">
-              <Search className="h-12 w-12 text-purple-600 mx-auto mb-2" />
+              <SearchCheck className="h-12 w-12 text-purple-600 mx-auto mb-2" />
               <CardTitle>Smart Search</CardTitle>
               <CardDescription>Intelligent product discovery</CardDescription>
             </CardHeader>
