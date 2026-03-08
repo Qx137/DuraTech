@@ -183,32 +183,33 @@ const Marketplace = () => {
       <MarketplaceHeader cartCount={cartCount} />
 
       {/* Main content */}
-      <main className="flex-1 container mx-auto px-4 pt-6 pb-8 max-w-6xl space-y-6">
-        {/* Search */}
-        <SearchFilters
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          organicOnly={organicOnly}
-          setOrganicOnly={setOrganicOnly}
-          categories={categories}
-          filteredProductsCount={filteredProducts.length}
-          totalProductsCount={products.length}
-          priceRange={priceRange}
-          setPriceRange={setPriceRange}
-          minQuantity={minQuantity}
-          setMinQuantity={setMinQuantity}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          showFilters={showFilters}
-          setShowFilters={setShowFilters}
-        />
+      {/* Sticky search + categories */}
+      <div className="sticky top-[76px] z-40 bg-background/95 backdrop-blur-md border-b border-border pb-3">
+        <div className="container mx-auto px-4 max-w-6xl space-y-3 pt-4">
+          <SearchFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            organicOnly={organicOnly}
+            setOrganicOnly={setOrganicOnly}
+            categories={categories}
+            filteredProductsCount={filteredProducts.length}
+            totalProductsCount={products.length}
+            priceRange={priceRange}
+            setPriceRange={setPriceRange}
+            minQuantity={minQuantity}
+            setMinQuantity={setMinQuantity}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+          />
+          <CategoryNav categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
+        </div>
+      </div>
 
-        {/* Categories */}
-        <CategoryNav categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
-
-
+      <main className="flex-1 container mx-auto px-4 pt-4 pb-8 max-w-6xl space-y-6">
         {/* AI Banner */}
         <AIRecommendationsBanner />
 
