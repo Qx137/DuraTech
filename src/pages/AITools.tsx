@@ -325,7 +325,7 @@ const AITools = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="searchQuery">
-                      <Search className="inline h-4 w-4 mr-1" />
+                      <SearchCheck className="inline h-4 w-4 mr-1" />
                       Describe what you're looking for
                     </Label>
                     <Textarea
