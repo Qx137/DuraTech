@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Bot, TrendingUp, Search, Leaf, MapPin, Calendar, DollarSign, Cloud, Thermometer, Loader2, Key } from "lucide-react";
+import { Sparkles, BarChart3, SearchCheck, Sprout, MapPin, CalendarDays, CircleDollarSign, Layers, Loader2, Brain, Wheat, FlaskConical, LineChart, ShieldCheck, Star, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import NotchHeader from "@/components/layout/NotchHeader";
 import { useToast } from "@/hooks/use-toast";
@@ -147,7 +147,7 @@ const AITools = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            <Bot className="inline h-10 w-10 mr-3 text-green-600" />
+            <Brain className="inline h-10 w-10 mr-3 text-green-600" />
             AI-Powered Agricultural Tools
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
@@ -164,7 +164,7 @@ const AITools = () => {
             onClick={() => setSelectedTool("recommendations")}
           >
             <CardHeader className="text-center">
-              <Bot className="h-12 w-12 text-green-600 mx-auto mb-2" />
+              <Sprout className="h-12 w-12 text-green-600 mx-auto mb-2" />
               <CardTitle>Crop Recommendations</CardTitle>
               <CardDescription>AI suggests best crops for your location</CardDescription>
             </CardHeader>
@@ -176,7 +176,7 @@ const AITools = () => {
             onClick={() => setSelectedTool("pricing")}
           >
             <CardHeader className="text-center">
-              <TrendingUp className="h-12 w-12 text-blue-600 mx-auto mb-2" />
+              <BarChart3 className="h-12 w-12 text-blue-600 mx-auto mb-2" />
               <CardTitle>Price Predictions</CardTitle>
               <CardDescription>Forecast market prices with ML</CardDescription>
             </CardHeader>
@@ -188,7 +188,7 @@ const AITools = () => {
             onClick={() => setSelectedTool("search")}
           >
             <CardHeader className="text-center">
-              <Search className="h-12 w-12 text-purple-600 mx-auto mb-2" />
+              <SearchCheck className="h-12 w-12 text-purple-600 mx-auto mb-2" />
               <CardTitle>Smart Search</CardTitle>
               <CardDescription>Intelligent product discovery</CardDescription>
             </CardHeader>
@@ -201,9 +201,9 @@ const AITools = () => {
           <Card className="shadow-lg border-0">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                {selectedTool === "recommendations" && <Bot className="h-5 w-5 text-green-600" />}
-                {selectedTool === "pricing" && <TrendingUp className="h-5 w-5 text-blue-600" />}
-                {selectedTool === "search" && <Search className="h-5 w-5 text-purple-600" />}
+                {selectedTool === "recommendations" && <Sprout className="h-5 w-5 text-green-600" />}
+                {selectedTool === "pricing" && <BarChart3 className="h-5 w-5 text-blue-600" />}
+                {selectedTool === "search" && <SearchCheck className="h-5 w-5 text-purple-600" />}
                 <span>
                   {selectedTool === "recommendations" && "Get Crop Recommendations"}
                   {selectedTool === "pricing" && "Analyze Price Trends"}
@@ -229,7 +229,7 @@ const AITools = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>
-                        <Calendar className="inline h-4 w-4 mr-1" />
+                        <CalendarDays className="inline h-4 w-4 mr-1" />
                         Season
                       </Label>
                       <Select>
@@ -246,7 +246,7 @@ const AITools = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>
-                        <Cloud className="inline h-4 w-4 mr-1" />
+                        <Layers className="inline h-4 w-4 mr-1" />
                         Soil Type
                       </Label>
                       <Select>
@@ -277,7 +277,7 @@ const AITools = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="cropType">
-                      <Leaf className="inline h-4 w-4 mr-1" />
+                      <Wheat className="inline h-4 w-4 mr-1" />
                       Crop Type
                     </Label>
                     <Select value={cropType} onValueChange={setCropType}>
@@ -295,7 +295,7 @@ const AITools = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>
-                      <Calendar className="inline h-4 w-4 mr-1" />
+                      <CalendarDays className="inline h-4 w-4 mr-1" />
                       Prediction Period
                     </Label>
                     <Select>
@@ -325,7 +325,7 @@ const AITools = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="searchQuery">
-                      <Search className="inline h-4 w-4 mr-1" />
+                      <SearchCheck className="inline h-4 w-4 mr-1" />
                       Describe what you're looking for
                     </Label>
                     <Textarea
@@ -481,17 +481,17 @@ const AITools = () => {
             <h3 className="text-2xl font-bold mb-4">🚀 Coming Soon: Advanced AI Features</h3>
             <div className="grid md:grid-cols-3 gap-6 mt-6">
               <div className="text-center">
-                <Thermometer className="h-8 w-8 mx-auto mb-2" />
+                <FlaskConical className="h-8 w-8 mx-auto mb-2" />
                 <h4 className="font-semibold">Weather Integration</h4>
                 <p className="text-sm opacity-90">Real-time weather-based recommendations</p>
               </div>
               <div className="text-center">
-                <DollarSign className="h-8 w-8 mx-auto mb-2" />
+                <CircleDollarSign className="h-8 w-8 mx-auto mb-2" />
                 <h4 className="font-semibold">Profit Optimization</h4>
                 <p className="text-sm opacity-90">Maximize your farming profits with AI</p>
               </div>
               <div className="text-center">
-                <Bot className="h-8 w-8 mx-auto mb-2" />
+                <Sparkles className="h-8 w-8 mx-auto mb-2" />
                 <h4 className="font-semibold">Personal AI Assistant</h4>
                 <p className="text-sm opacity-90">24/7 agricultural guidance</p>
               </div>
