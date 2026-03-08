@@ -54,7 +54,7 @@ const CategoryNav = ({ categories, selected, onSelect }: CategoryNavProps) => {
                 : "bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground border border-border"
             }`}
           >
-            {CATEGORY_ICONS[key] || <ShoppingBasket className="h-5 w-5" />}
+            {CATEGORY_ICONS[key] || <LayoutGrid className="h-5 w-5" />}
             <span className="text-xs font-medium whitespace-nowrap">
               {label}
             </span>
