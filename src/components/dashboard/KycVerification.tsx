@@ -10,10 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Shield, Upload, Clock, CheckCircle, AlertCircle, Camera, Building2, User, Wallet, Landmark } from "lucide-react";
+import { z } from "zod";
 
 type SellerType = "individual" | "corporate";
 type MobileProvider = "ecocash" | "innbucks" | "onemoney";
 type PaymentMethodType = "mobile_money" | "bank";
+
+// Zimbabwe ID format: XX-XXXXXXXAXX (digits-digitsLetterDigits)
+const ZW_ID_REGEX = /^\d{2}-\d{6,7}[A-Za-z]\d{2}$/;
+// Phone: starts with 07 and 9-10 digits, or +263 format
+const ZW_PHONE_REGEX = /^(\+263|0)(7[1-9])\d{7}$/;
+// Bank account: 6-20 digits
+const BANK_ACCOUNT_REGEX = /^\d{6,20}$/;
+
+type FormErrors = Record<string, string>;
 
 const MOBILE_PROVIDERS: { key: MobileProvider; label: string }[] = [
   { key: "ecocash", label: "EcoCash" },
@@ -84,6 +94,7 @@ export const KycVerification = () => {
   const [bankName, setBankName] = useState("");
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [bankBranch, setBankBranch] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (user) fetchKycStatus();
@@ -125,19 +136,63 @@ export const KycVerification = () => {
     );
   };
 
-  const isFormValid = () => {
-    if (!firstName.trim() || !lastName.trim() || !idNumber.trim()) return false;
-    if (!idFront || !selfie || (idType !== "passport" && !idBack)) return false;
-    if (sellerType === "corporate" && (!certOfIncorporation || !taxClearance)) return false;
-    if (paymentMethods.length === 0) return false;
-    if (paymentMethods.includes("mobile_money") && (mobileProviders.length === 0 || !mobileNumber.trim())) return false;
-    if (paymentMethods.includes("bank") && (!bankName.trim() || !bankAccountNumber.trim())) return false;
-    return true;
+  const validateForm = (): FormErrors => {
+    const errs: FormErrors = {};
+
+    // Personal details
+    if (!firstName.trim()) errs.firstName = "First name is required";
+    else if (firstName.trim().length < 2) errs.firstName = "Must be at least 2 characters";
+    else if (!/^[a-zA-Z\s'-]+$/.test(firstName.trim())) errs.firstName = "Only letters, spaces, hyphens allowed";
+
+    if (!lastName.trim()) errs.lastName = "Surname is required";
+    else if (lastName.trim().length < 2) errs.lastName = "Must be at least 2 characters";
+    else if (!/^[a-zA-Z\s'-]+$/.test(lastName.trim())) errs.lastName = "Only letters, spaces, hyphens allowed";
+
+    if (!idNumber.trim()) errs.idNumber = "ID number is required";
+    else if (!ZW_ID_REGEX.test(idNumber.trim())) errs.idNumber = "Invalid format. Use: 63-123456A78";
+
+    // Documents
+    if (!idFront) errs.idFront = "ID front is required";
+    if (idType !== "passport" && !idBack) errs.idBack = "ID back is required";
+    if (!selfie) errs.selfie = "Selfie with ID is required";
+    if (sellerType === "corporate") {
+      if (!certOfIncorporation) errs.cert = "Certificate of Incorporation is required";
+      if (!taxClearance) errs.tax = "Tax Clearance is required";
+    }
+
+    // Payment methods
+    if (paymentMethods.length === 0) errs.paymentMethods = "Select at least one payment method";
+
+    if (paymentMethods.includes("mobile_money")) {
+      if (mobileProviders.length === 0) errs.mobileProviders = "Select at least one provider";
+      if (!mobileNumber.trim()) errs.mobileNumber = "Mobile number is required";
+      else if (!ZW_PHONE_REGEX.test(mobileNumber.trim())) errs.mobileNumber = "Invalid format. Use: 0771234567 or +2637X1234567";
+    }
+
+    if (paymentMethods.includes("bank")) {
+      if (!bankName.trim()) errs.bankName = "Bank name is required";
+      if (!bankAccountNumber.trim()) errs.bankAccountNumber = "Account number is required";
+      else if (!BANK_ACCOUNT_REGEX.test(bankAccountNumber.trim())) errs.bankAccountNumber = "Must be 6-20 digits";
+    }
+
+    return errs;
+  };
+
+  const clearError = (field: string) => {
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   const handleSubmit = async () => {
-    if (!isFormValid()) {
-      toast({ title: "Missing Information", description: "Please fill in all required fields.", variant: "destructive" });
+    const formErrors = validateForm();
+    setErrors(formErrors);
+    if (Object.keys(formErrors).length > 0) {
+      toast({ title: "Validation Errors", description: "Please fix the highlighted fields.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -255,16 +310,22 @@ export const KycVerification = () => {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>First Name <span className="text-destructive">*</span></Label>
-              <Input placeholder="Enter first name" value={firstName} onChange={(e) => setFirstName(e.target.value)} maxLength={100} />
+              <Input placeholder="Enter first name" value={firstName} onChange={(e) => { setFirstName(e.target.value); clearError("firstName"); }} maxLength={100}
+                className={errors.firstName ? "border-destructive" : ""} />
+              {errors.firstName && <p className="text-xs text-destructive">{errors.firstName}</p>}
             </div>
             <div className="space-y-2">
               <Label>Surname <span className="text-destructive">*</span></Label>
-              <Input placeholder="Enter surname" value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={100} />
+              <Input placeholder="Enter surname" value={lastName} onChange={(e) => { setLastName(e.target.value); clearError("lastName"); }} maxLength={100}
+                className={errors.lastName ? "border-destructive" : ""} />
+              {errors.lastName && <p className="text-xs text-destructive">{errors.lastName}</p>}
             </div>
           </div>
           <div className="space-y-2">
             <Label>ID Number <span className="text-destructive">*</span></Label>
-            <Input placeholder="e.g. 63-123456A78" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} maxLength={50} />
+            <Input placeholder="e.g. 63-123456A78" value={idNumber} onChange={(e) => { setIdNumber(e.target.value); clearError("idNumber"); }} maxLength={50}
+              className={errors.idNumber ? "border-destructive" : ""} />
+            {errors.idNumber && <p className="text-xs text-destructive">{errors.idNumber}</p>}
           </div>
         </div>
 
@@ -348,6 +409,7 @@ export const KycVerification = () => {
               <span className="text-sm font-medium">Bank Account</span>
             </button>
           </div>
+          {errors.paymentMethods && <p className="text-xs text-destructive">{errors.paymentMethods}</p>}
 
           {/* Mobile Money Details */}
           {paymentMethods.includes("mobile_money") && (
@@ -358,15 +420,18 @@ export const KycVerification = () => {
                   <label key={key} className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
                       checked={mobileProviders.includes(key)}
-                      onCheckedChange={() => toggleMobileProvider(key)}
+                      onCheckedChange={() => { toggleMobileProvider(key); clearError("mobileProviders"); }}
                     />
                     <span className="text-sm">{label}</span>
                   </label>
                 ))}
               </div>
+              {errors.mobileProviders && <p className="text-xs text-destructive">{errors.mobileProviders}</p>}
               <div className="space-y-2">
                 <Label>Mobile Number <span className="text-destructive">*</span></Label>
-                <Input placeholder="e.g. 0771234567" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} maxLength={15} />
+                <Input placeholder="e.g. 0771234567" value={mobileNumber} onChange={(e) => { setMobileNumber(e.target.value); clearError("mobileNumber"); }} maxLength={15}
+                  className={errors.mobileNumber ? "border-destructive" : ""} />
+                {errors.mobileNumber && <p className="text-xs text-destructive">{errors.mobileNumber}</p>}
               </div>
             </div>
           )}
@@ -378,11 +443,15 @@ export const KycVerification = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Bank Name <span className="text-destructive">*</span></Label>
-                  <Input placeholder="e.g. CBZ Bank" value={bankName} onChange={(e) => setBankName(e.target.value)} maxLength={100} />
+                  <Input placeholder="e.g. CBZ Bank" value={bankName} onChange={(e) => { setBankName(e.target.value); clearError("bankName"); }} maxLength={100}
+                    className={errors.bankName ? "border-destructive" : ""} />
+                  {errors.bankName && <p className="text-xs text-destructive">{errors.bankName}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label>Account Number <span className="text-destructive">*</span></Label>
-                  <Input placeholder="Enter account number" value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} maxLength={30} />
+                  <Input placeholder="Enter account number" value={bankAccountNumber} onChange={(e) => { setBankAccountNumber(e.target.value); clearError("bankAccountNumber"); }} maxLength={30}
+                    className={errors.bankAccountNumber ? "border-destructive" : ""} />
+                  {errors.bankAccountNumber && <p className="text-xs text-destructive">{errors.bankAccountNumber}</p>}
                 </div>
               </div>
               <div className="space-y-2">
@@ -394,7 +463,7 @@ export const KycVerification = () => {
         </div>
 
         <div className="pt-4">
-          <Button className="w-full" onClick={handleSubmit} disabled={loading || !isFormValid()}>
+          <Button className="w-full" onClick={handleSubmit} disabled={loading}>
             {loading ? "Submitting..." : "Submit Verification"}
           </Button>
         </div>
