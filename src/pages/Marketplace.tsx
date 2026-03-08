@@ -29,10 +29,32 @@ const Marketplace = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Map major categories to the subcategory keys they contain
+  const CATEGORY_SUBCATEGORY_MAP: Record<string, string[]> = {
+    "agri-inputs": ["seeds", "fertilizers", "pesticides", "herbicides", "animal-feed"],
+    "equipment": ["tractors", "irrigation", "hand-tools", "harvesters", "spare-parts"],
+    "farm-produce": ["grains", "vegetables", "fruits", "legumes", "roots"],
+    "livestock": ["cattle", "poultry", "goats", "pigs", "rabbits"],
+    "farm-services": ["ploughing", "spraying", "consulting", "veterinary", "soil-testing"],
+    "transport-logistics": ["cold-chain", "bulk-transport", "last-mile", "warehousing", "packaging"],
+  };
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.farmer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+    
+    let matchesCategory = selectedCategory === "all";
+    if (!matchesCategory) {
+      // Check if it's a major category — match any of its subcategories
+      const subs = CATEGORY_SUBCATEGORY_MAP[selectedCategory];
+      if (subs) {
+        matchesCategory = subs.includes(product.category);
+      } else {
+        // Direct match (subcategory or legacy category)
+        matchesCategory = product.category === selectedCategory;
+      }
+    }
+
     const matchesOrganic = !organicOnly || product.organic;
     const matchesPrice = !showFilters || (product.price >= priceRange[0] && product.price <= priceRange[1]);
     const matchesQuantity = !showFilters || (!minQuantity || (product.stock_quantity || 0) >= parseInt(minQuantity));
