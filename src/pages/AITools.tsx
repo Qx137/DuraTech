@@ -491,7 +491,7 @@ const AITools = () => {
                 <p className="text-sm opacity-90">Maximize your farming profits with AI</p>
               </div>
               <div className="text-center">
-                <Bot className="h-8 w-8 mx-auto mb-2" />
+                <Sparkles className="h-8 w-8 mx-auto mb-2" />
                 <h4 className="font-semibold">Personal AI Assistant</h4>
                 <p className="text-sm opacity-90">24/7 agricultural guidance</p>
               </div>
