@@ -147,7 +147,7 @@ const AITools = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            <Bot className="inline h-10 w-10 mr-3 text-green-600" />
+            <Brain className="inline h-10 w-10 mr-3 text-green-600" />
             AI-Powered Agricultural Tools
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
