@@ -10,10 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Shield, Upload, Clock, CheckCircle, AlertCircle, Camera, Building2, User, Wallet, Landmark } from "lucide-react";
+import { z } from "zod";
 
 type SellerType = "individual" | "corporate";
 type MobileProvider = "ecocash" | "innbucks" | "onemoney";
 type PaymentMethodType = "mobile_money" | "bank";
+
+// Zimbabwe ID format: XX-XXXXXXXAXX (digits-digitsLetterDigits)
+const ZW_ID_REGEX = /^\d{2}-\d{6,7}[A-Za-z]\d{2}$/;
+// Phone: starts with 07 and 9-10 digits, or +263 format
+const ZW_PHONE_REGEX = /^(\+263|0)(7[1-9])\d{7}$/;
+// Bank account: 6-20 digits
+const BANK_ACCOUNT_REGEX = /^\d{6,20}$/;
+
+type FormErrors = Record<string, string>;
 
 const MOBILE_PROVIDERS: { key: MobileProvider; label: string }[] = [
   { key: "ecocash", label: "EcoCash" },
