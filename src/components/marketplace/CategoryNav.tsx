@@ -1,13 +1,13 @@
-import { Wheat, Carrot, Bean, Leaf, Apple, ShoppingBasket, Tractor, Wrench, Sprout, PawPrint, HandHelping, Truck } from "lucide-react";
+import { Wheat, Carrot, Bean, Leaf, Apple, LayoutGrid, FlaskConical, Cog, TreePine, Beef, Handshake, TruckIcon } from "lucide-react";
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  all: <ShoppingBasket className="h-5 w-5" />,
-  "agri-inputs": <Sprout className="h-5 w-5" />,
-  equipment: <Tractor className="h-5 w-5" />,
-  "farm-produce": <Wheat className="h-5 w-5" />,
-  livestock: <PawPrint className="h-5 w-5" />,
-  "farm-services": <HandHelping className="h-5 w-5" />,
-  "transport-logistics": <Truck className="h-5 w-5" />,
+  all: <LayoutGrid className="h-5 w-5" />,
+  "agri-inputs": <FlaskConical className="h-5 w-5" />,
+  equipment: <Cog className="h-5 w-5" />,
+  "farm-produce": <TreePine className="h-5 w-5" />,
+  livestock: <Beef className="h-5 w-5" />,
+  "farm-services": <Handshake className="h-5 w-5" />,
+  "transport-logistics": <TruckIcon className="h-5 w-5" />,
   grains: <Wheat className="h-5 w-5" />,
   vegetables: <Carrot className="h-5 w-5" />,
   legumes: <Bean className="h-5 w-5" />,
