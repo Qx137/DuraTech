@@ -554,12 +554,21 @@ export type Database = {
       }
       kyc_verifications: {
         Row: {
+          bank_account_number: string | null
+          bank_branch: string | null
+          bank_name: string | null
           certificate_of_incorporation_url: string | null
           created_at: string
+          first_name: string | null
           id: string
           id_back_url: string | null
           id_front_url: string
+          id_number: string | null
           id_type: string
+          last_name: string | null
+          mobile_money_number: string | null
+          mobile_money_provider: string[] | null
+          payment_methods: string[] | null
           rejection_reason: string | null
           selfie_url: string
           seller_type: string
@@ -569,12 +578,21 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bank_account_number?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
           certificate_of_incorporation_url?: string | null
           created_at?: string
+          first_name?: string | null
           id?: string
           id_back_url?: string | null
           id_front_url: string
+          id_number?: string | null
           id_type: string
+          last_name?: string | null
+          mobile_money_number?: string | null
+          mobile_money_provider?: string[] | null
+          payment_methods?: string[] | null
           rejection_reason?: string | null
           selfie_url: string
           seller_type?: string
@@ -584,12 +602,21 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bank_account_number?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
           certificate_of_incorporation_url?: string | null
           created_at?: string
+          first_name?: string | null
           id?: string
           id_back_url?: string | null
           id_front_url?: string
+          id_number?: string | null
           id_type?: string
+          last_name?: string | null
+          mobile_money_number?: string | null
+          mobile_money_provider?: string[] | null
+          payment_methods?: string[] | null
           rejection_reason?: string | null
           selfie_url?: string
           seller_type?: string
