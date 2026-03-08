@@ -449,7 +449,7 @@ export const KycVerification = () => {
         </div>
 
         <div className="pt-4">
-          <Button className="w-full" onClick={handleSubmit} disabled={loading || !isFormValid()}>
+          <Button className="w-full" onClick={handleSubmit} disabled={loading}>
             {loading ? "Submitting..." : "Submit Verification"}
           </Button>
         </div>
