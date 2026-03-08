@@ -210,8 +210,6 @@ const Marketplace = () => {
       </div>
 
       <main className="flex-1 container mx-auto px-4 pt-4 pb-8 max-w-6xl space-y-6">
-        {/* AI Banner */}
-        <AIRecommendationsBanner />
 
         {/* Products */}
         {loading ? (
