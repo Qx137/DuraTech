@@ -486,7 +486,7 @@ const AITools = () => {
                 <p className="text-sm opacity-90">Real-time weather-based recommendations</p>
               </div>
               <div className="text-center">
-                <DollarSign className="h-8 w-8 mx-auto mb-2" />
+                <CircleDollarSign className="h-8 w-8 mx-auto mb-2" />
                 <h4 className="font-semibold">Profit Optimization</h4>
                 <p className="text-sm opacity-90">Maximize your farming profits with AI</p>
               </div>
