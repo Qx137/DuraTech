@@ -47,7 +47,7 @@ const checkoutSchema = z.object({
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 type FormErrors = Partial<Record<keyof CheckoutFormData, string>>;
-type PaymentMethod = 'contipay';
+type PaymentMethod = 'contipay' | 'paynow';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -326,16 +326,35 @@ const Checkout = () => {
         console.error('Failed to send confirmation email:', emailError);
       }
 
-      // Process payment with ContiPay
-      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-contipay-payment', {
-        body: {
-          orderId: order.id,
-          amount: total,
-          email: sanitizedData.email,
-          phone: sanitizedData.phone,
-          customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`
-        }
-      });
+      // Process payment based on selected method
+      let paymentData;
+      let paymentError;
+
+      if (paymentMethod === 'paynow') {
+        const response = await supabase.functions.invoke('create-paynow-payment', {
+          body: {
+            orderId: order.id,
+            amount: total,
+            email: sanitizedData.email,
+            phone: sanitizedData.phone,
+            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`
+          }
+        });
+        paymentData = response.data;
+        paymentError = response.error;
+      } else {
+        const response = await supabase.functions.invoke('create-contipay-payment', {
+          body: {
+            orderId: order.id,
+            amount: total,
+            email: sanitizedData.email,
+            phone: sanitizedData.phone,
+            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`
+          }
+        });
+        paymentData = response.data;
+        paymentError = response.error;
+      }
 
       if (paymentError || !paymentData.success) {
         const errorMessage = paymentData?.error || paymentError?.message || 'Failed to create payment';
@@ -353,7 +372,7 @@ const Checkout = () => {
         throw new Error(userMessage);
       }
 
-      // Redirect to ContiPay payment page
+      // Redirect to payment gateway page (Paynow or ContiPay)
       window.location.href = paymentData.paymentUrl;
     } catch (error) {
       console.error('Error creating order:', error);
@@ -561,23 +580,44 @@ const Checkout = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-primary bg-primary/5">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">ContiPay</p>
-                          <p className="text-sm text-muted-foreground">Pay with EcoCash, OneMoney, InnBucks, ZIPIT, or Card</p>
-                        </div>
-                        <div className="flex items-center space-x-1 flex-wrap gap-1">
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">EcoCash</span>
-                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">OneMoney</span>
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">InnBucks</span>
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">ZIPIT</span>
-                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Card</span>
-                        </div>
+                  <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${paymentMethod === 'contipay' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setPaymentMethod('contipay')}>
+                      <RadioGroupItem value="contipay" id="contipay" className="mt-1" />
+                      <div className="flex-1">
+                        <Label htmlFor="contipay" className="flex items-center justify-between cursor-pointer">
+                          <div>
+                            <p className="font-medium">ContiPay</p>
+                            <p className="text-sm text-muted-foreground font-normal">Pay with EcoCash, OneMoney, InnBucks, ZIPIT, or Card</p>
+                          </div>
+                          <div className="flex items-center space-x-1 flex-wrap gap-1">
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">EcoCash</span>
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">OneMoney</span>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">InnBucks</span>
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">ZIPIT</span>
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Card</span>
+                          </div>
+                        </Label>
                       </div>
                     </div>
-                  </div>
+
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-colors mt-3 ${paymentMethod === 'paynow' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setPaymentMethod('paynow')}>
+                      <RadioGroupItem value="paynow" id="paynow" className="mt-1" />
+                      <div className="flex-1">
+                        <Label htmlFor="paynow" className="flex items-center justify-between cursor-pointer">
+                          <div>
+                            <p className="font-medium">Paynow</p>
+                            <p className="text-sm text-muted-foreground font-normal">Secure online payments via Paynow</p>
+                          </div>
+                          <div className="flex items-center space-x-1 flex-wrap gap-1">
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">EcoCash</span>
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">OneMoney</span>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">InnBucks</span>
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Visa / MC</span>
+                          </div>
+                        </Label>
+                      </div>
+                    </div>
+                  </RadioGroup>
 
                   <div className="bg-muted/50 rounded-lg p-4 mt-4">
                     <p className="text-sm text-muted-foreground">
