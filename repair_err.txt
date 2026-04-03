@@ -1,0 +1,394 @@
+supabase : open 
+supabase\.temp\profile: 
+The system cannot find 
+the file specified.
+At line:1 char:1
++ supabase migration 
+repair --status applied 
+20250716211834 --debug 
+2>& ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (o  
+  pen supabase\....file   
+  specified.:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+Loading project ref from 
+file: 
+supabase\.temp\project-ref
+Using connection pooler: p
+ostgresql://postgres.wutfc
+yskvfkunmvrvafz@aws-0-ap-s
+outheast-1.pooler.supabase
+.com:5432/postgres
+Initialising login role...
+Using access token for 
+profile: supabase
+Supabase CLI 2.75.0
+Using profile: supabase 
+(supabase.co)
+Connecting to remote 
+database...
+2026/03/01 09:25:01 PG 
+Send: {"Type":"StartupMess
+age","ProtocolVersion":196
+608,"Parameters":{"databas
+e":"postgres","user":"cli_
+login_postgres.wutfcyskvfk
+unmvrvafz"}}
+2026/03/01 09:25:01 PG 
+Recv: {"Type":"Authenticat
+ionSASL","AuthMechanisms":
+["SCRAM-SHA-256"]}
+2026/03/01 09:25:01 PG 
+Send: {"Type":"SASLInitial
+Response","AuthMechanism":
+"SCRAM-SHA-256","Data":"n,
+,n=,r=GXt6rChFAzLHKIAjSwU8
+bPQ1"}
+2026/03/01 09:25:02 PG 
+Recv: {"Type":"Authenticat
+ionSASLContinue","Data":"r
+=GXt6rChFAzLHKIAjSwU8bPQ1R
+UlGK1ZUT1g5MVdva3lNL3NwOTl
+nbGdESUc3TEFnPT0=,s=GGv82S
+y4UbA0mYE9zAFyyg==,i=4096"
+}
+2026/03/01 09:25:02 PG 
+Send: {"Type":"SASLRespons
+e","Data":"c=biws,r=GXt6rC
+hFAzLHKIAjSwU8bPQ1RUlGK1ZU
+T1g5MVdva3lNL3NwOTlnbGdESU
+c3TEFnPT0=,p=QzJIBpEc2LkE+
+C4LQdKFOKxqvbLML0CGDcEsp3T
+HvgE="}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"Authenticat
+ionSASLFinal","Data":"v=AE
+hCtIQSRsH2Tvf7oN0TEiutmgYd
+5d1U4rFM0OaBNE0="}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"Authenticat
+ionOK"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"DateStyle","
+Value":"ISO, MDY"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"IntervalStyl
+e","Value":"postgres"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"TimeZone","V
+alue":"UTC"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"application_
+name","Value":"Supavisor"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"client_encod
+ing","Value":"UTF8"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"default_tran
+saction_read_only","Value"
+:"off"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"in_hot_stand
+by","Value":"off"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"integer_date
+times","Value":"on"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"is_superuser
+","Value":"off"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"scram_iterat
+ions","Value":"4096"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"server_encod
+ing","Value":"UTF8"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"server_versi
+on","Value":"17.4"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"session_auth
+orization","Value":"cli_lo
+gin_postgres"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ParameterSt
+atus","Name":"standard_con
+forming_strings","Value":"
+on"}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"BackendKeyD
+ata","ProcessID":617195577
+,"SecretKey":3444607763}
+2026/03/01 09:25:06 PG 
+Recv: {"Type":"ReadyForQue
+ry","TxStatus":"I"}
+2026/03/01 09:25:06 PG 
+Send: {"Type":"Query","Str
+ing":"SET SESSION ROLE 
+postgres"}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"CommandComp
+lete","CommandTag":"SET"}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"ReadyForQue
+ry","TxStatus":"I"}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Parse","Nam
+e":"","Query":"SET 
+lock_timeout = '4s'","Para
+meterOIDs":null}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Bind","Dest
+inationPortal":"","Prepare
+dStatement":"","ParameterF
+ormatCodes":null,"Paramete
+rs":[],"ResultFormatCodes"
+:[]}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Describe","
+ObjectType":"P","Name":""}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Execute","P
+ortal":"","MaxRows":0}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Parse","Nam
+e":"","Query":"CREATE 
+SCHEMA IF NOT EXISTS supab
+ase_migrations","Parameter
+OIDs":null}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Bind","Dest
+inationPortal":"","Prepare
+dStatement":"","ParameterF
+ormatCodes":null,"Paramete
+rs":[],"ResultFormatCodes"
+:[]}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Describe","
+ObjectType":"P","Name":""}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Execute","P
+ortal":"","MaxRows":0}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Parse","Nam
+e":"","Query":"CREATE 
+TABLE IF NOT EXISTS supaba
+se_migrations.schema_migra
+tions (version text NOT 
+NULL PRIMARY KEY)","Parame
+terOIDs":null}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Bind","Dest
+inationPortal":"","Prepare
+dStatement":"","ParameterF
+ormatCodes":null,"Paramete
+rs":[],"ResultFormatCodes"
+:[]}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Describe","
+ObjectType":"P","Name":""}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Execute","P
+ortal":"","MaxRows":0}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Parse","Nam
+e":"","Query":"ALTER 
+TABLE supabase_migrations.
+schema_migrations ADD 
+COLUMN IF NOT EXISTS 
+statements text[]","Parame
+terOIDs":null}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Bind","Dest
+inationPortal":"","Prepare
+dStatement":"","ParameterF
+ormatCodes":null,"Paramete
+rs":[],"ResultFormatCodes"
+:[]}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Describe","
+ObjectType":"P","Name":""}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Execute","P
+ortal":"","MaxRows":0}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Parse","Nam
+e":"","Query":"ALTER 
+TABLE supabase_migrations.
+schema_migrations ADD 
+COLUMN IF NOT EXISTS name 
+text","ParameterOIDs":null
+}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Bind","Dest
+inationPortal":"","Prepare
+dStatement":"","ParameterF
+ormatCodes":null,"Paramete
+rs":[],"ResultFormatCodes"
+:[]}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Describe","
+ObjectType":"P","Name":""}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Execute","P
+ortal":"","MaxRows":0}
+2026/03/01 09:25:07 PG 
+Send: {"Type":"Sync"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"NoData"}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"CommandComp
+lete","CommandTag":"SET"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"NoData"}
+2026/03/01 09:25:07 PG 
+Recv: {"Severity":"NOTICE"
+,"SeverityUnlocalized":"NO
+TICE","Code":"42P06","Mess
+age":"schema 
+\"supabase_migrations\" 
+already exists, skipping",
+"Detail":"","Hint":"","Pos
+ition":0,"InternalPosition
+":0,"InternalQuery":"","Wh
+ere":"","SchemaName":"","T
+ableName":"","ColumnName":
+"","DataTypeName":"","Cons
+traintName":"","File":"sch
+emacmds.c","Line":132,"Rou
+tine":"CreateSchemaCommand
+","UnknownFields":null}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"CommandComp
+lete","CommandTag":"CREATE
+ SCHEMA"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"NoData"}
+2026/03/01 09:25:07 PG 
+Recv: {"Severity":"NOTICE"
+,"SeverityUnlocalized":"NO
+TICE","Code":"42P07","Mess
+age":"relation 
+\"schema_migrations\" 
+already exists, skipping",
+"Detail":"","Hint":"","Pos
+ition":0,"InternalPosition
+":0,"InternalQuery":"","Wh
+ere":"","SchemaName":"","T
+ableName":"","ColumnName":
+"","DataTypeName":"","Cons
+traintName":"","File":"par
+se_utilcmd.c","Line":207,"
+Routine":"transformCreateS
+tmt","UnknownFields":null}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"CommandComp
+lete","CommandTag":"CREATE
+ TABLE"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"NoData"}
+2026/03/01 09:25:07 PG 
+Recv: {"Severity":"NOTICE"
+,"SeverityUnlocalized":"NO
+TICE","Code":"42701","Mess
+age":"column 
+\"statements\" of 
+relation 
+\"schema_migrations\" 
+already exists, skipping",
+"Detail":"","Hint":"","Pos
+ition":0,"InternalPosition
+":0,"InternalQuery":"","Wh
+ere":"","SchemaName":"","T
+ableName":"","ColumnName":
+"","DataTypeName":"","Cons
+traintName":"","File":"tab
+lecmds.c","Line":7438,"Rou
+tine":"check_for_column_na
+me_collision","UnknownFiel
+ds":null}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"CommandComp
+lete","CommandTag":"ALTER 
+TABLE"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/01 09:25:07 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"NoData"}
+2026/03/01 09:25:07 PG 
+Recv: {"Severity":"NOTICE"
+,"SeverityUnlocalized":"NO
+TICE","Code":"42701","Mess
+age":"column \"name\" of 
+relation 
+\"schema_migrations\" 
+already exists, skipping",
+"Detail":"","Hint":"","Pos
+ition":0,"InternalPosition
+":0,"InternalQuery":"","Wh
+ere":"","SchemaName":"","T
+ableName":"","ColumnName":
+"","DataTypeName":"","Cons
+traintName":"","File":"tab
+lecmds.c","Line":7438,"Rou
+tine":"check_for_column_na
+me_collision","UnknownFiel
+ds":null}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"CommandComp
+lete","CommandTag":"ALTER 
+TABLE"}
+2026/03/01 09:25:07 PG 
+Recv: {"Type":"ReadyForQue
+ry","TxStatus":"I"}
+glob supabase\migrations\2
+0250716211834_*.sql: file 
+does not exist

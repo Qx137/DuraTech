@@ -1,0 +1,52 @@
+supabase : 
+Initialising login 
+role...
+At line:1 char:1
++ supabase db push 
+2>&1 | Out-File 
+-Encoding ASCII 
+push_output.txt
++ 
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo    
+          : 
+NotSpecified: (I    
+nitialising login rol 
+   e...:String) [], 
+Remo    teException
+    + 
+FullyQualifiedError   
+ Id : 
+NativeCommandErr    or
+ 
+Connecting to remote 
+database...
+Skipping migration 202
+50716211834-1ee6eb68-d
+102-409d-8631-1a76ad06
+93ae.sql... (file 
+name must match 
+pattern "<timestamp>_n
+ame.sql")
+Remote migration 
+versions not found in 
+local migrations 
+directory.
+
+Make sure your local 
+git repo is 
+up-to-date. If the 
+error persists, try 
+repairing the 
+migration history 
+table:
+supabase migration 
+repair --status 
+reverted 
+20260301070015
+
+And update local 
+migrations to match 
+remote database:
+supabase db pull
+

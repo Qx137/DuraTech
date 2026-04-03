@@ -80,8 +80,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         } else if (_sortBy == 'price_desc') {
           _filteredProducts.sort((a, b) => b.price.compareTo(a.price));
         } else if (_sortBy == 'rating') {
-          _filteredProducts
-              .sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+          _filteredProducts.sort((a, b) => b.rating.compareTo(a.rating));
         }
       }
     });
@@ -109,7 +108,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               ),
               onPressed: () => Navigator.pushNamed(context, '/cart').then((_) {
                 // Refresh count when returning from cart
-                context.read<CartProvider>().refreshCount();
+                if (context.mounted) {
+                  context.read<CartProvider>().refreshCount();
+                }
               }),
             ),
           ),
@@ -454,6 +455,23 @@ class _ProductCard extends StatelessWidget {
                         size: 14,
                         color: Colors.blue,
                       ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 14),
+                    const SizedBox(width: 2),
+                    Text(
+                      product.rating > 0
+                          ? product.rating.toStringAsFixed(1)
+                          : '—',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),

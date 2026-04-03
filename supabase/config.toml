@@ -3,6 +3,9 @@ project_id = "wutfcyskvfkunmvrvafz"
 [functions.paynow-webhook]
 verify_jwt = false
 
+[functions.contipay-webhook]
+verify_jwt = false
+
 [functions.send-order-email]
 verify_jwt = true
 
@@ -10,6 +13,15 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.create-paynow-payment]
+verify_jwt = true
+
+[functions.create-contipay-payment]
+verify_jwt = true
+
+[functions.get-contipay-status]
+verify_jwt = true
+
+[functions.create-contipay-disbursement]
 verify_jwt = true
 
 [functions.create-stripe-checkout]

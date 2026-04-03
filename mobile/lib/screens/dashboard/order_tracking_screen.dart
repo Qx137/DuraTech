@@ -143,9 +143,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.emerald.withOpacity(0.1),
+        color: AppColors.emerald.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.emerald.withOpacity(0.2)),
+        border: Border.all(color: AppColors.emerald.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -287,7 +287,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: AppColors.emerald.withOpacity(0.1),
+                  backgroundColor: AppColors.emerald.withValues(alpha: 0.1),
                   child: const Icon(Icons.person, color: AppColors.emerald),
                 ),
                 const SizedBox(width: 16),

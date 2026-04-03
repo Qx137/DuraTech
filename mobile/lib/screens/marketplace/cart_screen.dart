@@ -82,7 +82,7 @@ class _CartScreenState extends State<CartScreen> {
                                       item['id'],
                                       item['quantity'] - 1,
                                     );
-                                    if (mounted) {
+                                    if (context.mounted) {
                                       context
                                           .read<CartProvider>()
                                           .refreshCount();
@@ -98,7 +98,7 @@ class _CartScreenState extends State<CartScreen> {
                                       item['id'],
                                       item['quantity'] + 1,
                                     );
-                                    if (mounted) {
+                                    if (context.mounted) {
                                       context
                                           .read<CartProvider>()
                                           .refreshCount();

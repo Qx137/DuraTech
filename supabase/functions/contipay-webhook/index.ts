@@ -4,7 +4,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req: Request) => {
@@ -31,10 +31,15 @@ serve(async (req: Request) => {
         const payload = await req.json();
         console.log('Webhook payload:', JSON.stringify(payload, null, 2));
 
-        const { reference, status, amount, signature, transactionId } = payload;
+        // Official spec uses merchantRef for our orderId, but reference might also be sent
+        const reference = payload.merchantRef || payload.reference;
+        const status = payload.status;
+        const statusCode = payload.statusCode;
+        const amount = payload.amount;
+        const signature = payload.signature;
 
-        if (!reference || !status) {
-            console.error('Missing required webhook fields');
+        if (!reference || (!status && statusCode === undefined)) {
+            console.error('Missing required webhook fields: reference/merchantRef or status/statusCode');
             return new Response(
                 JSON.stringify({ success: false, error: 'Invalid webhook payload' }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -73,30 +78,59 @@ serve(async (req: Request) => {
             );
         }
 
-        // Map ContiPay status to our order status
+        // Idempotency check: prevent replay attacks
+        const { data: existingLog } = await supabase
+            .from('webhook_log')
+            .select('id')
+            .eq('webhook_reference', reference)
+            .eq('webhook_status', status || String(statusCode))
+            .maybeSingle();
+
+        if (existingLog) {
+            console.log('Webhook already processed for reference:', reference, 'status:', status || statusCode);
+            return new Response(
+                JSON.stringify({ success: true, message: 'Webhook already processed' }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+
+        // Map ContiPay status/statusCode to our order status
         let paymentStatus = 'pending';
         let orderStatus = 'pending';
 
-        switch (status.toUpperCase()) {
-            case 'SUCCESSFUL':
-            case 'COMPLETED':
-            case 'PAID':
+        // Use statusCode if available (1 = paid/success, 4 = declined/failed)
+        if (statusCode !== undefined) {
+            const code = Number(statusCode);
+            if (code === 1) {
                 paymentStatus = 'completed';
                 orderStatus = 'confirmed';
-                break;
-            case 'FAILED':
-            case 'CANCELLED':
-            case 'DECLINED':
+            } else if (code === 4 || code === 5) {
                 paymentStatus = 'failed';
                 orderStatus = 'cancelled';
-                break;
-            case 'PENDING':
-                paymentStatus = 'pending';
-                orderStatus = 'pending';
-                break;
-            default:
-                console.warn('Unknown ContiPay status:', status);
-                paymentStatus = 'pending';
+            }
+        } else if (status) {
+            // Fallback to string status if statusCode is missing
+            switch (status.toUpperCase()) {
+                case 'SUCCESSFUL':
+                case 'COMPLETED':
+                case 'PAID':
+                    paymentStatus = 'completed';
+                    orderStatus = 'confirmed';
+                    break;
+                case 'FAILED':
+                case 'CANCELLED':
+                case 'DECLINED':
+                    paymentStatus = 'failed';
+                    orderStatus = 'cancelled';
+                    break;
+                case 'PENDING':
+                    paymentStatus = 'pending';
+                    orderStatus = 'pending';
+                    break;
+                default:
+                    console.warn('Unknown ContiPay status:', status);
+                    paymentStatus = 'pending';
+            }
         }
 
         console.log(`Updating order ${reference} to payment_status: ${paymentStatus}, status: ${orderStatus}`);
@@ -115,6 +149,15 @@ serve(async (req: Request) => {
             console.error('Error updating order:', updateError);
             throw updateError;
         }
+
+        // Log webhook as processed to prevent replays
+        await supabase
+            .from('webhook_log')
+            .insert({
+                webhook_reference: reference,
+                webhook_status: status || String(statusCode),
+            })
+            .single();
 
         // If payment successful, send confirmation email
         if (paymentStatus === 'completed') {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/community_service.dart';
 import '../../theme/app_colors.dart';
-import 'post_detail_screen.dart';
+import 'new_post_screen.dart';
 
 class TopicDetailScreen extends StatefulWidget {
   final Map<String, dynamic> topic;
@@ -105,14 +105,6 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PostDetailScreen(post: post),
-                          ),
-                        );
-                      },
                     ),
                   );
                 },
@@ -122,8 +114,19 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: New post in this topic
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NewPostScreen(
+                topicId: widget.topic['id'],
+                topicTitle: widget.topic['title'],
+              ),
+            ),
+          );
+          if (result == true) {
+            _loadPosts();
+          }
         },
         child: const Icon(Icons.add),
       ),

@@ -1,5 +1,4 @@
 // Distance calculation utilities similar to InDrive pricing
-import { supabase } from '@/integrations/supabase/client';
 
 export interface Location {
   lat: number;
@@ -22,27 +21,10 @@ const DEFAULT_PRICING: PricingConfig = {
 };
 
 /**
- * Calculate actual road distance between two coordinates using GraphHopper via secure edge function
+ * Calculate distance between two coordinates using Haversine formula
  */
 export async function calculateDistance(from: Location, to: Location): Promise<number> {
-  try {
-    const { data, error } = await supabase.functions.invoke('graphhopper-geocode', {
-      body: { 
-        type: 'route',
-        points: [[from.lat, from.lng], [to.lat, to.lng]]
-      }
-    });
-    
-    if (error) throw error;
-    
-    // Distance is returned in meters, convert to kilometers
-    const distanceInMeters = data.paths?.[0]?.distance || 0;
-    return distanceInMeters / 1000;
-  } catch (error) {
-    console.error('Error calculating distance with GraphHopper:', error);
-    // Fallback to Haversine formula for straight-line distance
-    return calculateDistanceFallback(from, to);
-  }
+  return calculateDistanceFallback(from, to);
 }
 
 /**
@@ -90,7 +72,7 @@ export function getSellerLocationFromProduct(product: any): Location {
   }
   
   // Fallback to a default location if no coordinates are set
-  return { lat: 40.7128, lng: -74.0060 }; // New York as default
+  return { lat: -17.8292, lng: 31.0522 }; // Harare as default
 }
 
 /**

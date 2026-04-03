@@ -552,6 +552,89 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_verifications: {
+        Row: {
+          bank_account_number: string | null
+          bank_branch: string | null
+          bank_name: string | null
+          certificate_of_incorporation_url: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          id_back_url: string | null
+          id_front_url: string
+          id_number: string | null
+          id_type: string
+          last_name: string | null
+          mobile_money_number: string | null
+          mobile_money_provider: string[] | null
+          payment_methods: string[] | null
+          rejection_reason: string | null
+          selfie_url: string
+          seller_type: string
+          status: string
+          tax_clearance_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_number?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
+          certificate_of_incorporation_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          id_back_url?: string | null
+          id_front_url: string
+          id_number?: string | null
+          id_type: string
+          last_name?: string | null
+          mobile_money_number?: string | null
+          mobile_money_provider?: string[] | null
+          payment_methods?: string[] | null
+          rejection_reason?: string | null
+          selfie_url: string
+          seller_type?: string
+          status?: string
+          tax_clearance_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_number?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
+          certificate_of_incorporation_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string
+          id_number?: string | null
+          id_type?: string
+          last_name?: string | null
+          mobile_money_number?: string | null
+          mobile_money_provider?: string[] | null
+          payment_methods?: string[] | null
+          rejection_reason?: string | null
+          selfie_url?: string
+          seller_type?: string
+          status?: string
+          tax_clearance_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -845,6 +928,7 @@ export type Database = {
           description: string | null
           email: string
           id: string
+          kyc_status: string
           name: string
           updated_at: string
           user_type: string
@@ -855,6 +939,7 @@ export type Database = {
           description?: string | null
           email: string
           id: string
+          kyc_status?: string
           name: string
           updated_at?: string
           user_type: string
@@ -865,6 +950,7 @@ export type Database = {
           description?: string | null
           email?: string
           id?: string
+          kyc_status?: string
           name?: string
           updated_at?: string
           user_type?: string
@@ -927,6 +1013,27 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_log: {
+        Row: {
+          id: string
+          processed_at: string
+          webhook_reference: string
+          webhook_status: string
+        }
+        Insert: {
+          id?: string
+          processed_at?: string
+          webhook_reference: string
+          webhook_status: string
+        }
+        Update: {
+          id?: string
+          processed_at?: string
+          webhook_reference?: string
+          webhook_status?: string
         }
         Relationships: []
       }

@@ -21,11 +21,23 @@ class CommunityService {
 
   Future<List<Map<String, dynamic>>> fetchTopicPosts(String topicId) async {
     final response = await _client
-        .from('community_posts')
+        .from('forum_replies')
         .select('*')
-        .order('created_at', ascending: false);
+        .eq('topic_id', topicId)
+        .order('created_at', ascending: true);
 
     return _joinProfiles(response);
+  }
+
+  Future<void> createTopicReply(String topicId, String content) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    await _client.from('forum_replies').insert({
+      'topic_id': topicId,
+      'user_id': user.id,
+      'content': content,
+    });
   }
 
   Future<void> createPost(String content) async {

@@ -4,8 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface PaymentRequest {
@@ -28,6 +27,7 @@ function getSafeErrorMessage(error: string): string {
         'Order already paid': 'This order has already been paid',
         'Amount mismatch': 'Unable to process payment',
         'ContiPay credentials not configured': 'Payment service temporarily unavailable',
+        'Payment gateway temporarily unavailable': 'The payment gateway is temporarily unavailable. Please try again in a few moments.',
     };
 
     // Return mapped message or generic error
@@ -72,6 +72,7 @@ serve(async (req: Request) => {
 
         // Parse and validate input
         const body = await req.json();
+        console.log('Request body:', JSON.stringify(body));
         let { orderId, amount, email, phone, customerName } = body as PaymentRequest;
         if (typeof amount === 'string') {
             amount = parseFloat(amount);
@@ -93,9 +94,11 @@ serve(async (req: Request) => {
         const orderError = orderRes.error;
 
         if (orderError || !order) {
-            console.error('Order lookup failed:', orderError);
+            console.error('Order lookup failed:', orderError, 'for orderId:', orderId);
             throw new Error('Order not found');
         }
+
+        console.log('Order found:', JSON.stringify(order));
 
         // 5. Verify user owns this order
         if (order.user_id !== user.id) {
@@ -118,63 +121,69 @@ serve(async (req: Request) => {
         // Get ContiPay credentials from environment
         const apiKey = (globalThis as any).Deno.env.get('CONTIPAY_API_KEY');
         const apiSecret = (globalThis as any).Deno.env.get('CONTIPAY_API_SECRET');
-        const baseUrl = (globalThis as any).Deno.env.get('CONTIPAY_BASE_URL') || 'https://api.contipay.co.zw';
+        const merchantIdRaw = (globalThis as any).Deno.env.get('CONTIPAY_MERCHANT_ID');
+        // Official ContiPay URLs: 
+        // TEST: https://api-uat.contipay.net
+        // LIVE: https://api.contipay.net (or https://api-v2.contipay.co.zw)
+        const rawBaseUrl = (globalThis as any).Deno.env.get('CONTIPAY_BASE_URL') || 'https://api-uat.contipay.net';
+        // Ensure baseUrl has a protocol and remove trailing slash
+        const baseUrl = (rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl}`).replace(/\/$/, '');
 
-        if (!apiKey || !apiSecret) {
-            console.error('ContiPay credentials not configured');
+        if (!apiKey || !apiSecret || !merchantIdRaw) {
+            console.error('ContiPay credentials not configured correctly. Missing:', !apiKey ? 'API_KEY' : '', !apiSecret ? 'API_SECRET' : '', !merchantIdRaw ? 'MERCHANT_ID' : '');
             throw new Error('ContiPay credentials not configured');
         }
 
-        // Create payment request to ContiPay
+        const merchantId = parseInt(merchantIdRaw, 10);
+        if (isNaN(merchantId)) {
+            console.error('Invalid CONTIPAY_MERCHANT_ID: must be a number');
+            throw new Error('ContiPay credentials not configured');
+        }
+
+        // Build redirect payment payload per ContiPay API spec
         const returnUrl = `${(globalThis as any).Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '') || 'https://wutfcyskvfkunmvrvafz.lovable.app'}/payment-success?orderId=${orderId}`;
         const resultUrl = `${(globalThis as any).Deno.env.get('SUPABASE_URL')}/functions/v1/contipay-webhook`;
 
+        // Split customer name into first/last
+        const nameParts = customerName.trim().split(' ');
+        const firstName = nameParts[0] || 'Customer';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
         const paymentData = {
-            apiKey: apiKey,
-            amount: amount.toFixed(2),
+            webhookUrl: resultUrl,
+            successUrl: returnUrl,
+            cancelUrl: returnUrl,
+            description: `Payment for order ${orderId}`.substring(0, 100),
+            amount: parseFloat(amount.toFixed(2)),
             reference: orderId,
-            email: email,
-            phone: phone || '',
-            customerName: customerName,
-            returnUrl: returnUrl,
-            resultUrl: resultUrl,
-            description: `Payment for order ${orderId}`
-        };
-
-        // Create HMAC signature
-        const dataToSign = `${apiKey}${amount.toFixed(2)}${orderId}${email}`;
-        const encoder = new TextEncoder();
-        const keyData = encoder.encode(apiSecret);
-        const messageData = encoder.encode(dataToSign);
-
-        const cryptoKey = await crypto.subtle.importKey(
-            'raw',
-            keyData,
-            { name: 'HMAC', hash: 'SHA-256' },
-            false,
-            ['sign']
-        );
-
-        const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-        const signatureArray = Array.from(new Uint8Array(signature));
-        const signatureHex = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-        // Add signature to payment data
-        const finalPaymentData = {
-            ...paymentData,
-            signature: signatureHex
+            merchantId: merchantId,
+            currencyCode: 'USD',
+            customer: {
+                firstName: firstName || 'Customer',
+                surname: lastName || 'N/A',
+                middleName: '',
+                email: email,
+                cell: phone && phone.trim() !== '' ? phone : '0000000000',
+                countryCode: 'ZW',
+                nationalId: '', // Optional/Placeholder
+            },
         };
 
         console.log('Sending request to ContiPay:', baseUrl);
+        console.log('Final Payment Data:', JSON.stringify(paymentData));
 
-        // Send request to ContiPay
+        // Use Basic Auth with token (apiKey) and secret (apiSecret) per ContiPay JS client
+        const basicAuth = btoa(`${apiKey}:${apiSecret}`);
+
+        // Send redirect payment request to ContiPay
         const contiPayResponse = await fetch(`${baseUrl}/acquire/payment`, {
-            method: 'POST',
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'Authorization': `Basic ${basicAuth}`,
             },
-            body: JSON.stringify(finalPaymentData)
+            body: JSON.stringify(paymentData)
         });
 
         if (!contiPayResponse.ok) {
@@ -184,9 +193,12 @@ serve(async (req: Request) => {
         }
 
         const responseData = await contiPayResponse.json();
-        console.log('ContiPay response received');
+        console.log('ContiPay response received:', JSON.stringify(responseData));
 
-        if (responseData.success && responseData.paymentUrl) {
+        // ContiPay redirect responses may return a URL in different fields
+        const paymentUrl = responseData.paymentUrl || responseData.url || responseData.redirectUrl || responseData.redirect_url;
+
+        if (paymentUrl) {
             // Update order with ContiPay reference
             await supabase
                 .from('orders')
@@ -196,7 +208,7 @@ serve(async (req: Request) => {
             return new Response(
                 JSON.stringify({
                     success: true,
-                    paymentUrl: responseData.paymentUrl,
+                    paymentUrl: paymentUrl,
                     reference: orderId
                 }),
                 {
@@ -204,11 +216,11 @@ serve(async (req: Request) => {
                 }
             );
         } else {
-            console.error('ContiPay returned error:', responseData.error || responseData.message);
+            console.error('ContiPay returned no payment URL:', JSON.stringify(responseData));
             return new Response(
                 JSON.stringify({
                     success: false,
-                    error: 'Payment initialization failed. Please try again.'
+                    error: responseData.message || responseData.error || 'Payment initialization failed. Please try again.'
                 }),
                 {
                     status: 400,
@@ -225,6 +237,13 @@ serve(async (req: Request) => {
         const safeMessage = getSafeErrorMessage(internalError);
         const status = internalError.includes('Access denied') ? 403 :
             internalError.includes('Unauthorized') ? 401 : 400;
+
+        // Log detailed error server-side for debugging
+        console.error('Payment error context:', JSON.stringify({
+            internalError,
+            userId: typeof user !== 'undefined' ? user?.id : 'unknown',
+            timestamp: new Date().toISOString()
+        }));
 
         return new Response(
             JSON.stringify({

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, User, Store, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import NotchHeader from "@/components/layout/NotchHeader";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import {
@@ -87,25 +88,17 @@ const Settings = () => {
     
     setIsUpdating(true);
     try {
-      // Update user_roles table
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .update({ role: 'seller' })
-        .eq('user_id', user.id);
-
-      if (roleError) throw roleError;
-
-      // Update profiles table with seller info
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          user_type: 'seller',
+      // Use edge function for secure role change
+      const { data, error } = await supabase.functions.invoke('update-user-role', {
+        body: {
+          role: 'seller',
           business_name: sellerInfo.businessName.trim(),
           description: sellerInfo.description?.trim() || null,
-        })
-        .eq('id', user.id);
+        },
+      });
 
-      if (profileError) throw profileError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Welcome, Seller!",
@@ -131,21 +124,13 @@ const Settings = () => {
   const handleSwitchToBuyer = async () => {
     setIsUpdating(true);
     try {
-      // Update user_roles table
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .update({ role: 'buyer' })
-        .eq('user_id', user.id);
+      // Use edge function for secure role change
+      const { data, error } = await supabase.functions.invoke('update-user-role', {
+        body: { role: 'buyer' },
+      });
 
-      if (roleError) throw roleError;
-
-      // Update profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ user_type: 'buyer' })
-        .eq('id', user.id);
-
-      if (profileError) throw profileError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Role Updated",
@@ -170,16 +155,21 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
+      <NotchHeader
+        navItems={[
+          { label: "Dashboard", to: "/dashboard" },
+          { label: "Marketplace", to: "/marketplace" },
+          { label: "Community", to: "/community" },
+        ]}
+        actions={
           <Link to="/dashboard">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
             </Button>
           </Link>
-          <h1 className="text-xl font-semibold">Settings</h1>
-        </div>
-      </header>
+        }
+      />
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>

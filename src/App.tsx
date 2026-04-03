@@ -23,6 +23,7 @@ import DeliveryBidSelection from "./pages/DeliveryBidSelection";
 import Settings from "./pages/Settings";
 import Delivery from "./pages/Delivery";
 import NotFound from "./pages/NotFound";
+import FloatingSupportButton from "./components/layout/FloatingSupportButton";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +35,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Marketplace />} />
+            <Route path="/home" element={<Index />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -54,6 +56,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <FloatingSupportButton />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

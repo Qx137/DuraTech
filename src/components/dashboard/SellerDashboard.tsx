@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Leaf, Package, DollarSign, Users, TrendingUp, Plus, Edit, Eye, LogOut, MessageSquare, BarChart3, Settings, Database, Upload, FileText, Building, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import NotchHeader from "@/components/layout/NotchHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
@@ -106,7 +107,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
     const file = e.target.files?.[0];
     if (file) {
       // Check file type (images and videos)
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/mov'];
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime', 'video/mov'];
       if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
@@ -132,6 +133,27 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   const handleSaveProduct = async () => {
     if (newProduct.name && newProduct.price && newProduct.stock && newProduct.unit && newProduct.category) {
+      const price = parseFloat(newProduct.price);
+      const stock = parseInt(newProduct.stock);
+
+      if (isNaN(price) || price < 0) {
+        toast({
+          title: "Invalid Price",
+          description: "Please enter a valid price.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (isNaN(stock) || stock < 0) {
+        toast({
+          title: "Invalid Stock",
+          description: "Please enter a valid stock quantity.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       setUploading(true);
       try {
         let mediaUrl = newProduct.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop';
@@ -147,10 +169,10 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
             {
               seller_id: user.id,
               name: newProduct.name,
-              price: parseFloat(newProduct.price),
+              price: price,
               unit: newProduct.unit,
               category: newProduct.category,
-              stock_quantity: parseInt(newProduct.stock),
+              stock_quantity: stock,
               description: newProduct.description,
               location: newProduct.location,
               organic: newProduct.organic,
@@ -182,11 +204,11 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         setSelectedFile(null);
         setShowAddProductForm(false);
         fetchProducts(); // Refresh the products list
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error adding product:', error);
         toast({
           title: "Error",
-          description: "Failed to add product. Please try again.",
+          description: error.message || "Failed to add product. Please try again.",
           variant: "destructive"
         });
       } finally {
@@ -222,6 +244,27 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   const handleUpdateProduct = async () => {
     if (newProduct.name && newProduct.price && newProduct.stock && newProduct.unit && newProduct.category && editingProduct) {
+      const price = parseFloat(newProduct.price);
+      const stock = parseInt(newProduct.stock);
+
+      if (isNaN(price) || price < 0) {
+        toast({
+          title: "Invalid Price",
+          description: "Please enter a valid price.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (isNaN(stock) || stock < 0) {
+        toast({
+          title: "Invalid Stock",
+          description: "Please enter a valid stock quantity.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       setUploading(true);
       try {
         let mediaUrl = newProduct.image;
@@ -235,10 +278,10 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           .from('products')
           .update({
             name: newProduct.name,
-            price: parseFloat(newProduct.price),
+            price: price,
             unit: newProduct.unit,
             category: newProduct.category,
-            stock_quantity: parseInt(newProduct.stock),
+            stock_quantity: stock,
             description: newProduct.description,
             location: newProduct.location,
             organic: newProduct.organic,
@@ -273,11 +316,11 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         setShowEditForm(false);
         setEditingProduct(null);
         fetchProducts(); // Refresh the products list
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error updating product:', error);
         toast({
           title: "Error",
-          description: "Failed to update product. Please try again.",
+          description: error.message || "Failed to update product. Please try again.",
           variant: "destructive"
         });
       } finally {
@@ -343,11 +386,11 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
       if (error) throw error;
       setProducts(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
         title: "Error",
-        description: "Failed to load products.",
+        description: error.message || "Failed to load products.",
         variant: "destructive"
       });
     } finally {
@@ -788,31 +831,15 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
 
   return (
     <>
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img
-              src="/logo.png"
-              alt="Durahub Logo"
-              className="h-16"
-            />
-          </Link>
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/dashboard" className="text-green-600 font-medium">
-              Dashboard
-            </Link>
-            <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
-              Marketplace
-            </Link>
-            <Link to="/community" className="text-gray-700 hover:text-green-600 transition-colors">
-              Community
-            </Link>
-            <Link to="/ai-tools" className="text-gray-700 hover:text-green-600 transition-colors">
-              AI Tools
-            </Link>
-          </nav>
-          <div className="flex items-center space-x-3">
+      <NotchHeader
+        navItems={[
+          { label: "Dashboard", to: "/dashboard", active: true },
+          { label: "Marketplace", to: "/marketplace" },
+          { label: "Community", to: "/community" },
+          { label: "AI Tools", to: "/ai-tools" },
+        ]}
+        actions={
+          <>
             <Button onClick={handleAddProduct} size="sm" className="bg-green-600 hover:bg-green-700">
               <Plus className="h-4 w-4 mr-1" />
               Add Product
@@ -821,9 +848,9 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
               <LogOut className="h-4 w-4 mr-1" />
               Logout
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
@@ -926,7 +953,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                 <div className="space-y-2">
                   <Input
                     type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/mov"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm,video/quicktime,video/mov"
                     onChange={handleFileChange}
                     className="cursor-pointer"
                   />

@@ -7,8 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Bot, TrendingUp, Search, Leaf, MapPin, Calendar, DollarSign, Cloud, Thermometer, Loader2, Key } from "lucide-react";
+import { Sparkles, BarChart3, SearchCheck, Sprout, MapPin, CalendarDays, CircleDollarSign, Layers, Loader2, Brain, Wheat, FlaskConical, LineChart, ShieldCheck, Star, Zap, CloudSun } from "lucide-react";
+import WeatherIntegrationTool from "@/components/ai-tools/WeatherIntegrationTool";
+import ProfitOptimizationTool from "@/components/ai-tools/ProfitOptimizationTool";
+import PersonalAssistantTool from "@/components/ai-tools/PersonalAssistantTool";
 import { Link } from "react-router-dom";
+import NotchHeader from "@/components/layout/NotchHeader";
 import { useToast } from "@/hooks/use-toast";
 import { generateCropRecommendations, analyzePriceTrends, smartSearch, CropRecommendation, PriceAnalysis } from "@/services/ai";
 
@@ -127,42 +131,26 @@ const AITools = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img
-              src="/logo.png"
-              alt="Durahub Logo"
-              className="h-16"
-            />
-          </Link>
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/dashboard" className="text-gray-700 hover:text-green-600 transition-colors">
-              Dashboard
-            </Link>
-            <Link to="/marketplace" className="text-gray-700 hover:text-green-600 transition-colors">
-              Marketplace
-            </Link>
-            <Link to="/community" className="text-gray-700 hover:text-green-600 transition-colors">
-              Community
-            </Link>
-            <Link to="/ai-tools" className="text-green-600 font-medium">
-              AI Tools
-            </Link>
-          </nav>
+      <NotchHeader
+        navItems={[
+          { label: "Dashboard", to: "/dashboard" },
+          { label: "Marketplace", to: "/marketplace" },
+          { label: "Community", to: "/community" },
+          { label: "AI Tools", to: "/ai-tools", active: true },
+        ]}
+        actions={
           <Link to="/login">
             <Button className="bg-green-600 hover:bg-green-700">
               Account
             </Button>
           </Link>
-        </div>
-      </header>
+        }
+      />
 
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            <Bot className="inline h-10 w-10 mr-3 text-green-600" />
+            <Brain className="inline h-10 w-10 mr-3 text-green-600" />
             AI-Powered Agricultural Tools
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
@@ -172,53 +160,78 @@ const AITools = () => {
         </div>
 
         {/* Tool Selection */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <Card
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "recommendations" ? "ring-2 ring-green-500 shadow-lg" : ""
-              }`}
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "recommendations" ? "ring-2 ring-green-500 shadow-lg" : ""}`}
             onClick={() => setSelectedTool("recommendations")}
           >
-            <CardHeader className="text-center">
-              <Bot className="h-12 w-12 text-green-600 mx-auto mb-2" />
-              <CardTitle>Crop Recommendations</CardTitle>
-              <CardDescription>AI suggests best crops for your location</CardDescription>
+            <CardHeader className="text-center p-4">
+              <Sprout className="h-10 w-10 text-green-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Crop Recommendations</CardTitle>
             </CardHeader>
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "pricing" ? "ring-2 ring-blue-500 shadow-lg" : ""
-              }`}
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "pricing" ? "ring-2 ring-blue-500 shadow-lg" : ""}`}
             onClick={() => setSelectedTool("pricing")}
           >
-            <CardHeader className="text-center">
-              <TrendingUp className="h-12 w-12 text-blue-600 mx-auto mb-2" />
-              <CardTitle>Price Predictions</CardTitle>
-              <CardDescription>Forecast market prices with ML</CardDescription>
+            <CardHeader className="text-center p-4">
+              <BarChart3 className="h-10 w-10 text-blue-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Price Predictions</CardTitle>
             </CardHeader>
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "search" ? "ring-2 ring-purple-500 shadow-lg" : ""
-              }`}
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "search" ? "ring-2 ring-purple-500 shadow-lg" : ""}`}
             onClick={() => setSelectedTool("search")}
           >
-            <CardHeader className="text-center">
-              <Search className="h-12 w-12 text-purple-600 mx-auto mb-2" />
-              <CardTitle>Smart Search</CardTitle>
-              <CardDescription>Intelligent product discovery</CardDescription>
+            <CardHeader className="text-center p-4">
+              <SearchCheck className="h-10 w-10 text-purple-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Smart Search</CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "weather" ? "ring-2 ring-amber-500 shadow-lg" : ""}`}
+            onClick={() => setSelectedTool("weather")}
+          >
+            <CardHeader className="text-center p-4">
+              <CloudSun className="h-10 w-10 text-amber-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Weather Insights</CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "profit" ? "ring-2 ring-emerald-500 shadow-lg" : ""}`}
+            onClick={() => setSelectedTool("profit")}
+          >
+            <CardHeader className="text-center p-4">
+              <CircleDollarSign className="h-10 w-10 text-emerald-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">Profit Optimizer</CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${selectedTool === "assistant" ? "ring-2 ring-violet-500 shadow-lg" : ""}`}
+            onClick={() => setSelectedTool("assistant")}
+          >
+            <CardHeader className="text-center p-4">
+              <Sparkles className="h-10 w-10 text-violet-600 mx-auto mb-1" />
+              <CardTitle className="text-sm">AI Assistant</CardTitle>
             </CardHeader>
           </Card>
         </div>
 
         {/* Tool Content */}
+        {(selectedTool === "recommendations" || selectedTool === "pricing" || selectedTool === "search") && (
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Input Panel */}
           <Card className="shadow-lg border-0">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                {selectedTool === "recommendations" && <Bot className="h-5 w-5 text-green-600" />}
-                {selectedTool === "pricing" && <TrendingUp className="h-5 w-5 text-blue-600" />}
-                {selectedTool === "search" && <Search className="h-5 w-5 text-purple-600" />}
+                {selectedTool === "recommendations" && <Sprout className="h-5 w-5 text-green-600" />}
+                {selectedTool === "pricing" && <BarChart3 className="h-5 w-5 text-blue-600" />}
+                {selectedTool === "search" && <SearchCheck className="h-5 w-5 text-purple-600" />}
                 <span>
                   {selectedTool === "recommendations" && "Get Crop Recommendations"}
                   {selectedTool === "pricing" && "Analyze Price Trends"}
@@ -244,7 +257,7 @@ const AITools = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>
-                        <Calendar className="inline h-4 w-4 mr-1" />
+                        <CalendarDays className="inline h-4 w-4 mr-1" />
                         Season
                       </Label>
                       <Select>
@@ -261,7 +274,7 @@ const AITools = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>
-                        <Cloud className="inline h-4 w-4 mr-1" />
+                        <Layers className="inline h-4 w-4 mr-1" />
                         Soil Type
                       </Label>
                       <Select>
@@ -292,7 +305,7 @@ const AITools = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="cropType">
-                      <Leaf className="inline h-4 w-4 mr-1" />
+                      <Wheat className="inline h-4 w-4 mr-1" />
                       Crop Type
                     </Label>
                     <Select value={cropType} onValueChange={setCropType}>
@@ -310,7 +323,7 @@ const AITools = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>
-                      <Calendar className="inline h-4 w-4 mr-1" />
+                      <CalendarDays className="inline h-4 w-4 mr-1" />
                       Prediction Period
                     </Label>
                     <Select>
@@ -340,7 +353,7 @@ const AITools = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="searchQuery">
-                      <Search className="inline h-4 w-4 mr-1" />
+                      <SearchCheck className="inline h-4 w-4 mr-1" />
                       Describe what you're looking for
                     </Label>
                     <Textarea
@@ -489,30 +502,11 @@ const AITools = () => {
             </CardContent>
           </Card>
         </div>
+        )}
 
-        {/* Features Banner */}
-        <div className="mt-12 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg p-8">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold mb-4">🚀 Coming Soon: Advanced AI Features</h3>
-            <div className="grid md:grid-cols-3 gap-6 mt-6">
-              <div className="text-center">
-                <Thermometer className="h-8 w-8 mx-auto mb-2" />
-                <h4 className="font-semibold">Weather Integration</h4>
-                <p className="text-sm opacity-90">Real-time weather-based recommendations</p>
-              </div>
-              <div className="text-center">
-                <DollarSign className="h-8 w-8 mx-auto mb-2" />
-                <h4 className="font-semibold">Profit Optimization</h4>
-                <p className="text-sm opacity-90">Maximize your farming profits with AI</p>
-              </div>
-              <div className="text-center">
-                <Bot className="h-8 w-8 mx-auto mb-2" />
-                <h4 className="font-semibold">Personal AI Assistant</h4>
-                <p className="text-sm opacity-90">24/7 agricultural guidance</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {selectedTool === "weather" && <WeatherIntegrationTool />}
+        {selectedTool === "profit" && <ProfitOptimizationTool />}
+        {selectedTool === "assistant" && <PersonalAssistantTool />}
       </div>
     </div>
   );

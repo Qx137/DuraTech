@@ -1,15 +1,18 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import MarketplaceHeader from "@/components/marketplace/MarketplaceHeader";
 import SearchFilters from "@/components/marketplace/SearchFilters";
-import AIRecommendationsBanner from "@/components/marketplace/AIRecommendationsBanner";
+import CategoryNav from "@/components/marketplace/CategoryNav";
+
 import ProductCard from "@/components/marketplace/ProductCard";
 import NoProductsFound from "@/components/marketplace/NoProductsFound";
+import TrustBar from "@/components/marketplace/TrustBar";
+import MarketplaceFooter from "@/components/marketplace/MarketplaceFooter";
 import { Product } from "@/data/sampleProducts";
 import { calculateDistance, getSellerLocationFromProduct, Location } from "@/utils/distanceCalculator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,21 +29,38 @@ const Marketplace = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Map major categories to the subcategory keys they contain
+  const CATEGORY_SUBCATEGORY_MAP: Record<string, string[]> = {
+    "agri-inputs": ["seeds", "fertilizers", "pesticides", "herbicides", "animal-feed"],
+    "equipment": ["tractors", "irrigation", "hand-tools", "harvesters", "spare-parts"],
+    "farm-produce": ["grains", "vegetables", "fruits", "legumes", "roots"],
+    "livestock": ["cattle", "poultry", "goats", "pigs", "rabbits"],
+    "farm-services": ["ploughing", "spraying", "consulting", "veterinary", "soil-testing"],
+    "transport-logistics": ["cold-chain", "bulk-transport", "last-mile", "warehousing", "packaging"],
+  };
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.farmer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
-    const matchesOrganic = !organicOnly || product.organic;
+    
+    let matchesCategory = selectedCategory === "all";
+    if (!matchesCategory) {
+      // Check if it's a major category — match any of its subcategories
+      const subs = CATEGORY_SUBCATEGORY_MAP[selectedCategory];
+      if (subs) {
+        matchesCategory = subs.includes(product.category);
+      } else {
+        // Direct match (subcategory or legacy category)
+        matchesCategory = product.category === selectedCategory;
+      }
+    }
 
-    // Only apply advanced filters if they are visible (showFilters is true)
+    const matchesOrganic = !organicOnly || product.organic;
     const matchesPrice = !showFilters || (product.price >= priceRange[0] && product.price <= priceRange[1]);
     const matchesQuantity = !showFilters || (!minQuantity || (product.stock_quantity || 0) >= parseInt(minQuantity));
-
     return matchesSearch && matchesCategory && matchesOrganic && matchesPrice && matchesQuantity;
   }).sort((a, b) => {
-    // Only sort if filters are visible, otherwise keep default order (relevance/database order)
-    if (!showFilters) return 0;
-
+    if (!showFilters && sortBy === "relevance") return 0;
     if (sortBy === "price_asc") return a.price - b.price;
     if (sortBy === "price_desc") return b.price - a.price;
     if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
@@ -64,20 +84,14 @@ const Marketplace = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
+          setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
         },
-        (error) => {
-          console.log('Location access denied, using default location');
-          // Default to NYC if location access is denied
-          setUserLocation({ lat: 40.7128, lng: -74.0060 });
+        () => {
+          setUserLocation({ lat: -17.8292, lng: 31.0522 });
         }
       );
     } else {
-      // Default to NYC if geolocation is not supported
-      setUserLocation({ lat: 40.7128, lng: -74.0060 });
+      setUserLocation({ lat: -17.8292, lng: 31.0522 });
     }
   };
 
@@ -85,21 +99,12 @@ const Marketplace = () => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select(`
-          *,
-          profiles (
-            name,
-            business_name
-          )
-        `);
-
+        .select(`*, profiles ( name, business_name )`);
       if (error) throw error;
-
       const formattedProducts = await Promise.all(
         (data || []).map(async (product: any) => {
           const sellerLocation = getSellerLocationFromProduct(product);
           const distance = userLocation ? await calculateDistance(userLocation, sellerLocation) : null;
-
           return {
             id: product.id,
             name: product.name,
@@ -112,13 +117,12 @@ const Marketplace = () => {
             category: product.category,
             organic: product.organic,
             description: product.description || '',
-            distance: distance,
+            distance,
             stock_quantity: product.stock_quantity || 0,
             kycStatus: 'none' as const
           };
         })
       );
-
       setProducts(formattedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -134,7 +138,6 @@ const Marketplace = () => {
         .from('cart_items')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user?.id);
-
       if (error) throw error;
       setCartCount(count || 0);
     } catch (error) {
@@ -144,102 +147,87 @@ const Marketplace = () => {
 
   const addToCart = async (productId: string) => {
     if (!user) {
-      toast({
-        title: "Please Sign In",
-        description: "You need to sign in to add items to your cart.",
-        variant: "destructive",
-      });
+      toast({ title: "Please Sign In", description: "You need to sign in to add items to your cart.", variant: "destructive" });
       return;
     }
-
     try {
-      // Check if item already exists in cart
       const { data: existingItem, error: checkError } = await supabase
         .from('cart_items')
         .select('id, quantity')
         .eq('user_id', user.id)
         .eq('product_id', productId)
         .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
-
+      if (checkError && checkError.code !== 'PGRST116') throw checkError;
       if (existingItem) {
-        // Update quantity if item exists
         const { error: updateError } = await supabase
           .from('cart_items')
           .update({ quantity: existingItem.quantity + 1 })
           .eq('id', existingItem.id);
-
         if (updateError) throw updateError;
       } else {
-        // Insert new item if it doesn't exist
         const { error: insertError } = await supabase
           .from('cart_items')
-          .insert([
-            {
-              user_id: user.id,
-              product_id: productId,
-              quantity: 1
-            }
-          ]);
-
+          .insert([{ user_id: user.id, product_id: productId, quantity: 1 }]);
         if (insertError) throw insertError;
       }
-
       await fetchCartCount();
-      toast({
-        title: "Added to Cart",
-        description: "Product has been added to your cart successfully!",
-      });
-    } catch (error) {
+      toast({ title: "Added to Cart", description: "Product added successfully!" });
+    } catch (error: any) {
       console.error('Error adding to cart:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add product to cart. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to add product to cart.", variant: "destructive" });
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
+    <div className="min-h-screen bg-background flex flex-col">
       <MarketplaceHeader cartCount={cartCount} />
 
-      <div className="container mx-auto px-4 py-8">
-        <SearchFilters
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          organicOnly={organicOnly}
-          setOrganicOnly={setOrganicOnly}
-          categories={categories}
-          filteredProductsCount={filteredProducts.length}
-          totalProductsCount={products.length}
-          priceRange={priceRange}
-          setPriceRange={setPriceRange}
-          minQuantity={minQuantity}
-          setMinQuantity={setMinQuantity}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          showFilters={showFilters}
-          setShowFilters={setShowFilters}
-        />
+      {/* Main content */}
+      {/* Sticky search + categories */}
+      <div className="sticky top-[76px] z-40 bg-background/95 backdrop-blur-md border-b border-border pb-3">
+        <div className="container mx-auto px-4 max-w-6xl space-y-3 pt-4">
+          <SearchFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            organicOnly={organicOnly}
+            setOrganicOnly={setOrganicOnly}
+            categories={categories}
+            filteredProductsCount={filteredProducts.length}
+            totalProductsCount={products.length}
+            priceRange={priceRange}
+            setPriceRange={setPriceRange}
+            minQuantity={minQuantity}
+            setMinQuantity={setMinQuantity}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+          />
+          <CategoryNav categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
+        </div>
+      </div>
 
-        <AIRecommendationsBanner />
+      <main className="flex-1 container mx-auto px-4 pt-4 pb-8 max-w-6xl space-y-6">
 
+        {/* Products */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading products...</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="rounded-2xl overflow-hidden border border-border bg-card">
+                <Skeleton className="aspect-[4/3] w-full" />
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-5 w-1/3 mt-2" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <>
-            {/* Products Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {filteredProducts.map(product => (
                 <ProductCard
                   key={product.id}
@@ -248,11 +236,12 @@ const Marketplace = () => {
                 />
               ))}
             </div>
-
             {filteredProducts.length === 0 && <NoProductsFound />}
           </>
         )}
-      </div>
+      </main>
+
+      <MarketplaceFooter />
     </div>
   );
 };

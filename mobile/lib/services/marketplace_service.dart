@@ -58,4 +58,47 @@ class MarketplaceService {
       'seller_id': user.id,
     });
   }
+
+  Future<List<Map<String, dynamic>>> fetchProductReviews(String productId) async {
+    final response = await _client
+        .from('product_reviews')
+        .select()
+        .eq('product_id', productId)
+        .order('created_at', ascending: false);
+
+    final reviews = List<Map<String, dynamic>>.from(response as List);
+    if (reviews.isEmpty) return reviews;
+
+    final userIds = reviews.map((r) => r['user_id'] as String).toSet().toList();
+    final profilesRes = await _client
+        .from('profiles')
+        .select('id, name')
+        .inFilter('id', userIds);
+
+    final profileMap = {
+      for (final p in profilesRes as List)
+        p['id'] as String: p['name'] as String?
+    };
+
+    for (final r in reviews) {
+      r['author_name'] = profileMap[r['user_id']] ?? 'Anonymous';
+    }
+    return reviews;
+  }
+
+  Future<void> submitReview(
+    String productId,
+    int rating,
+    String? reviewText,
+  ) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    await _client.from('product_reviews').insert({
+      'product_id': productId,
+      'user_id': user.id,
+      'rating': rating,
+      'review_text': reviewText,
+    });
+  }
 }

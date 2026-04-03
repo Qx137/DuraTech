@@ -1,0 +1,2 @@
+INFO|LINT|USE_BUILD_CONTEXT_SYNCHRONOUSLY|C:\\Users\\adore\\Documents\\projects\\durahub\\DuraTech\\mobile\\lib\\screens\\auth\\login_screen.dart|85|38|7|Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check.
+INFO|LINT|USE_BUILD_CONTEXT_SYNCHRONOUSLY|C:\\Users\\adore\\Documents\\projects\\durahub\\DuraTech\\mobile\\lib\\screens\\auth\\login_screen.dart|93|38|7|Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check.

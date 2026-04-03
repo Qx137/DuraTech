@@ -43,7 +43,8 @@ interface OrderItem {
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const orderId = location.state?.orderId;
+  const queryParams = new URLSearchParams(location.search);
+  const orderId = location.state?.orderId || queryParams.get('orderId');
 
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -54,10 +55,19 @@ const PaymentSuccess = () => {
   const [showDriverSelection, setShowDriverSelection] = useState(false);
 
   useEffect(() => {
-    if (orderId) {
+    let interval: NodeJS.Timeout;
+
+    if (orderId && (!order || order.payment_status !== 'completed')) {
       fetchOrderData();
+      interval = setInterval(() => {
+        fetchOrderData();
+      }, 5000);
     }
-  }, [orderId]);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [orderId, order?.payment_status]);
 
   useEffect(() => {
     // Only scan for drivers if bidding is not enabled

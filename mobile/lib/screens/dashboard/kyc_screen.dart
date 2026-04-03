@@ -136,7 +136,7 @@ class _KycScreenState extends State<KycScreen> {
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _idType,
+                      initialValue: _idType,
                       items: const [
                         DropdownMenuItem(
                             value: 'national_id', child: Text('National ID')),
