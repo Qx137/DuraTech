@@ -112,12 +112,17 @@ const Delivery = () => {
     if (pickup && destination) {
       const dist = getDistance(pickup.lat, pickup.lng, destination.lat, destination.lng);
       setDistance(dist);
-      setPrice(calculatePrice(dist));
+      setPrice(calculatePrice(dist) * transportMultiplier);
     } else {
       setDistance(null);
       setPrice(null);
     }
-  }, [pickup, destination]);
+  }, [pickup, destination, transportMultiplier]);
+
+  const handleTransportSelect = (type: TransportType) => {
+    setSelectedTransport(type.id);
+    setTransportMultiplier(type.priceMultiplier);
+  };
 
   const handleSelectSuggestion = (suggestion: any, type: 'pickup' | 'destination') => {
     const loc = { lat: parseFloat(suggestion.lat), lng: parseFloat(suggestion.lon) };
