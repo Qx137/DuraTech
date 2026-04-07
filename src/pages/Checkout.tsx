@@ -337,7 +337,8 @@ const Checkout = () => {
             amount: total,
             email: sanitizedData.email,
             phone: sanitizedData.phone,
-            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`
+            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`,
+            returnUrl: window.location.origin + '/payment-success'
           }
         });
         paymentData = response.data;
@@ -349,7 +350,8 @@ const Checkout = () => {
             amount: total,
             email: sanitizedData.email,
             phone: sanitizedData.phone,
-            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`
+            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`,
+            returnUrl: window.location.origin + '/payment-success'
           }
         });
         paymentData = response.data;
@@ -359,12 +361,12 @@ const Checkout = () => {
       if (paymentError || !paymentData.success) {
         const errorMessage = paymentData?.error || paymentError?.message || 'Failed to create payment';
 
-        let userMessage = "There was an error processing your order. Please try again.";
+        let userMessage = "There was an error processing your order. Please try again. (" + errorMessage + ")";
 
         if (errorMessage.includes('Unable to connect to payment gateway')) {
           userMessage = "The payment gateway is temporarily unavailable. Your order has been created. Please try again in a few moments or contact support with your order ID: " + order.id;
         } else if (errorMessage.includes('credentials')) {
-          userMessage = "Payment system configuration error. Please contact support.";
+          userMessage = "Payment system configuration error. Please contact support. (" + errorMessage + ")";
         } else if (errorMessage.includes('Amount mismatch')) {
           userMessage = "There was an issue with the order amount. Please refresh and try again.";
         }
@@ -374,10 +376,19 @@ const Checkout = () => {
 
       // Redirect to payment gateway page (Paynow or ContiPay)
       window.location.href = paymentData.paymentUrl;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating order:', error);
 
-      const errorMessage = error instanceof Error ? error.message : "There was an error processing your order. Please try again.";
+      let errorMessage = "There was an error processing your order. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error.message === 'string') {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object') {
+        errorMessage = JSON.stringify(error);
+      } else {
+        errorMessage = String(error);
+      }
 
       toast({
         title: "Order Failed",

@@ -13,6 +13,7 @@ interface PaymentRequest {
     email: string;
     phone?: string;
     customerName: string;
+    returnUrl?: string;
 }
 
 // Map internal errors to safe client messages
@@ -73,7 +74,7 @@ serve(async (req: Request) => {
         // Parse and validate input
         const body = await req.json();
         console.log('Request body:', JSON.stringify(body));
-        let { orderId, amount, email, phone, customerName } = body as PaymentRequest;
+        let { orderId, amount, email, phone, customerName, returnUrl: clientReturnUrl } = body as PaymentRequest;
         if (typeof amount === 'string') {
             amount = parseFloat(amount);
         }
@@ -140,8 +141,19 @@ serve(async (req: Request) => {
             throw new Error('ContiPay credentials not configured');
         }
 
-        // Build redirect payment payload per ContiPay API spec
-        const returnUrl = `${(globalThis as any).Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '') || 'https://wutfcyskvfkunmvrvafz.lovable.app'}/payment-success?orderId=${orderId}`;
+        // Determine frontend return URL
+        let frontendUrl = (globalThis as any).Deno.env.get('FRONTEND_URL') || (globalThis as any).Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '') || 'https://wutfcyskvfkunmvrvafz.lovable.app';
+        if (frontendUrl.includes('.supabase.co')) {
+            frontendUrl = 'https://wutfcyskvfkunmvrvafz.lovable.app';
+        }
+        
+        let returnUrl = clientReturnUrl;
+        if (!returnUrl) {
+            returnUrl = `${frontendUrl}/payment-success?orderId=${orderId}`;
+        }
+        else if (!returnUrl.includes('?')) {
+            returnUrl = `${returnUrl}?orderId=${orderId}`;
+        }
         const resultUrl = `${(globalThis as any).Deno.env.get('SUPABASE_URL')}/functions/v1/contipay-webhook`;
 
         // Split customer name into first/last

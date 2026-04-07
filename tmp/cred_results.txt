@@ -1,0 +1,12 @@
+
+--- Testing UAT (https://api-uat.contipay.net) ---
+Status: 200
+Response: {"status":"Error","statusCode":3,"message":"Transaction Request failed with reason:Duplicate Reference:test-ref","mode":"response"}
+
+--- Testing Live v1 (https://api.contipay.net) ---
+Status: 200
+Response: {"status":"Error","statusCode":3,"message":"Authorization Token incorrect!","mode":"response"}
+
+--- Testing Live v2 (https://api-v2.contipay.co.zw) ---
+Status: 200
+Response: {"status":"Error","statusCode":3,"message":"Authorization Token incorrect!","mode":"response"}
