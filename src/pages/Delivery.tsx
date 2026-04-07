@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { LocationPicker } from '@/components/delivery/LocationPicker';
 import { DeliveryRequestPanel } from '@/components/delivery/DeliveryRequestPanel';
+import { TransportType } from '@/components/delivery/TransportTypeSelector';
 import { getDistance, calculatePrice } from '@/utils/delivery';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
@@ -29,6 +30,8 @@ const Delivery = () => {
 
   const [distance, setDistance] = useState<number | null>(null);
   const [price, setPrice] = useState<number | null>(null);
+  const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
+  const [transportMultiplier, setTransportMultiplier] = useState(1);
   const [loading, setLoading] = useState(false);
 
   // Reverse geocoding helper

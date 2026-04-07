@@ -135,6 +135,11 @@ export const DeliveryRequestPanel = ({
                         </div>
                     </div>
 
+                    <TransportTypeSelector
+                        selected={selectedTransport}
+                        onSelect={onTransportSelect}
+                    />
+
                     {(distance !== null && distance > 0) && (
                         <div className="grid grid-cols-2 gap-3 pt-2">
                             <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
