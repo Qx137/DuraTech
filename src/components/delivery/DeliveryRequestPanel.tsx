@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapPin, Navigation, DollarSign, Clock, ArrowRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { TransportTypeSelector, TransportType } from "./TransportTypeSelector";
 
 interface DeliveryRequestPanelProps {
     pickupName: string;
@@ -19,6 +20,8 @@ interface DeliveryRequestPanelProps {
     destinationSuggestions?: any[];
     onSelectSuggestion: (suggestion: any, type: 'pickup' | 'destination') => void;
     searching: 'pickup' | 'destination' | null;
+    selectedTransport: string | null;
+    onTransportSelect: (type: TransportType) => void;
 }
 
 export const DeliveryRequestPanel = ({
@@ -34,7 +37,9 @@ export const DeliveryRequestPanel = ({
     pickupSuggestions = [],
     destinationSuggestions = [],
     onSelectSuggestion,
-    searching
+    searching,
+    selectedTransport,
+    onTransportSelect
 }: DeliveryRequestPanelProps) => {
     return (
         <div className="w-full md:w-[400px] pointer-events-auto">
@@ -129,6 +134,11 @@ export const DeliveryRequestPanel = ({
                             </div>
                         </div>
                     </div>
+
+                    <TransportTypeSelector
+                        selected={selectedTransport}
+                        onSelect={onTransportSelect}
+                    />
 
                     {(distance !== null && distance > 0) && (
                         <div className="grid grid-cols-2 gap-3 pt-2">

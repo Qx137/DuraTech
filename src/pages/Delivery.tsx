@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { LocationPicker } from '@/components/delivery/LocationPicker';
 import { DeliveryRequestPanel } from '@/components/delivery/DeliveryRequestPanel';
+import { TransportType } from '@/components/delivery/TransportTypeSelector';
 import { getDistance, calculatePrice } from '@/utils/delivery';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
@@ -29,6 +30,8 @@ const Delivery = () => {
 
   const [distance, setDistance] = useState<number | null>(null);
   const [price, setPrice] = useState<number | null>(null);
+  const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
+  const [transportMultiplier, setTransportMultiplier] = useState(1);
   const [loading, setLoading] = useState(false);
 
   // Reverse geocoding helper
@@ -109,12 +112,17 @@ const Delivery = () => {
     if (pickup && destination) {
       const dist = getDistance(pickup.lat, pickup.lng, destination.lat, destination.lng);
       setDistance(dist);
-      setPrice(calculatePrice(dist));
+      setPrice(calculatePrice(dist) * transportMultiplier);
     } else {
       setDistance(null);
       setPrice(null);
     }
-  }, [pickup, destination]);
+  }, [pickup, destination, transportMultiplier]);
+
+  const handleTransportSelect = (type: TransportType) => {
+    setSelectedTransport(type.id);
+    setTransportMultiplier(type.priceMultiplier);
+  };
 
   const handleSelectSuggestion = (suggestion: any, type: 'pickup' | 'destination') => {
     const loc = { lat: parseFloat(suggestion.lat), lng: parseFloat(suggestion.lon) };
@@ -218,7 +226,7 @@ const Delivery = () => {
     }
   };
 
-  const isValid = !!(pickup && destination && pickupName && destinationName);
+  const isValid = !!(pickup && destination && pickupName && destinationName && selectedTransport);
 
   return (
     <div className="h-screen w-full flex flex-col md:flex-row relative bg-background overflow-hidden">
@@ -268,6 +276,8 @@ const Delivery = () => {
           destinationSuggestions={destinationSuggestions}
           onSelectSuggestion={handleSelectSuggestion}
           searching={searching}
+          selectedTransport={selectedTransport}
+          onTransportSelect={handleTransportSelect}
         />
       </div>
     </div>
