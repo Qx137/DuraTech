@@ -226,7 +226,7 @@ const Delivery = () => {
     }
   };
 
-  const isValid = !!(pickup && destination && pickupName && destinationName);
+  const isValid = !!(pickup && destination && pickupName && destinationName && selectedTransport);
 
   return (
     <div className="h-screen w-full flex flex-col md:flex-row relative bg-background overflow-hidden">
