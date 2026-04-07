@@ -7,8 +7,7 @@ import { DeliveryRequestPanel } from '@/components/delivery/DeliveryRequestPanel
 import { TransportType } from '@/components/delivery/TransportTypeSelector';
 import { getDistance, calculatePrice } from '@/utils/delivery';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Truck } from 'lucide-react';
 
 interface Location {
   lat: number;
@@ -29,12 +28,12 @@ const Delivery = () => {
   const [searching, setSearching] = useState<'pickup' | 'destination' | null>(null);
 
   const [distance, setDistance] = useState<number | null>(null);
-  const [price, setPrice] = useState<number | null>(null);
+  const [minPrice, setMinPrice] = useState<number | null>(null);
+  const [offeredPrice, setOfferedPrice] = useState<number | null>(null);
   const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
   const [transportMultiplier, setTransportMultiplier] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Reverse geocoding helper
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     try {
       const response = await fetch(
@@ -48,7 +47,6 @@ const Delivery = () => {
     }
   };
 
-  // Auto-locate on mount
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -66,7 +64,6 @@ const Delivery = () => {
     }
   }, []);
 
-  // Search logic for Nominatim (Debounced)
   useEffect(() => {
     const searchLocation = async (query: string, type: 'pickup' | 'destination') => {
       if (query.length < 3 || query.includes(',') || query === 'My Location' || query === 'Destination') {
@@ -74,7 +71,6 @@ const Delivery = () => {
         else setDestinationSuggestions([]);
         return;
       }
-
       setSearching(type);
       try {
         const response = await fetch(
@@ -92,30 +88,27 @@ const Delivery = () => {
 
     const delayDebounceFn = setTimeout(() => {
       if (pickupName && !pickupName.includes('My Location') && pickupName.length > 5) {
-        // Only search if it's not a reverse geocoded address (heuristic: contains commas)
-        if (!pickupName.includes(',')) {
-          searchLocation(pickupName, 'pickup');
-        }
+        if (!pickupName.includes(',')) searchLocation(pickupName, 'pickup');
       }
       if (destinationName && destinationName !== 'Destination' && destinationName.length > 5) {
-        if (!destinationName.includes(',')) {
-          searchLocation(destinationName, 'destination');
-        }
+        if (!destinationName.includes(',')) searchLocation(destinationName, 'destination');
       }
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
   }, [pickupName, destinationName]);
 
-  // Update distance and price when locations change
   useEffect(() => {
     if (pickup && destination) {
       const dist = getDistance(pickup.lat, pickup.lng, destination.lat, destination.lng);
       setDistance(dist);
-      setPrice(calculatePrice(dist) * transportMultiplier);
+      const calculated = calculatePrice(dist) * transportMultiplier;
+      setMinPrice(calculated);
+      setOfferedPrice(calculated);
     } else {
       setDistance(null);
-      setPrice(null);
+      setMinPrice(null);
+      setOfferedPrice(null);
     }
   }, [pickup, destination, transportMultiplier]);
 
@@ -137,44 +130,47 @@ const Delivery = () => {
     }
   };
 
+  const handleOfferedPriceChange = (value: number) => {
+    if (minPrice !== null && value >= minPrice) {
+      setOfferedPrice(value);
+    }
+  };
+
   const handleRequest = async () => {
     if (!user) {
       toast.error('Please login to request a delivery');
       navigate('/login');
       return;
     }
-
     if (!pickup || !destination || !pickupName || !destinationName) {
       toast.error('Please fill in all details');
+      return;
+    }
+    if (offeredPrice !== null && minPrice !== null && offeredPrice < minPrice) {
+      toast.error('Offered price cannot be below the minimum');
       return;
     }
 
     setLoading(true);
     try {
-      // Get user name parts
       const nameParts = user.name?.split(' ') || [];
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // 1. Create a "Delivery Service" order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
           status: 'pending',
-          total: price || 0,
-          payment_method: 'cash', // Default for now
+          total: offeredPrice || 0,
+          payment_method: 'contipay',
           payment_status: 'pending',
-          // order_type: 'service',
           delivery_address: {
             firstName,
             lastName,
             address: destinationName,
             phone: user.phone || '',
-            coordinates: {
-              latitude: destination.lat,
-              longitude: destination.lng,
-            }
+            coordinates: { latitude: destination.lat, longitude: destination.lng }
           }
         })
         .select()
@@ -182,45 +178,41 @@ const Delivery = () => {
 
       if (orderError) throw orderError;
 
-      // 2. Create the delivery record
       const { data: delivery, error: deliveryError } = await supabase
         .from('deliveries')
         .insert({
           order_id: order.id,
           pickup_address: {
-            firstName,
-            lastName,
+            firstName, lastName,
             address: pickupName,
             phone: user.phone || '',
-            coordinates: {
-              latitude: pickup.lat,
-              longitude: pickup.lng,
-            }
+            coordinates: { latitude: pickup.lat, longitude: pickup.lng }
           },
           delivery_address: {
-            firstName,
-            lastName,
+            firstName, lastName,
             address: destinationName,
             phone: user.phone || '',
-            coordinates: {
-              latitude: destination.lat,
-              longitude: destination.lng,
-            }
+            coordinates: { latitude: destination.lat, longitude: destination.lng }
           },
-          status: 'pending',
-          distance_km: distance
+          status: 'awaiting_bids',
+          distance_km: distance,
+          transport_type: selectedTransport,
+          offered_price: offeredPrice,
+          min_price: minPrice,
+          bidding_enabled: true,
+          buyer_can_select: true,
+          bidding_deadline: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
         })
         .select()
         .single();
 
       if (deliveryError) throw deliveryError;
 
-      toast.success('Delivery request submitted! Drivers are being notified.');
-      navigate(`/delivery-tracking?orderId=${order.id}`);
-
+      toast.success('Request sent! Drivers will review your offer.');
+      navigate(`/delivery-bids/${delivery.id}`);
     } catch (error: any) {
       console.error('Error creating delivery request:', error);
-      toast.error(error.message || 'Failed to create delivery request');
+      toast.error(error.message || 'Failed to send request');
     } finally {
       setLoading(false);
     }
@@ -229,56 +221,65 @@ const Delivery = () => {
   const isValid = !!(pickup && destination && pickupName && destinationName && selectedTransport);
 
   return (
-    <div className="h-screen w-full flex flex-col md:flex-row relative bg-background overflow-hidden">
-      {/* Header Mobile / Back Button */}
-      <div className="absolute top-4 left-4 z-[2000] pointer-events-auto">
-        <Button
-          variant="secondary"
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="rounded-full shadow-md bg-white/90 backdrop-blur-sm border border-border"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+    <div className="h-screen w-full flex flex-col bg-background overflow-hidden">
+      {/* DuraGo Header */}
+      <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 flex items-center gap-3 shadow-md z-[2000]">
+        <button onClick={() => navigate(-1)} className="text-white hover:opacity-80">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+            <Truck className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-white font-bold text-lg leading-tight">DuraGo</h1>
+            <p className="text-white/70 text-[10px]">Fast & reliable logistics</p>
+          </div>
+        </div>
       </div>
 
-      {/* Map Section - Main background on mobile, left on desktop */}
-      <div className="flex-1 w-full h-full z-0">
-        <LocationPicker
-          pickup={pickup}
-          destination={destination}
-          onPickupChange={async (loc) => {
-            setPickup(loc);
-            const address = await reverseGeocode(loc.lat, loc.lng);
-            setPickupName(address);
-          }}
-          onDestinationChange={async (loc) => {
-            setDestination(loc);
-            const address = await reverseGeocode(loc.lat, loc.lng);
-            setDestinationName(address);
-          }}
-        />
-      </div>
+      {/* Main content */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Map - reduced height on mobile */}
+        <div className="h-[35vh] md:h-full md:flex-1 w-full">
+          <LocationPicker
+            pickup={pickup}
+            destination={destination}
+            onPickupChange={async (loc) => {
+              setPickup(loc);
+              const address = await reverseGeocode(loc.lat, loc.lng);
+              setPickupName(address);
+            }}
+            onDestinationChange={async (loc) => {
+              setDestination(loc);
+              const address = await reverseGeocode(loc.lat, loc.lng);
+              setDestinationName(address);
+            }}
+          />
+        </div>
 
-      {/* Panel Section - Floats over map on mobile, right on desktop */}
-      <div className="absolute inset-x-0 bottom-0 md:relative md:inset-auto md:w-auto p-4 md:p-6 z-[1500] pointer-events-none flex justify-center items-end md:items-center">
-        <DeliveryRequestPanel
-          pickupName={pickupName}
-          destinationName={destinationName}
-          onPickupNameChange={setPickupName}
-          onDestinationNameChange={setDestinationName}
-          distance={distance}
-          price={price}
-          onRequest={handleRequest}
-          loading={loading}
-          isValid={isValid}
-          pickupSuggestions={pickupSuggestions}
-          destinationSuggestions={destinationSuggestions}
-          onSelectSuggestion={handleSelectSuggestion}
-          searching={searching}
-          selectedTransport={selectedTransport}
-          onTransportSelect={handleTransportSelect}
-        />
+        {/* Panel */}
+        <div className="flex-1 md:flex-none md:w-[420px] overflow-y-auto p-4 md:p-5">
+          <DeliveryRequestPanel
+            pickupName={pickupName}
+            destinationName={destinationName}
+            onPickupNameChange={setPickupName}
+            onDestinationNameChange={setDestinationName}
+            distance={distance}
+            minPrice={minPrice}
+            offeredPrice={offeredPrice}
+            onOfferedPriceChange={handleOfferedPriceChange}
+            onRequest={handleRequest}
+            loading={loading}
+            isValid={isValid}
+            pickupSuggestions={pickupSuggestions}
+            destinationSuggestions={destinationSuggestions}
+            onSelectSuggestion={handleSelectSuggestion}
+            searching={searching}
+            selectedTransport={selectedTransport}
+            onTransportSelect={handleTransportSelect}
+          />
+        </div>
       </div>
     </div>
   );
