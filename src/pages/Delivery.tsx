@@ -276,6 +276,8 @@ const Delivery = () => {
           destinationSuggestions={destinationSuggestions}
           onSelectSuggestion={handleSelectSuggestion}
           searching={searching}
+          selectedTransport={selectedTransport}
+          onTransportSelect={handleTransportSelect}
         />
       </div>
     </div>
