@@ -102,11 +102,14 @@ export type Database = {
           estimated_delivery_time: string | null
           estimated_price: number | null
           id: string
+          min_price: number | null
+          offered_price: number | null
           order_id: string
           pickup_address: Json
           selected_bid_id: string | null
           status: string
           tracking_number: string
+          transport_type: string | null
           updated_at: string
         }
         Insert: {
@@ -121,11 +124,14 @@ export type Database = {
           estimated_delivery_time?: string | null
           estimated_price?: number | null
           id?: string
+          min_price?: number | null
+          offered_price?: number | null
           order_id: string
           pickup_address: Json
           selected_bid_id?: string | null
           status?: string
           tracking_number?: string
+          transport_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -140,11 +146,14 @@ export type Database = {
           estimated_delivery_time?: string | null
           estimated_price?: number | null
           id?: string
+          min_price?: number | null
+          offered_price?: number | null
           order_id?: string
           pickup_address?: Json
           selected_bid_id?: string | null
           status?: string
           tracking_number?: string
+          transport_type?: string | null
           updated_at?: string
         }
         Relationships: [
