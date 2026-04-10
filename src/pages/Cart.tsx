@@ -161,8 +161,11 @@ const Cart = () => {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
       <NotchHeader
         navItems={[
+          { label: "Dashboard", to: "/dashboard" },
           { label: "Marketplace", to: "/marketplace" },
           { label: "Community", to: "/community" },
+          { label: "DuraGo", to: "/delivery" },
+          { label: "AI Tools", to: "/ai-tools" },
           { label: "Cart", to: "/cart", active: true },
         ]}
         actions={

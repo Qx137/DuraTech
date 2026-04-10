@@ -250,6 +250,7 @@ const Community = () => {
           { label: "Dashboard", to: "/dashboard" },
           { label: "Marketplace", to: "/marketplace" },
           { label: "Community", to: "/community", active: true },
+          { label: "DuraGo", to: "/delivery" },
           { label: "AI Tools", to: "/ai-tools" },
         ]}
         actions={

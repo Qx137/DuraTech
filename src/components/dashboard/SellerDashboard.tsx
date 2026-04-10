@@ -836,6 +836,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           { label: "Dashboard", to: "/dashboard", active: true },
           { label: "Marketplace", to: "/marketplace" },
           { label: "Community", to: "/community" },
+          { label: "DuraGo", to: "/delivery" },
           { label: "AI Tools", to: "/ai-tools" },
         ]}
         actions={

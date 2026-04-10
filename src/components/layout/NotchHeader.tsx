@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ReactNode, useState } from "react";
 import { Menu, X } from "lucide-react";
 
-interface NavItem {
+export interface NavItem {
   label: string;
   to: string;
   active?: boolean;
@@ -13,7 +13,7 @@ interface NotchHeaderProps {
   actions?: ReactNode;
 }
 
-const defaultNavItems: NavItem[] = [
+export const defaultNavItems: NavItem[] = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Marketplace", to: "/marketplace" },
   { label: "Community", to: "/community" },
