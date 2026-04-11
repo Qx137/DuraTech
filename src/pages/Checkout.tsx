@@ -15,6 +15,16 @@ import LocationMap from "@/components/checkout/LocationMap";
 import DeliveryOptions from "@/components/checkout/DeliveryOptions";
 import { calculateTotalShipping, type Location } from "@/utils/distanceCalculator";
 import { z } from "zod";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Validation schema for checkout form
 const checkoutSchema = z.object({
@@ -76,6 +86,18 @@ const Checkout = () => {
     cvv: "",
     nameOnCard: ""
   });
+  
+  const [showShippingWarning, setShowShippingWarning] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  // Countdown timer for shipping warning
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showShippingWarning && countdown > 0) {
+      timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [showShippingWarning, countdown]);
 
   // Pre-fill contact information from user profile
   useEffect(() => {
@@ -220,6 +242,15 @@ const Checkout = () => {
         description: "Please add items to your cart before checkout.",
         variant: "destructive",
       });
+      return;
+    }
+
+    const { subtotal, total: orderTotal, shipping: shippingTotal } = calculateTotal();
+    
+    // Intercept if shipping is higher than 50% of order value
+    if (orderTotal > subtotal * 1.5 && !showShippingWarning) {
+      setCountdown(3);
+      setShowShippingWarning(true);
       return;
     }
 
@@ -691,6 +722,59 @@ const Checkout = () => {
           </div>
         </form>
       </div>
+      
+      <AlertDialog open={showShippingWarning} onOpenChange={setShowShippingWarning}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-amber-600 flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              High Delivery Cost Warning
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4 pt-2">
+              <p>
+                The delivery cost for this order is relatively high compared to the value of the items.
+              </p>
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-2 text-sm">
+                <div className="flex justify-between text-amber-800">
+                  <span>Cart Items:</span>
+                  <span className="font-semibold">${calculateTotal().subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-amber-800">
+                  <span>Delivery & Tax:</span>
+                  <span className="font-semibold">${(calculateTotal().shipping + calculateTotal().tax).toFixed(2)}</span>
+                </div>
+                <div className="border-t border-amber-200 pt-2 flex justify-between font-bold text-amber-900">
+                  <span>Total Cost:</span>
+                  <span>${calculateTotal().total.toFixed(2)}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground italic">
+                This often happens when ordering fresh produce from multiple farmers at different locations.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Review Order</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowShippingWarning(false);
+                // We use a timeout to let the dialog close before starting the submission
+                // but since handleSubmit is already bound to the form, we need to call it manually
+                // or just let the "confirmed" state handle it.
+                // In this case, we'll manually trigger the next step.
+                setTimeout(() => {
+                  const form = document.querySelector('form');
+                  if (form) form.requestSubmit();
+                }, 100);
+              }}
+              disabled={countdown > 0}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {countdown > 0 ? `Wait ${countdown}s...` : "Proceed Anyway"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
