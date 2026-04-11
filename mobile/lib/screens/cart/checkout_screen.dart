@@ -344,7 +344,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 onPressed: () {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
-                child: const Text('Back to Home'),
+                child: const Text('Back to Shopping'),
               ),
             ],
           ),

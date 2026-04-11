@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Leaf, Package, Truck, Star, Phone, Users } from "lucide-react";
+import { CheckCircle, Leaf, Package, Truck, Star, Phone, Users, ArrowLeft } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -387,20 +387,21 @@ const PaymentSuccess = () => {
                 Select a driver above to proceed with your delivery.
               </p>
             )}
-            {selectedDriver && (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+              {selectedDriver && (
                 <Link to="/delivery-tracking" state={{ orderId, orderTotal: order?.total || 0, selectedDriver }}>
-                  <Button className="bg-green-600 hover:bg-green-700">
+                  <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
                     Track My Delivery
                   </Button>
                 </Link>
-                <Link to="/marketplace">
-                  <Button variant="outline">
-                    Continue Shopping
-                  </Button>
-                </Link>
-              </div>
-            )}
+              )}
+              <Link to="/marketplace">
+                <Button variant={selectedDriver ? "outline" : "default"} className={`${!selectedDriver ? "bg-green-600 hover:bg-green-700" : ""} w-full sm:w-auto`}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Shopping
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
