@@ -32,8 +32,8 @@ BEGIN
       IF NEW.total < cart_total THEN
         RAISE EXCEPTION 'Order total (%) is less than cart items total (%)', NEW.total, cart_total;
       END IF;
-      -- Ensure total is not unreasonably higher (e.g. more than 50% above items for tax/fees)
-      IF NEW.total > cart_total * 1.5 THEN
+      -- Ensure total is not unreasonably higher (e.g. more than 10x items for security/sanity)
+      IF NEW.total > cart_total * 10.0 THEN
         RAISE EXCEPTION 'Order total (%) is unreasonably higher than cart items total (%)', NEW.total, cart_total;
       END IF;
     END IF;

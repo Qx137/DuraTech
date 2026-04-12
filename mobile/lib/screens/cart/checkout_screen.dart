@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../services/cart_service.dart';
 import '../../services/contipay_service.dart';
 import '../../services/paynow_service.dart';
@@ -282,6 +283,98 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  Future<bool> _showShippingWarning(double itemsTotal, double total) async {
+    int countdown = 3;
+
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return StatefulBuilder(
+              builder: (context, setDialogState) {
+                // Timer will be managed by a simple delayed future for the countdown
+                return AlertDialog(
+                  title: const Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                      SizedBox(width: 8),
+                      Text('High Delivery Cost'),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'The delivery and tax costs for this order are high compared to the item value.',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange.withOpacity(0.2)),
+                        ),
+                        child: Column(
+                          children: [
+                            _costRow('Cart Items', itemsTotal),
+                            _costRow('Delivery & Tax', total - itemsTotal),
+                            const Divider(),
+                            _costRow('Total Cost', total, isBold: true),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'This often happens when ordering from multiple distant farmers. Do you want to proceed?',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Review Order'),
+                    ),
+                    _CountdownButton(
+                      countdown: countdown,
+                      onPressed: () => Navigator.pop(context, true),
+                      onCountdownComplete: () {
+                        if (context.mounted) {
+                          setDialogState(() {
+                            countdown = 0;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ) ??
+        false;
+  }
+
+  Widget _costRow(String label, double amount, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+          Text('\$${amount.toStringAsFixed(2)}',
+              style: TextStyle(
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleCheckout() async {
     if (_emailController.text.isEmpty ||
         _firstNameController.text.isEmpty ||
@@ -290,6 +383,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         const SnackBar(content: Text('Please fill in all required fields')),
       );
       return;
+    }
+
+    final itemsTotal = widget.items.fold<double>(
+      0.0,
+      (sum, item) => sum + (item['products']['price'] * item['quantity']),
+    );
+
+    if (widget.totalPrice > itemsTotal * 1.5) {
+      final confirmed = await _showShippingWarning(itemsTotal, widget.totalPrice);
+      if (!confirmed) return;
     }
 
     setState(() => _isLoading = true);
@@ -344,7 +447,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 onPressed: () {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
-                child: const Text('Back to Home'),
+                child: const Text('Back to Shopping'),
               ),
             ],
           ),
@@ -373,3 +476,68 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 }
+
+class _CountdownButton extends StatefulWidget {
+  final int countdown;
+  final VoidCallback onPressed;
+  final VoidCallback onCountdownComplete;
+
+  const _CountdownButton({
+    required this.countdown,
+    required this.onPressed,
+    required this.onCountdownComplete,
+  });
+
+  @override
+  State<_CountdownButton> createState() => _CountdownButtonState();
+}
+
+class _CountdownButtonState extends State<_CountdownButton> {
+  late int _currentCountdown;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCountdown = widget.countdown;
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        if (_currentCountdown > 0) {
+          setState(() {
+            _currentCountdown--;
+          });
+        } else {
+          _timer?.cancel();
+          widget.onCountdownComplete();
+        }
+      } else {
+        _timer?.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: _currentCountdown > 0 ? null : widget.onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.emerald,
+        foregroundColor: Colors.white,
+      ),
+      child: Text(_currentCountdown > 0
+          ? 'Wait ${_currentCountdown}s...'
+          : 'Proceed Anyway'),
+    );
+  }
+}
+

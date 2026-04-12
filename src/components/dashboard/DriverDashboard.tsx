@@ -9,6 +9,10 @@ import { CreateBidForm } from '@/components/delivery/CreateBidForm';
 import { MapPin, Package, Clock, DollarSign, CheckCircle, Navigation, Gavel, Building2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { KycVerification } from './KycVerification';
+import NotchHeader from '../layout/NotchHeader';
+import { LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface Driver {
   id: string;
@@ -337,8 +341,33 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
     }
   };
 
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    toast.success("Logged out successfully");
+  };
+
   return (
-    <div className="min-h-screen bg-background p-6">
+    <>
+      <NotchHeader
+        navItems={[
+          { label: "Dashboard", to: "/dashboard", active: true },
+          { label: "Marketplace", to: "/marketplace" },
+          { label: "Community", to: "/community" },
+          { label: "DuraGo", to: "/delivery" },
+          { label: "AI Tools", to: "/ai-tools" },
+        ]}
+        actions={
+          <Button onClick={handleLogout} variant="outline" size="sm">
+            <LogOut className="h-4 w-4 mr-1" />
+            Logout
+          </Button>
+        }
+      />
+      <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Driver Status Card */}
         <Card>
@@ -650,5 +679,6 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
         )}
       </div>
     </div>
+    </>
   );
 };
