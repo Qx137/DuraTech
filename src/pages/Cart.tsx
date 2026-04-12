@@ -154,7 +154,7 @@ const Cart = () => {
       });
       return;
     }
-    navigate('/checkout');
+    navigate('/delivery');
   };
 
   return (

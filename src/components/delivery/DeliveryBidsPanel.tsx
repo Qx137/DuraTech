@@ -24,6 +24,13 @@ export const DeliveryBidsPanel = ({
   const [bids, setBids] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [showBids, setShowBids] = useState(false);
+
+  useEffect(() => {
+    // Simulation: Wait 2 seconds before showing the bids to the user
+    const timer = setTimeout(() => setShowBids(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     fetchBids();
@@ -209,12 +216,17 @@ export const DeliveryBidsPanel = ({
           </div>
         )}
 
-        {bids.length === 0 ? (
+        {!showBids || bids.length === 0 ? (
           <div className="text-center py-8">
-            <Gavel className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No bids yet</p>
+            <div className="relative mb-4 flex justify-center">
+              <Gavel className="h-12 w-12 text-muted-foreground animate-bounce" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+              </div>
+            </div>
+            <p className="text-muted-foreground font-medium">Searching for drivers...</p>
             <p className="text-sm text-muted-foreground">
-              Drivers and delivery companies will submit bids soon
+              Drivers and delivery companies are reviewing your request
             </p>
           </div>
         ) : (
