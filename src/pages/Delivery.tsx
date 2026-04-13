@@ -278,21 +278,21 @@ const Delivery = () => {
   const isValid = !!(pickup && destination && pickupName && destinationName && selectedTransport);
 
   return (
-    <div className="h-screen w-full flex flex-col bg-background overflow-hidden">
+    <div className="h-screen w-full flex flex-col bg-slate-50 overflow-hidden">
       {/* DuraGo Header */}
-      <div className="bg-green-50/50 border-2 border-orange-400 rounded-full mx-4 mt-4 px-6 py-2 flex items-center gap-3 shadow-lg z-[2000]">
-        <button onClick={() => navigate(-1)} className="text-orange-600 hover:opacity-80">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      <div className="bg-green-50/50 border-2 border-orange-500 rounded-full mx-auto mt-6 px-12 py-4 flex items-center justify-center relative shadow-lg z-[2000] w-auto max-w-[90%] md:max-w-[400px]">
+        <button onClick={() => navigate(-1)} className="absolute left-8 text-orange-600 hover:opacity-80">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div className="flex items-center gap-2">
-          <img src="/DURAGO.webp" alt="DuraGo Logo" className="h-8 w-auto" />
+        <div className="flex items-center">
+          <img src="/DURAGO.webp" alt="DuraGo Logo" className="h-20 w-auto" />
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Map - reduced height on mobile */}
-        <div className="h-[35vh] md:h-full md:flex-1 w-full">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-6">
+        {/* Map Frame */}
+        <div className="h-[40vh] md:h-full md:flex-1 w-full bg-white border border-slate-200 shadow-2xl rounded-[2.5rem] overflow-hidden">
           <LocationPicker
             pickup={pickup}
             destination={destination}
@@ -309,8 +309,8 @@ const Delivery = () => {
           />
         </div>
 
-        {/* Panel */}
-        <div className="flex-1 md:flex-none md:w-[420px] overflow-y-auto p-4 md:p-5">
+        {/* Panel Frame */}
+        <div className="flex-1 md:flex-none md:w-[420px] overflow-y-auto bg-white border border-slate-200 shadow-2xl rounded-[3rem] p-4 md:p-6">
           <DeliveryRequestPanel
             pickupName={pickupName}
             destinationName={destinationName}
