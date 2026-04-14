@@ -322,7 +322,7 @@ const DeliveryBidSelection = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Delivery Fee:</span>
                       <span className="font-medium text-green-600">
-                        ${(delivery.order.total - calculateOrderSummary().subtotal - (delivery.order.tax || 0)).toFixed(2)}
+                        ${(delivery.estimated_price || 0).toFixed(2)}
                       </span>
                     </div>
                     {delivery.order.tax > 0 && (
@@ -333,7 +333,9 @@ const DeliveryBidSelection = () => {
                     )}
                     <div className="flex justify-between text-lg font-bold pt-2">
                       <span>Grand Total:</span>
-                      <span className="text-primary">${delivery.order.total.toFixed(2)}</span>
+                      <span className="text-primary">
+                        ${(calculateOrderSummary().subtotal + (delivery.estimated_price || 0) + (delivery.order.tax || 0)).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                   
@@ -353,7 +355,7 @@ const DeliveryBidSelection = () => {
                       size="lg"
                       className="bg-green-600 hover:bg-green-700 font-bold px-8"
                     >
-                      {paying ? "Processing..." : `Pay $${delivery.order.total.toFixed(2)}`}
+                      {paying ? "Processing..." : `Pay $${(calculateOrderSummary().subtotal + (delivery.estimated_price || 0) + (delivery.order.tax || 0)).toFixed(2)}`}
                     </Button>
                   </div>
                 </div>
@@ -369,15 +371,14 @@ const DeliveryBidSelection = () => {
               </div>
             </CardContent>
           </Card>
+        ) : (
+          <DeliveryBidsPanel
+            deliveryId={delivery.id}
+            biddingDeadline={delivery.bidding_deadline}
+            selectedBidId={delivery.selected_bid_id}
+            onBidAccepted={handleBidAccepted}
+          />
         )}
-
-        {/* Bids Panel */}
-        <DeliveryBidsPanel
-          deliveryId={delivery.id}
-          biddingDeadline={delivery.bidding_deadline}
-          selectedBidId={delivery.selected_bid_id}
-          onBidAccepted={handleBidAccepted}
-        />
       </div>
     </div>
   );
