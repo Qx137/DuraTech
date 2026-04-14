@@ -251,7 +251,7 @@ const Delivery = () => {
             phone: user.phone || '',
             coordinates: { latitude: destination.lat, longitude: destination.lng }
           },
-          status: 'awaiting_bids',
+          status: 'pending',
           distance_km: distance,
           transport_type: selectedTransport,
           offered_price: offeredPrice,
@@ -280,12 +280,12 @@ const Delivery = () => {
   return (
     <div className="h-screen w-full flex flex-col bg-slate-50 overflow-hidden">
       {/* DuraGo Header */}
-      <div className="bg-green-50/50 border-2 border-orange-500 rounded-full mx-auto mt-6 px-12 py-4 flex items-center justify-center relative shadow-lg z-[2000] w-auto max-w-[90%] md:max-w-[400px]">
-        <button onClick={() => navigate(-1)} className="absolute left-8 text-orange-600 hover:opacity-80">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      <div className="bg-white border-[3px] border-orange-500 rounded-full mx-auto mt-6 px-8 py-3 flex items-center justify-center relative shadow-xl z-[2000] w-auto inline-flex min-w-[280px]">
+        <button onClick={() => navigate(-1)} className="absolute left-6 text-orange-600 hover:text-orange-700 transition-colors bg-orange-50 p-1.5 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div className="flex items-center">
-          <img src="/DURAGO.webp" alt="DuraGo Logo" className="h-20 w-auto" />
+        <div className="flex items-center justify-center pl-8">
+          <img src="/DURAGO.webp" alt="DuraGo Logo" className="h-16 md:h-20 w-auto object-contain transform scale-[1.35] translate-y-1" />
         </div>
       </div>
 
