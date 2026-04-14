@@ -74,7 +74,7 @@ serve(async (req: Request) => {
         // Parse and validate input
         const body = await req.json();
         console.log('Request body:', JSON.stringify(body));
-        let { orderId, amount, email, phone, customerName, returnUrl: clientReturnUrl } = body as PaymentRequest;
+        let { orderId, deliveryId, amount, email, phone, customerName, returnUrl: clientReturnUrl } = body as PaymentRequest;
         if (typeof amount === 'string') {
             amount = parseFloat(amount);
         }
@@ -113,9 +113,24 @@ serve(async (req: Request) => {
             throw new Error('Order already paid');
         }
 
+        let expectedTotal = order.total;
+        
+        // If a deliveryId is provided, factor in the delivery estimated price
+        if (deliveryId) {
+            const deliveryRes: any = await (supabase
+                .from('deliveries')
+                .select('estimated_price')
+                .eq('id', deliveryId)
+                .single() as any);
+                
+            if (deliveryRes.data?.estimated_price) {
+                expectedTotal += Number(deliveryRes.data.estimated_price);
+            }
+        }
+
         // 7. Verify amount matches (prevent price manipulation)
-        if (Math.abs(order.total - amount) > 0.01) {
-            console.error('Amount mismatch - requested:', amount, 'actual:', order.total);
+        if (Math.abs(expectedTotal - amount) > 0.01) {
+            console.error('Amount mismatch - requested:', amount, 'expected:', expectedTotal, 'db_order_total:', order.total);
             throw new Error('Amount mismatch');
         }
 

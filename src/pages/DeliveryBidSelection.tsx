@@ -16,6 +16,7 @@ interface DeliveryDetails {
   status: string;
   bidding_deadline: string | null;
   selected_bid_id: string | null;
+  estimated_price?: number;
   pickup_address: any;
   delivery_address: any;
   distance_km: number | null;
@@ -72,6 +73,7 @@ const DeliveryBidSelection = () => {
           status,
           bidding_deadline,
           selected_bid_id,
+          estimated_price,
           pickup_address,
           delivery_address,
           distance_km,
@@ -133,17 +135,10 @@ const DeliveryBidSelection = () => {
       const subtotal = calculateOrderSummary().subtotal;
       const finalTotal = subtotal + bidAmount + (delivery.order.tax || 0);
 
-      // Update the official order total in the database before payment
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ total: finalTotal })
-        .eq('id', delivery.order.id);
-
-      if (updateError) throw updateError;
-
       const response = await supabase.functions.invoke('create-contipay-payment', {
         body: {
           orderId: delivery.order.id,
+          deliveryId: delivery.id,
           amount: finalTotal,
           email: user.email,
           customerName: user.user_metadata?.full_name || user.email || "Customer",
