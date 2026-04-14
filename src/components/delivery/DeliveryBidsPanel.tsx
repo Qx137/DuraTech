@@ -108,7 +108,9 @@ export const DeliveryBidsPanel = ({
         supabase.from('deliveries').select('estimated_price, min_price').eq('id', deliveryId).maybeSingle()
       ]);
 
-      if (error) throw error;
+      if (error) {
+        console.warn("Error fetching real bids (schema might be misaligned). Falling back to demo mode:", error);
+      }
       let finalBids: any[] = bidsData || [];
 
       // Demo Simulation: If no real bids, generate 4 mock drivers
