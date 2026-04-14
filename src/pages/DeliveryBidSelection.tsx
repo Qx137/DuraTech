@@ -109,16 +109,21 @@ const DeliveryBidSelection = () => {
   };
 
   const handlePayment = async () => {
-    if (!delivery || !delivery.selected_bid_id) return;
+    if (!delivery || (!delivery.selected_bid_id && delivery.status !== 'assigned')) return;
 
     setPaying(true);
     try {
-      // Find the accepted bid amount (we'll fetch it again to be sure)
-      const { data: bidData } = await supabase
-        .from('delivery_bids')
-        .select('bid_amount')
-        .eq('id', delivery.selected_bid_id)
-        .single();
+      let bidAmount = delivery.estimated_price || 0;
+      
+      // Find the accepted bid amount (if there is a real DB selected bid)
+      if (delivery.selected_bid_id) {
+        const { data: bidData } = await supabase
+          .from('delivery_bids')
+          .select('bid_amount')
+          .eq('id', delivery.selected_bid_id)
+          .single();
+        if (bidData) bidAmount = bidData.bid_amount;
+      }
       
       const { data: userData } = await supabase.auth.getUser();
       const user = userData.user;
@@ -126,7 +131,7 @@ const DeliveryBidSelection = () => {
       if (!user) throw new Error("Authentication required");
 
       const subtotal = calculateOrderSummary().subtotal;
-      const finalTotal = subtotal + (bidData?.bid_amount || 0) + (delivery.order.tax || 0);
+      const finalTotal = subtotal + bidAmount + (delivery.order.tax || 0);
 
       // Update the official order total in the database before payment
       const { error: updateError } = await supabase
