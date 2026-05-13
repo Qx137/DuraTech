@@ -13,7 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import LocationMap from "@/components/checkout/LocationMap";
 import DeliveryOptions from "@/components/checkout/DeliveryOptions";
-import { calculateTotalShipping, type Location } from "@/utils/distanceCalculator";
+import { calculateTotalShipping, type Location as UtilsLocation } from "@/utils/distanceCalculator";
+import { DuraGoHeader } from "@/components/delivery/DuraGoHeader";
+import { LocationPicker } from "@/components/delivery/LocationPicker";
+import { TransportTypeSelector, type TransportType } from "@/components/delivery/TransportTypeSelector";
+import { calculateDistance, calculateMinPrice } from "@/lib/pricing";
 import { z } from "zod";
 import {
   AlertDialog,
@@ -25,6 +29,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+interface Location {
+  lat: number;
+  lng: number;
+}
 
 // Validation schema for checkout form
 const checkoutSchema = z.object({
@@ -74,7 +83,13 @@ const Checkout = () => {
     details: Array<{ sellerId: string; distance: number; price: number; }>;
   } | null>(null);
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState<any>(null);
-  const [biddingEnabled, setBiddingEnabled] = useState(false);
+  const [biddingEnabled, setBiddingEnabled] = useState(true); // Default to true for DuraGo focus
+  
+  const [pickup, setPickup] = useState<Location | null>(null);
+  const [destination, setDestination] = useState<Location | null>(null);
+  const [transportType, setTransportType] = useState<TransportType | null>(null);
+  const [offerPrice, setOfferPrice] = useState<number>(0);
+  const [minPrice, setMinPrice] = useState<number>(0);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -166,10 +181,18 @@ const Checkout = () => {
     setDeliveryLocation(location);
 
     if (cartItems.length > 0) {
-      const shippingCalc = await calculateTotalShipping(cartItems, location);
+      const shippingCalc = await calculateTotalShipping(cartItems, location as UtilsLocation);
       setShippingDetails(shippingCalc);
     }
   };
+
+  useEffect(() => {
+    if (pickup && destination && transportType) {
+      const distance = calculateDistance(pickup.lat, pickup.lng, destination.lat, destination.lng);
+      const min = calculateMinPrice(distance, transportType.priceMultiplier);
+      setMinPrice(min);
+    }
+  }, [pickup, destination, transportType]);
 
   const validateForm = (): boolean => {
     const result = checkoutSchema.safeParse({
@@ -317,38 +340,40 @@ const Checkout = () => {
       if (clearCartError) throw clearCartError;
 
       // Create delivery with bidding settings
-      const biddingDeadline = biddingEnabled
-        ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
-        : null;
+      const biddingDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours from now
 
-      const { error: deliveryError } = await supabase
+      const { data: delivery, error: deliveryError } = await supabase
         .from('deliveries')
         .insert({
           order_id: order.id,
-          pickup_address: { address: "Farm Location" }, // This would be the seller's address
+          pickup_address: { 
+            lat: pickup.lat, 
+            lng: pickup.lng,
+            address: "Pickup Location" 
+          },
           delivery_address: {
             firstName: sanitizedData.firstName,
             lastName: sanitizedData.lastName,
-            address: deliveryLocation.address,
+            address: deliveryLocation?.address || "Delivery Location",
             coordinates: {
-              lat: deliveryLocation.lat,
-              lng: deliveryLocation.lng
+              lat: destination.lat,
+              lng: destination.lng
             },
-            phone: sanitizedData.phone,
-            deliveryService: biddingEnabled ? null : selectedDeliveryOption.name,
-            deliveryServiceId: biddingEnabled ? null : selectedDeliveryOption.id
+            phone: sanitizedData.phone
           },
-          status: biddingEnabled ? 'awaiting_bids' : 'pending',
-          bidding_enabled: biddingEnabled,
+          status: 'pending',
+          bidding_enabled: true,
           bidding_deadline: biddingDeadline,
           buyer_can_select: true,
-          estimated_price: shippingDetails?.totalShipping || null,
-          distance_km: shippingDetails?.details.reduce((sum, d) => sum + d.distance, 0) || null
-        });
+          estimated_price: offerPrice,
+          distance_km: calculateDistance(pickup.lat, pickup.lng, destination.lat, destination.lng)
+        })
+        .select()
+        .single();
 
       if (deliveryError) throw deliveryError;
 
-      // Send order confirmation email
+      // Send order confirmation email (optional)
       try {
         await supabase.functions.invoke('send-order-email', {
           body: { orderId: order.id, type: 'confirmation' }
@@ -357,56 +382,13 @@ const Checkout = () => {
         console.error('Failed to send confirmation email:', emailError);
       }
 
-      // Process payment based on selected method
-      let paymentData;
-      let paymentError;
+      toast({
+        title: "Request Sent!",
+        description: "Your transport request has been sent to drivers. You will receive bids shortly.",
+      });
 
-      if (paymentMethod === 'paynow') {
-        const response = await supabase.functions.invoke('create-paynow-payment', {
-          body: {
-            orderId: order.id,
-            amount: total,
-            email: sanitizedData.email,
-            phone: sanitizedData.phone,
-            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`,
-            returnUrl: window.location.origin + '/payment-success'
-          }
-        });
-        paymentData = response.data;
-        paymentError = response.error;
-      } else {
-        const response = await supabase.functions.invoke('create-contipay-payment', {
-          body: {
-            orderId: order.id,
-            amount: total,
-            email: sanitizedData.email,
-            phone: sanitizedData.phone,
-            customerName: `${sanitizedData.firstName} ${sanitizedData.lastName}`,
-            returnUrl: window.location.origin + '/payment-success'
-          }
-        });
-        paymentData = response.data;
-        paymentError = response.error;
-      }
-
-      if (paymentError || !paymentData.success) {
-        const errorMessage = paymentData?.error || paymentError?.message || 'Failed to create payment';
-
-        let userMessage = "There was an error processing your order. Please try again. (" + errorMessage + ")";
-
-        if (errorMessage.includes('Unable to connect to payment gateway')) {
-          userMessage = "The payment gateway is temporarily unavailable. Your order has been created. Please try again in a few moments or contact support with your order ID: " + order.id;
-        } else if (errorMessage.includes('credentials')) {
-          userMessage = "Payment system configuration error. Please contact support. (" + errorMessage + ")";
-        } else if (errorMessage.includes('Amount mismatch')) {
-          userMessage = "There was an issue with the order amount. Please refresh and try again.";
-        }
-
-        throw new Error(userMessage);
-      }
-
-      // Redirect to payment gateway page (Paynow or ContiPay)
-      window.location.href = paymentData.paymentUrl;
+      // Redirect to bid selection screen instead of payment
+      navigate(`/delivery-bid-selection/${delivery.id}`);
     } catch (error: any) {
       console.error('Error creating order:', error);
 
@@ -542,18 +524,69 @@ const Checkout = () => {
                 </CardContent>
               </Card>
 
-              {/* Delivery Location Map */}
-              <LocationMap
-                onLocationSelect={handleLocationSelect}
-                selectedLocation={deliveryLocation}
-              />
+              {/* DuraGo Specific Workflow */}
+              <div className="space-y-6">
+                <DuraGoHeader />
+                
+                <Card className="overflow-hidden border-none shadow-md">
+                  <div className="h-[280px]"> {/* Reduced size map */}
+                    <LocationPicker 
+                      pickup={pickup}
+                      destination={destination}
+                      onPickupChange={setPickup}
+                      onDestinationChange={setDestination}
+                    />
+                  </div>
+                </Card>
 
-              {/* Delivery Options */}
-              <DeliveryOptions
-                onDeliverySelect={setSelectedDeliveryOption}
-                selectedOption={selectedDeliveryOption?.id}
-                deliveryDistance={shippingDetails?.details.reduce((sum, detail) => sum + detail.distance, 0) / (shippingDetails?.details.length || 1)}
-              />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                       <CardTitle className="text-sm">Transport Vehicle</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <TransportTypeSelector 
+                        selected={transportType?.id || null} 
+                        onSelect={setTransportType} 
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                       <CardTitle className="text-sm">Your Offer Price (USD)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                        <Input 
+                          type="number"
+                          value={offerPrice}
+                          onChange={(e) => setOfferPrice(parseFloat(e.target.value) || 0)}
+                          className="pl-7"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Min. recommended: <span className="font-semibold">${minPrice.toFixed(2)}</span>
+                      </p>
+                      <div className="bg-primary/5 p-2 rounded-md border border-primary/10">
+                        <p className="text-[10px] leading-tight text-primary font-medium">
+                          Note: Drivers are more likely to accept offers at or above the recommended price.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Original Delivery Options (Hidden or secondary now) */}
+              <div className="opacity-50 grayscale pointer-events-none scale-95 origin-top hidden">
+                <DeliveryOptions
+                  onDeliverySelect={setSelectedDeliveryOption}
+                  selectedOption={selectedDeliveryOption?.id}
+                  deliveryDistance={shippingDetails?.details.reduce((sum, detail) => sum + detail.distance, 0) / (shippingDetails?.details.length || 1)}
+                />
+              </div>
 
               {/* Shipping Details */}
               {shippingDetails && (
@@ -712,9 +745,9 @@ const Checkout = () => {
                     type="submit"
                     className="w-full bg-green-600 hover:bg-green-700 mt-6"
                     size="lg"
-                    disabled={loading || cartItems.length === 0 || !deliveryLocation || (!biddingEnabled && !selectedDeliveryOption)}
+                    disabled={loading || cartItems.length === 0 || !pickup || !destination || !transportType}
                   >
-                    {loading ? "Processing..." : "Complete Order"}
+                    {loading ? "Processing..." : "Send Request to Drivers"}
                   </Button>
                 </CardContent>
               </Card>

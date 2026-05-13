@@ -33,6 +33,35 @@ const Delivery = () => {
   const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
   const [transportMultiplier, setTransportMultiplier] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [cartItems, setCartItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      fetchCartItems();
+    }
+  }, [user]);
+
+  const fetchCartItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cart_items')
+        .select(`
+          *,
+          products (
+            id,
+            name,
+            price,
+            seller_id
+          )
+        `)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+      setCartItems(data || []);
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
+    }
+  };
 
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     try {
@@ -157,12 +186,18 @@ const Delivery = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
+      const subtotal = cartItems.reduce((sum, item) => sum + (item.products.price * item.quantity), 0);
+      const deliveryFee = offeredPrice || 0;
+      const tax = subtotal * 0.1;
+      const total = subtotal + deliveryFee + tax;
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
           status: 'pending',
-          total: offeredPrice || 0,
+          total: total,
+          tax: tax,
           payment_method: 'contipay',
           payment_status: 'pending',
           delivery_address: {
@@ -177,6 +212,28 @@ const Delivery = () => {
         .single();
 
       if (orderError) throw orderError;
+
+      // Create order items from cart
+      for (const cartItem of cartItems) {
+        const { error: itemError } = await supabase
+          .from('order_items')
+          .insert({
+            order_id: order.id,
+            product_id: cartItem.product_id,
+            quantity: cartItem.quantity,
+            price: cartItem.products.price
+          });
+
+        if (itemError) throw itemError;
+      }
+
+      // Clear cart
+      const { error: clearCartError } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (clearCartError) throw clearCartError;
 
       const { data: delivery, error: deliveryError } = await supabase
         .from('deliveries')
@@ -194,7 +251,7 @@ const Delivery = () => {
             phone: user.phone || '',
             coordinates: { latitude: destination.lat, longitude: destination.lng }
           },
-          status: 'awaiting_bids',
+          status: 'pending',
           distance_km: distance,
           transport_type: selectedTransport,
           offered_price: offeredPrice,
@@ -221,27 +278,21 @@ const Delivery = () => {
   const isValid = !!(pickup && destination && pickupName && destinationName && selectedTransport);
 
   return (
-    <div className="h-screen w-full flex flex-col bg-background overflow-hidden">
+    <div className="h-screen w-full flex flex-col bg-slate-50 overflow-hidden">
       {/* DuraGo Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 flex items-center gap-3 shadow-md z-[2000]">
-        <button onClick={() => navigate(-1)} className="text-white hover:opacity-80">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      <div className="bg-white border-[3px] border-orange-500 rounded-full mx-auto mt-6 px-8 py-3 flex items-center justify-center relative shadow-xl z-[2000] w-auto inline-flex min-w-[280px]">
+        <button onClick={() => navigate(-1)} className="absolute left-6 text-orange-600 hover:text-orange-700 transition-colors bg-orange-50 p-1.5 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-            <Truck className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-white font-bold text-lg leading-tight">DuraGo</h1>
-            <p className="text-white/70 text-[10px]">Fast & reliable logistics</p>
-          </div>
+        <div className="flex items-center justify-center pl-8">
+          <img src="/DURAGO.webp" alt="DuraGo Logo" className="h-16 md:h-20 w-auto object-contain transform scale-[1.35] translate-y-1" />
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Map - reduced height on mobile */}
-        <div className="h-[35vh] md:h-full md:flex-1 w-full">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-6">
+        {/* Map Frame */}
+        <div className="h-[40vh] md:h-full md:flex-1 w-full bg-white border border-slate-200 shadow-2xl rounded-[2.5rem] overflow-hidden">
           <LocationPicker
             pickup={pickup}
             destination={destination}
@@ -258,8 +309,8 @@ const Delivery = () => {
           />
         </div>
 
-        {/* Panel */}
-        <div className="flex-1 md:flex-none md:w-[420px] overflow-y-auto p-4 md:p-5">
+        {/* Panel Frame */}
+        <div className="flex-1 md:flex-none md:w-[420px] overflow-y-auto bg-white border border-slate-200 shadow-2xl rounded-[3rem] p-4 md:p-6">
           <DeliveryRequestPanel
             pickupName={pickupName}
             destinationName={destinationName}

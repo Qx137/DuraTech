@@ -27,6 +27,7 @@ interface DeliveryBidCardProps {
       rating: number | null;
       logo_url: string | null;
     } | null;
+    demo_provider_name?: string | null;
   };
   onAccept?: (bidId: string) => void;
   onReject?: (bidId: string) => void;
@@ -44,7 +45,7 @@ export const DeliveryBidCard = ({
   const isCompanyBid = !!bid.company;
   const providerName = isCompanyBid 
     ? bid.company?.name 
-    : bid.driver?.profiles?.name || 'Driver';
+    : bid.demo_provider_name || bid.driver?.profiles?.name || 'Driver';
   const providerRating = isCompanyBid 
     ? bid.company?.rating 
     : bid.driver?.rating;
