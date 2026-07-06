@@ -17,7 +17,7 @@ export const defaultNavItems: NavItem[] = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Marketplace", to: "/marketplace" },
   { label: "Community", to: "/community" },
-  { label: "DuraGo", to: "/delivery" },
+  { label: "DuraGo", to: "https://durago.co.zw" },
   { label: "AI Tools", to: "/ai-tools" },
 ];
 
@@ -31,19 +31,21 @@ const NotchHeader = ({ navItems = defaultNavItems, actions }: NotchHeaderProps) 
           <img src="/logo.png" alt="Durahub Logo" className="h-10 sm:h-14" />
         </Link>
         <nav className="hidden md:flex items-center gap-8">
-          {navItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={
-                item.active
-                  ? "text-primary font-medium"
-                  : "text-muted-foreground hover:text-primary transition-colors"
-              }
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const className = item.active
+              ? "text-primary font-medium"
+              : "text-muted-foreground hover:text-primary transition-colors";
+
+            return item.to.startsWith("http") ? (
+              <a key={item.to} href={item.to} className={className}>
+                {item.label}
+              </a>
+            ) : (
+              <Link key={item.to} to={item.to} className={className}>
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="flex items-center gap-3">
           {actions}
@@ -61,20 +63,33 @@ const NotchHeader = ({ navItems = defaultNavItems, actions }: NotchHeaderProps) 
       {mobileOpen && (
         <div className="md:hidden mt-2 mx-auto max-w-5xl bg-card/95 backdrop-blur-md rounded-2xl shadow-lg border border-border p-4 animate-in slide-in-from-top-2 fade-in duration-200">
           <nav className="flex flex-col gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setMobileOpen(false)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  item.active
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-primary hover:bg-primary/5"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const className = `px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                item.active
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+              }`;
+
+              return item.to.startsWith("http") ? (
+                <a
+                  key={item.to}
+                  href={item.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={className}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={className}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
       )}

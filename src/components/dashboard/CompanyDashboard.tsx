@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -150,12 +149,12 @@ export const CompanyDashboard = ({ userId }: CompanyDashboardProps) => {
             <CardDescription>You haven't registered a delivery company yet</CardDescription>
           </CardHeader>
           <CardContent>
-            <Link to="/company-registration">
+            <a href="https://durago.co.zw">
               <Button className="w-full">
                 <Building2 className="h-4 w-4 mr-2" />
                 Register Your Company
               </Button>
-            </Link>
+            </a>
           </CardContent>
         </Card>
       </div>
@@ -187,7 +186,7 @@ export const CompanyDashboard = ({ userId }: CompanyDashboardProps) => {
           { label: "Dashboard", to: "/dashboard", active: true },
           { label: "Marketplace", to: "/marketplace" },
           { label: "Community", to: "/community" },
-          { label: "DuraGo", to: "/delivery" },
+          { label: "DuraGo", to: "https://durago.co.zw" },
           { label: "AI Tools", to: "/ai-tools" },
         ]}
         actions={

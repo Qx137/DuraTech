@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
@@ -16,16 +17,26 @@ import Community from "./pages/Community";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import PaymentSuccess from "./pages/PaymentSuccess";
-import DeliveryTracking from "./pages/DeliveryTracking";
-import DriverRegistration from "./pages/DriverRegistration";
-import CompanyRegistration from "./pages/CompanyRegistration";
-import DeliveryBidSelection from "./pages/DeliveryBidSelection";
 import Settings from "./pages/Settings";
-import Delivery from "./pages/Delivery";
 import NotFound from "./pages/NotFound";
 import FloatingSupportButton from "./components/layout/FloatingSupportButton";
 
 const queryClient = new QueryClient();
+const DURAGO_URL = "https://durago.co.zw";
+
+const ExternalRedirect = ({ to }: { to: string }) => {
+  useEffect(() => {
+    window.location.replace(to);
+  }, [to]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+      <a href={to} className="text-primary underline">
+        Redirecting to DuraGo...
+      </a>
+    </div>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -47,12 +58,13 @@ const App = () => (
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
-            <Route path="/delivery-tracking" element={<DeliveryTracking />} />
-            <Route path="/driver-registration" element={<DriverRegistration />} />
-            <Route path="/company-registration" element={<CompanyRegistration />} />
-            <Route path="/delivery-bids/:deliveryId" element={<DeliveryBidSelection />} />
+            <Route path="/delivery-tracking" element={<ExternalRedirect to={DURAGO_URL} />} />
+            <Route path="/driver-registration" element={<ExternalRedirect to={DURAGO_URL} />} />
+            <Route path="/company-registration" element={<ExternalRedirect to={DURAGO_URL} />} />
+            <Route path="/delivery-bid-selection/:deliveryId" element={<ExternalRedirect to={DURAGO_URL} />} />
+            <Route path="/delivery-bids/:deliveryId" element={<ExternalRedirect to={DURAGO_URL} />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/delivery" element={<Delivery />} />
+            <Route path="/delivery" element={<ExternalRedirect to={DURAGO_URL} />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -234,7 +234,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
           { label: "Dashboard", to: "/dashboard", active: true },
           { label: "Marketplace", to: "/marketplace" },
           { label: "Community", to: "/community" },
-          { label: "DuraGo", to: "/delivery" },
+          { label: "DuraGo", to: "https://durago.co.zw" },
           { label: "AI Tools", to: "/ai-tools" },
         ]}
         actions={

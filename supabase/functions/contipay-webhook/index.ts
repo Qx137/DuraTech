@@ -7,6 +7,19 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function timingSafeEqualHex(a: string, b: string): boolean {
+    const normalizedA = a.toLowerCase();
+    const normalizedB = b.toLowerCase();
+    let diff = normalizedA.length ^ normalizedB.length;
+    const maxLength = Math.max(normalizedA.length, normalizedB.length);
+
+    for (let i = 0; i < maxLength; i++) {
+        diff |= (normalizedA.charCodeAt(i) || 0) ^ (normalizedB.charCodeAt(i) || 0);
+    }
+
+    return diff === 0;
+}
+
 serve(async (req: Request) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
@@ -37,6 +50,7 @@ serve(async (req: Request) => {
         const statusCode = payload.statusCode;
         const amount = payload.amount;
         const signature = payload.signature;
+        const statusForSignature = status ?? String(statusCode);
 
         if (!reference || (!status && statusCode === undefined)) {
             console.error('Missing required webhook fields: reference/merchantRef or status/statusCode');
@@ -53,7 +67,7 @@ serve(async (req: Request) => {
         }
 
         // Create expected signature
-        const dataToVerify = `${reference}${status}${amount || ''}`;
+        const dataToVerify = `${reference}${statusForSignature}${amount || ''}`;
         const encoder = new TextEncoder();
         const keyData = encoder.encode(apiSecret);
         const messageData = encoder.encode(dataToVerify);
@@ -70,7 +84,7 @@ serve(async (req: Request) => {
         const expectedSignatureArray = Array.from(new Uint8Array(expectedSignature));
         const expectedSignatureHex = expectedSignatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-        if (signature && signature !== expectedSignatureHex) {
+        if (!signature || typeof signature !== 'string' || !timingSafeEqualHex(signature, expectedSignatureHex)) {
             console.error('Invalid webhook signature');
             return new Response(
                 JSON.stringify({ success: false, error: 'Invalid signature' }),
@@ -131,6 +145,41 @@ serve(async (req: Request) => {
                     console.warn('Unknown ContiPay status:', status);
                     paymentStatus = 'pending';
             }
+        }
+
+        // Verify the callback amount against server-side order data before changing payment state.
+        const { data: order, error: orderError } = await supabase
+            .from('orders')
+            .select('id, total, payment_status')
+            .eq('id', reference)
+            .single();
+
+        if (orderError || !order) {
+            console.error('Order lookup failed for webhook reference:', reference, orderError);
+            return new Response(
+                JSON.stringify({ success: false, error: 'Order not found' }),
+                { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+
+        let expectedTotal = Number(order.total);
+        const { data: delivery } = await supabase
+            .from('deliveries')
+            .select('estimated_price')
+            .eq('order_id', reference)
+            .maybeSingle();
+
+        if (delivery?.estimated_price) {
+            expectedTotal += Number(delivery.estimated_price);
+        }
+
+        const callbackAmount = Number(amount);
+        if ((paymentStatus === 'completed' || paymentStatus === 'failed') && (!Number.isFinite(callbackAmount) || Math.abs(callbackAmount - expectedTotal) > 0.01)) {
+            console.error('Webhook amount mismatch - received:', amount, 'expected:', expectedTotal, 'order:', reference);
+            return new Response(
+                JSON.stringify({ success: false, error: 'Invalid amount' }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
         }
 
         console.log(`Updating order ${reference} to payment_status: ${paymentStatus}, status: ${orderStatus}`);

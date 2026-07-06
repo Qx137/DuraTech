@@ -298,7 +298,7 @@ const DeliveryBidSelection = () => {
         </Card>
 
         {/* Success Message if Assigned */}
-        {isAssigned && (
+        {isAssigned ? (
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="py-6">
               <div className="flex items-center gap-3">

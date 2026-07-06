@@ -39,7 +39,7 @@ const MarketplaceFooter = () => {
             <ul className="space-y-2.5 text-sm text-background/50">
               <li><Link to="/register?type=seller" className="hover:text-primary transition-colors">Start Selling</Link></li>
               <li><Link to="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link></li>
-              <li><Link to="/delivery" className="hover:text-primary transition-colors">Delivery</Link></li>
+              <li><a href="https://durago.co.zw" className="hover:text-primary transition-colors">Delivery</a></li>
             </ul>
           </div>
           <div>

@@ -99,12 +99,12 @@ const Index = () => {
                 Sell Your Produce
               </Button>
             </Link>
-            <Link to="/delivery">
+            <a href="https://durago.co.zw">
               <Button size="lg" variant="outline" className="text-base px-8 py-6 rounded-xl border-orange-500 text-orange-600 hover:bg-orange-50">
                 <Truck className="mr-2 h-5 w-5" />
                 DuraHub Delivery
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -277,7 +277,7 @@ const Index = () => {
                     Help Center
                   </button>
                 </li>
-                <li><Link to="/delivery" className="hover:text-green-500 transition-colors">Request Delivery</Link></li>
+                <li><a href="https://durago.co.zw" className="hover:text-green-500 transition-colors">Request Delivery</a></li>
                 <li><Link to="/marketplace" className="hover:text-green-500 transition-colors">Returns</Link></li>
               </ul>
             </div>

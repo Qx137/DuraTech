@@ -292,7 +292,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <Button onClick={() => window.location.href = '/driver-registration'}>
+              <Button onClick={() => window.location.href = 'https://durago.co.zw'}>
                 Submit New Application
               </Button>
             </CardContent>
@@ -314,7 +314,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Button onClick={() => window.location.href = '/driver-registration'} className="w-full">
+            <Button onClick={() => window.location.href = 'https://durago.co.zw'} className="w-full">
               Complete Driver Profile
             </Button>
           </CardContent>
@@ -357,7 +357,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
           { label: "Dashboard", to: "/dashboard", active: true },
           { label: "Marketplace", to: "/marketplace" },
           { label: "Community", to: "/community" },
-          { label: "DuraGo", to: "/delivery" },
+          { label: "DuraGo", to: "https://durago.co.zw" },
           { label: "AI Tools", to: "/ai-tools" },
         ]}
         actions={

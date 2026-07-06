@@ -13,7 +13,7 @@ const MarketplaceHeader = ({ cartCount }: MarketplaceHeaderProps) => {
     { label: "Dashboard", to: "/dashboard" },
     { label: "Marketplace", to: "/marketplace", active: true },
     { label: "Community", to: "/community" },
-    { label: "DuraGo", to: "/delivery" },
+    { label: "DuraGo", to: "https://durago.co.zw" },
     { label: "AI Tools", to: "/ai-tools" },
   ];
 

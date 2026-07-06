@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Minus, Plus, Trash2, ShoppingCart, Leaf, ArrowLeft } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import NotchHeader from "@/components/layout/NotchHeader";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +22,6 @@ interface CartItem {
 }
 
 const Cart = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -154,7 +153,7 @@ const Cart = () => {
       });
       return;
     }
-    navigate('/delivery');
+    window.location.href = 'https://durago.co.zw';
   };
 
   return (
@@ -164,7 +163,7 @@ const Cart = () => {
           { label: "Dashboard", to: "/dashboard" },
           { label: "Marketplace", to: "/marketplace" },
           { label: "Community", to: "/community" },
-          { label: "DuraGo", to: "/delivery" },
+          { label: "DuraGo", to: "https://durago.co.zw" },
           { label: "AI Tools", to: "/ai-tools" },
           { label: "Cart", to: "/cart", active: true },
         ]}
