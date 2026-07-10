@@ -1,8 +1,5 @@
 project_id = "wutfcyskvfkunmvrvafz"
 
-[functions.paynow-webhook]
-verify_jwt = false
-
 [functions.contipay-webhook]
 verify_jwt = false
 
@@ -10,9 +7,6 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.match-driver]
-verify_jwt = true
-
-[functions.create-paynow-payment]
 verify_jwt = true
 
 [functions.create-contipay-payment]

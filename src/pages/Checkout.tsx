@@ -66,7 +66,7 @@ const checkoutSchema = z.object({
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 type FormErrors = Partial<Record<keyof CheckoutFormData, string>>;
-type PaymentMethod = 'contipay' | 'paynow';
+type PaymentMethod = 'contipay';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -670,24 +670,6 @@ const Checkout = () => {
                             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">InnBucks</span>
                             <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">ZIPIT</span>
                             <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Card</span>
-                          </div>
-                        </Label>
-                      </div>
-                    </div>
-
-                    <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-colors mt-3 ${paymentMethod === 'paynow' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setPaymentMethod('paynow')}>
-                      <RadioGroupItem value="paynow" id="paynow" className="mt-1" />
-                      <div className="flex-1">
-                        <Label htmlFor="paynow" className="flex items-center justify-between cursor-pointer">
-                          <div>
-                            <p className="font-medium">Paynow</p>
-                            <p className="text-sm text-muted-foreground font-normal">Secure online payments via Paynow</p>
-                          </div>
-                          <div className="flex items-center space-x-1 flex-wrap gap-1">
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">EcoCash</span>
-                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">OneMoney</span>
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">InnBucks</span>
-                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Visa / MC</span>
                           </div>
                         </Label>
                       </div>

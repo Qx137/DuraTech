@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../services/cart_service.dart';
 import '../../services/contipay_service.dart';
-import '../../services/paynow_service.dart';
 import '../../theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
@@ -27,7 +26,6 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _service = CartService();
   final _contipayService = ContiPayService();
-  final _paynowService = PaynowService();
   final _authService = AuthService();
   final _emailController = TextEditingController();
   final _firstNameController = TextEditingController();
@@ -179,11 +177,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 'contipay',
                 'ContiPay (EcoCash, OneMoney, InnBucks, ZIPIT, Card)',
                 Icons.payment),
-            const SizedBox(height: 12),
-            _paymentOption(
-                'paynow',
-                'Paynow (EcoCash, OneMoney, InnBucks, Visa / MC)',
-                Icons.security),
             const SizedBox(height: 32),
             _orderSummary(),
             const SizedBox(height: 32),
@@ -412,18 +405,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         context.read<CartProvider>().refreshCount();
       }
 
-      // 2. Initiate Payment if ContiPay or Paynow is selected
+      // 2. Initiate Payment if ContiPay is selected
       if (_paymentMethod == 'contipay') {
         await _contipayService.initiatePayment(
-          orderId: orderId,
-          amount: widget.totalPrice,
-          email: _emailController.text,
-          customerName:
-              '${_firstNameController.text} ${_lastNameController.text}',
-          phone: _phoneController.text,
-        );
-      } else if (_paymentMethod == 'paynow') {
-        await _paynowService.initiatePayment(
           orderId: orderId,
           amount: widget.totalPrice,
           email: _emailController.text,

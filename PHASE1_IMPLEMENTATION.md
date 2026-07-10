@@ -160,7 +160,7 @@ Features:
 3. Cart cleared
 4. Delivery record created
 5. **[NEW]** Confirmation email sent
-6. Payment initiated via Paynow
+6. Payment initiated via ContiPay
 7. Redirect to payment success page
 
 ## Database Schema
