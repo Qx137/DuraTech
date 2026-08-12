@@ -36,6 +36,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS validate_order_total_on_insert_trigger ON public.orders;
 CREATE TRIGGER validate_order_total_on_insert_trigger
 BEFORE INSERT ON public.orders
 FOR EACH ROW

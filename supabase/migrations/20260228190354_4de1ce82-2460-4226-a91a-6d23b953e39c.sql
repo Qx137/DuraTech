@@ -32,6 +32,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS validate_order_item_price_trigger ON public.order_items;
 CREATE TRIGGER validate_order_item_price_trigger
 BEFORE INSERT ON public.order_items
 FOR EACH ROW
@@ -68,6 +69,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS validate_order_total_trigger ON public.orders;
 CREATE TRIGGER validate_order_total_trigger
 BEFORE UPDATE ON public.orders
 FOR EACH ROW

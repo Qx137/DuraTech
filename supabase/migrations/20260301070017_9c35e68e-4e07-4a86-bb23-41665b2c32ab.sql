@@ -3,6 +3,7 @@
 DROP POLICY IF EXISTS "Authenticated users can upload product media" ON storage.objects;
 
 -- Create restricted policy: only sellers can upload, must be in their own folder, image files only
+DROP POLICY IF EXISTS "Sellers can upload product media" ON storage.objects;
 CREATE POLICY "Sellers can upload product media"
 ON storage.objects FOR INSERT
 WITH CHECK (
