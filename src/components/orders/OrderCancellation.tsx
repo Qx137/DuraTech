@@ -29,13 +29,12 @@ export const OrderCancellation = ({ orderId, currentStatus, onCancelled }: Order
   const handleCancellation = async () => {
     setLoading(true);
     try {
-      // Update order status to cancelled
+      // Update order status to cancelled. payment_status is intentionally left
+      // untouched here - it can only be changed by the payment webhook, and an
+      // actual refund (if the order was paid) has to go through ContiPay separately.
       const { error: updateError } = await supabase
         .from('orders')
-        .update({ 
-          status: 'cancelled',
-          payment_status: 'refunded'
-        })
+        .update({ status: 'cancelled' })
         .eq('id', orderId);
 
       if (updateError) throw updateError;

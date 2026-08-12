@@ -26,6 +26,13 @@ serve(async (req: Request) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error('Unauthorized');
 
+    // This endpoint has no caller anywhere in the app and no data model that tracks
+    // who is actually owed a payout (no earnings/commission/pending-payout table).
+    // Previously it accepted any authenticated user's account details and amount and
+    // paid them out from the merchant's live ContiPay account - a direct fund-drain
+    // vulnerability. Disabled until a real payout-entitlement flow exists.
+    throw new Error('Disbursements are not currently available');
+
     // Parse disbursement payload from request
     // Expected: { customer: {...}, transaction: {...}, accountDetails: {...} }
     const payload = await req.json();
@@ -54,7 +61,6 @@ serve(async (req: Request) => {
     const amount = transaction.amount !== undefined ? String(transaction.amount) : 'null';
     
     const dataToSign = `${authKey}${reference}${merchantId}${accountNumber}${amount}`;
-    console.log('Data to sign for disbursement:', dataToSign);
 
     // --- RSA-SHA256 SIGNING ---
     // Prepare Private Key

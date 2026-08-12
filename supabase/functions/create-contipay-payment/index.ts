@@ -115,14 +115,17 @@ serve(async (req: Request) => {
 
         let expectedTotal = order.total;
         
-        // If a deliveryId is provided, factor in the delivery estimated price
+        // If a deliveryId is provided, factor in the delivery estimated price.
+        // Look it up by orderId (not just its own id) so a caller can't point at an
+        // unrelated delivery to manipulate the expected total.
         if (deliveryId) {
             const deliveryRes: any = await (supabase
                 .from('deliveries')
                 .select('estimated_price')
                 .eq('id', deliveryId)
+                .eq('order_id', orderId)
                 .single() as any);
-                
+
             if (deliveryRes.data?.estimated_price) {
                 expectedTotal += Number(deliveryRes.data.estimated_price);
             }
