@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,13 @@ import {
   Building2, Users, Package, DollarSign, Star, 
   TrendingUp, MapPin, Clock, Gavel, Plus 
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { KycVerification } from './KycVerification';
 import NotchHeader from '../layout/NotchHeader';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { formatCurrency } from '@/lib/pricing';
 
 interface CompanyDashboardProps {
   userId: string;
@@ -56,78 +58,92 @@ interface AvailableDelivery {
 }
 
 export const CompanyDashboard = ({ userId }: CompanyDashboardProps) => {
-  const [company, setCompany] = useState<Company | null>(null);
-  const [drivers, setDrivers] = useState<CompanyDriver[]>([]);
-  const [availableDeliveries, setAvailableDeliveries] = useState<AvailableDelivery[]>([]);
-  const [myBids, setMyBids] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchCompanyData();
-  }, [userId]);
+  const companyQueryKey = ['companyDashboard', userId];
 
-  const fetchCompanyData = async () => {
-    try {
-      // Fetch company
-      const { data: companyData, error: companyError } = await supabase
-        .from('delivery_companies')
-        .select('*')
-        .eq('owner_id', userId)
-        .single();
+  const { data: companyData, isLoading: loading } = useQuery({
+    queryKey: companyQueryKey,
+    queryFn: async () => {
+      try {
+        // Company and available-deliveries don't depend on each other - fetch together.
+        const [
+          { data: company, error: companyError },
+          { data: deliveriesData, error: deliveriesError },
+        ] = await Promise.all([
+          supabase
+            .from('delivery_companies')
+            .select('*')
+            .eq('owner_id', userId)
+            .single(),
+          supabase
+            .from('deliveries')
+            .select('*')
+            .eq('status', 'pending')
+            .eq('bidding_enabled', true)
+            .order('created_at', { ascending: false })
+            .limit(20),
+        ]);
 
-      if (companyError) throw companyError;
-      setCompany(companyData);
+        if (companyError) throw companyError;
+        if (deliveriesError) throw deliveriesError;
 
-      // Fetch company drivers
-      const { data: driversData, error: driversError } = await supabase
-        .from('drivers')
-        .select(`
-          id, status, rating, vehicle_type,
-          profiles:user_id(name, email)
-        `)
-        .eq('company_id', companyData.id);
+        // Drivers and bids both depend on company.id, but not on each other.
+        const [
+          { data: driversData, error: driversError },
+          { data: bidsData, error: bidsError },
+        ] = await Promise.all([
+          supabase
+            .from('drivers')
+            .select(`
+              id, status, rating, vehicle_type,
+              profiles:user_id(name, email)
+            `)
+            .eq('company_id', company.id),
+          supabase
+            .from('delivery_bids')
+            .select(`
+              *,
+              deliveries(
+                id,
+                status,
+                pickup_address,
+                delivery_address,
+                order_id
+              )
+            `)
+            .eq('company_id', company.id)
+            .order('created_at', { ascending: false }),
+        ]);
 
-      if (driversError) throw driversError;
-      setDrivers(driversData || []);
+        if (driversError) throw driversError;
+        if (bidsError) throw bidsError;
 
-      // Fetch available deliveries for bidding
-      const { data: deliveriesData, error: deliveriesError } = await supabase
-        .from('deliveries')
-        .select('*')
-        .eq('status', 'pending')
-        .eq('bidding_enabled', true)
-        .order('created_at', { ascending: false })
-        .limit(20);
+        return {
+          company: company as Company,
+          availableDeliveries: (deliveriesData || []) as AvailableDelivery[],
+          drivers: (driversData || []) as CompanyDriver[],
+          myBids: bidsData || [],
+        };
+      } catch (error) {
+        console.error('Error fetching company data:', error);
+        toast({ title: 'Failed to load company data', variant: 'destructive' });
+        return {
+          company: null as Company | null,
+          availableDeliveries: [] as AvailableDelivery[],
+          drivers: [] as CompanyDriver[],
+          myBids: [] as any[],
+        };
+      }
+    },
+  });
 
-      if (deliveriesError) throw deliveriesError;
-      setAvailableDeliveries(deliveriesData || []);
-
-      // Fetch company's bids
-      const { data: bidsData, error: bidsError } = await supabase
-        .from('delivery_bids')
-        .select(`
-          *,
-          deliveries(
-            id,
-            status,
-            pickup_address,
-            delivery_address,
-            order_id
-          )
-        `)
-        .eq('company_id', companyData.id)
-        .order('created_at', { ascending: false });
-
-      if (bidsError) throw bidsError;
-      setMyBids(bidsData || []);
-    } catch (error) {
-      console.error('Error fetching company data:', error);
-      toast.error('Failed to load company data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const company = companyData?.company ?? null;
+  const availableDeliveries = companyData?.availableDeliveries ?? [];
+  const drivers = companyData?.drivers ?? [];
+  const myBids = companyData?.myBids ?? [];
 
   if (loading) {
     return (
@@ -176,7 +192,7 @@ export const CompanyDashboard = ({ userId }: CompanyDashboardProps) => {
   const handleLogout = () => {
     logout();
     navigate('/');
-    toast.success("Logged out successfully");
+    toast({ title: "Logged out successfully" });
   };
 
   return (
@@ -307,7 +323,7 @@ export const CompanyDashboard = ({ userId }: CompanyDashboardProps) => {
                             {delivery.estimated_price && (
                               <span className="flex items-center gap-1 text-primary font-medium">
                                 <DollarSign className="h-4 w-4" />
-                                Est. ${delivery.estimated_price.toFixed(2)}
+                                Est. {formatCurrency(delivery.estimated_price)}
                               </span>
                             )}
                           </div>
@@ -321,13 +337,14 @@ export const CompanyDashboard = ({ userId }: CompanyDashboardProps) => {
               <div>
                 {selectedDelivery ? (
                   <CreateBidForm
+                    key={selectedDelivery}
                     deliveryId={selectedDelivery}
                     companyId={company.id}
                     suggestedPrice={
                       availableDeliveries.find(d => d.id === selectedDelivery)?.estimated_price || undefined
                     }
                     onBidCreated={() => {
-                      fetchCompanyData();
+                      queryClient.invalidateQueries({ queryKey: companyQueryKey });
                       setSelectedDelivery(null);
                     }}
                   />
@@ -369,7 +386,7 @@ export const CompanyDashboard = ({ userId }: CompanyDashboardProps) => {
                           <div className="flex items-center gap-4 text-sm">
                             <span className="flex items-center gap-1 font-semibold text-primary">
                               <DollarSign className="h-4 w-4" />
-                              ${bid.bid_amount.toFixed(2)}
+                              {formatCurrency(bid.bid_amount)}
                             </span>
                             <span className="flex items-center gap-1 text-muted-foreground">
                               <Clock className="h-4 w-4" />

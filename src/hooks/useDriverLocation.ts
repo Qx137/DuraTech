@@ -33,7 +33,7 @@ export const useDriverLocation = (driverId: string | null) => {
 
         if (data?.current_location) {
           const loc = data.current_location as any;
-          if (typeof loc === 'object' && loc.latitude && loc.longitude) {
+          if (typeof loc === 'object' && typeof loc.latitude === 'number' && typeof loc.longitude === 'number') {
             setLocation({ latitude: loc.latitude, longitude: loc.longitude });
           }
         }
@@ -65,7 +65,7 @@ export const useDriverLocation = (driverId: string | null) => {
         (payload) => {
           if (payload.new.current_location) {
             const loc = payload.new.current_location as any;
-            if (typeof loc === 'object' && loc.latitude && loc.longitude) {
+            if (typeof loc === 'object' && typeof loc.latitude === 'number' && typeof loc.longitude === 'number') {
               setLocation({ latitude: loc.latitude, longitude: loc.longitude });
             }
           }

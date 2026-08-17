@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, CheckCircle2, ShoppingBag } from "lucide-react";
+import { formatCurrency } from "@/lib/pricing";
 
 interface Product {
   id: string;
@@ -84,7 +85,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         {/* Price + CTA */}
         <div className="flex items-end justify-between mt-auto pt-2">
           <div>
-            <span className="text-lg font-bold text-foreground">${product.price.toFixed(2)}</span>
+            <span className="text-lg font-bold text-foreground">{formatCurrency(product.price)}</span>
             <span className="text-xs text-muted-foreground ml-1">/{product.unit}</span>
           </div>
           <Button

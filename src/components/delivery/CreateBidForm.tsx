@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DollarSign, Clock, Send } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 interface CreateBidFormProps {
   deliveryId: string;
@@ -27,17 +27,18 @@ export const CreateBidForm = ({
   const [estimatedTime, setEstimatedTime] = useState('30');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!driverId && !companyId) {
-      toast.error('Invalid provider');
+      toast({ title: 'Invalid provider', variant: 'destructive' });
       return;
     }
 
     if (!bidAmount || parseFloat(bidAmount) <= 0) {
-      toast.error('Please enter a valid bid amount');
+      toast({ title: 'Please enter a valid bid amount', variant: 'destructive' });
       return;
     }
 
@@ -57,14 +58,14 @@ export const CreateBidForm = ({
 
       if (error) throw error;
 
-      toast.success('Bid submitted successfully!');
+      toast({ title: 'Bid submitted successfully!' });
       setBidAmount('');
       setEstimatedTime('30');
       setMessage('');
       onBidCreated?.();
     } catch (error: any) {
       console.error('Error creating bid:', error);
-      toast.error(error.message || 'Failed to submit bid');
+      toast({ title: error.message || 'Failed to submit bid', variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }

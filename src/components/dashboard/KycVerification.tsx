@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -65,9 +66,28 @@ const FileUploadBox = ({
 export const KycVerification = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<"none" | "pending" | "verified" | "rejected">("none");
-  const [kycData, setKycData] = useState<any>(null);
+
+  const kycStatusQueryKey = ['kycStatus', user?.id];
+
+  const { data: kycStatusData } = useQuery({
+    queryKey: kycStatusQueryKey,
+    queryFn: async () => {
+      const { data: profile } = await supabase.from("profiles").select("kyc_status").eq("id", user!.id).single();
+      const kycStatus = ((profile as any)?.kyc_status || "none") as "none" | "pending" | "verified" | "rejected";
+      let kyc: any = null;
+      if (kycStatus !== "none") {
+        const { data } = await (supabase.from("kyc_verifications" as any).select("*").eq("user_id", user!.id) as any).maybeSingle();
+        kyc = data;
+      }
+      return { status: kycStatus, kycData: kyc };
+    },
+    enabled: !!user,
+  });
+
+  const status = kycStatusData?.status ?? "none";
+  const kycData = kycStatusData?.kycData ?? null;
 
   // Personal details
   const [firstName, setFirstName] = useState("");
@@ -95,25 +115,6 @@ export const KycVerification = () => {
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [bankBranch, setBankBranch] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
-
-  useEffect(() => {
-    if (user) fetchKycStatus();
-  }, [user]);
-
-  const fetchKycStatus = async () => {
-    if (!user) return;
-    try {
-      const { data: profile } = await supabase.from("profiles").select("kyc_status").eq("id", user.id).single();
-      const kycStatus = (profile as any)?.kyc_status || "none";
-      setStatus(kycStatus);
-      if (kycStatus !== "none") {
-        const { data: kyc } = await (supabase.from("kyc_verifications" as any).select("*").eq("user_id", user.id) as any).maybeSingle();
-        setKycData(kyc);
-      }
-    } catch (error) {
-      console.error("Error fetching KYC:", error);
-    }
-  };
 
   const uploadFile = async (file: File, type: string): Promise<string> => {
     const fileExt = file.name.split(".").pop();
@@ -236,7 +237,7 @@ export const KycVerification = () => {
       if (profileError) throw profileError;
 
       toast({ title: "KYC Submitted", description: "Your verification documents have been received and are under review." });
-      fetchKycStatus();
+      queryClient.invalidateQueries({ queryKey: kycStatusQueryKey });
     } catch (error: any) {
       toast({ title: "Submission Failed", description: error.message || "An error occurred.", variant: "destructive" });
     } finally {

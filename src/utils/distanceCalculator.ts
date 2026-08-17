@@ -21,27 +21,30 @@ const DEFAULT_PRICING: PricingConfig = {
 };
 
 /**
- * Calculate distance between two coordinates using Haversine formula
+ * Calculate straight-line distance between two coordinates using the
+ * Haversine formula. This is the single source of truth for this
+ * calculation - other modules (lib/pricing.ts, utils/delivery.ts) wrap it
+ * rather than reimplementing the math themselves.
  */
-export async function calculateDistance(from: Location, to: Location): Promise<number> {
-  return calculateDistanceFallback(from, to);
+export function haversineDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /**
- * Fallback: Calculate straight-line distance using Haversine formula
+ * Calculate distance between two coordinates using Haversine formula
  */
-function calculateDistanceFallback(from: Location, to: Location): number {
-  const R = 6371; // Earth's radius in kilometers
-  const dLat = toRad(to.lat - from.lat);
-  const dLng = toRad(to.lng - from.lng);
-  
-  const a = 
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(from.lat)) * Math.cos(toRad(to.lat)) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+export async function calculateDistance(from: Location, to: Location): Promise<number> {
+  return haversineDistanceKm(from.lat, from.lng, to.lat, to.lng);
 }
 
 function toRad(value: number): number {
@@ -64,7 +67,7 @@ export function calculateShippingPrice(
  */
 export function getSellerLocationFromProduct(product: any): Location {
   // Use the pickup coordinates if available, otherwise fallback to default location
-  if (product.pickup_latitude && product.pickup_longitude) {
+  if (product.pickup_latitude != null && product.pickup_longitude != null) {
     return {
       lat: Number(product.pickup_latitude),
       lng: Number(product.pickup_longitude)

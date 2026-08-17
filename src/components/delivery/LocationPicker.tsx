@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Target, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 // Fix for default marker icons
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -70,6 +70,7 @@ export const LocationPicker = ({ pickup, destination, onPickupChange, onDestinat
     const [locating, setLocating] = useState(false);
     const [mapCenter, setMapCenter] = useState<[number, number]>([-17.8252, 31.0335]);
     const [zoom, setZoom] = useState(13);
+    const { toast } = useToast();
 
     // Switch to destination mode if pickup is set
     useEffect(() => {
@@ -88,7 +89,7 @@ export const LocationPicker = ({ pickup, destination, onPickupChange, onDestinat
 
     const handleUseMyLocation = () => {
         if (!navigator.geolocation) {
-            toast.error('Geolocation is not supported by your browser');
+            toast({ title: 'Geolocation is not supported by your browser', variant: 'destructive' });
             return;
         }
 
@@ -104,11 +105,11 @@ export const LocationPicker = ({ pickup, destination, onPickupChange, onDestinat
                 setMapCenter([latitude, longitude]);
                 setZoom(16);
                 setLocating(false);
-                toast.success(`Set ${selecting} to current location`);
+                toast({ title: `Set ${selecting} to current location` });
             },
             (error) => {
                 console.error('Error getting location:', error);
-                toast.error('Could not access your location. Please check permissions.');
+                toast({ title: 'Could not access your location. Please check permissions.', variant: 'destructive' });
                 setLocating(false);
             },
             { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }

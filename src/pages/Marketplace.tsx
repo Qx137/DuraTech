@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,17 +12,13 @@ import NoProductsFound from "@/components/marketplace/NoProductsFound";
 import TrustBar from "@/components/marketplace/TrustBar";
 import MarketplaceFooter from "@/components/marketplace/MarketplaceFooter";
 import { Product } from "@/data/sampleProducts";
-import { calculateDistance, getSellerLocationFromProduct, Location } from "@/utils/distanceCalculator";
+import { haversineDistanceKm, getSellerLocationFromProduct, Location } from "@/utils/distanceCalculator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [organicOnly, setOrganicOnly] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [rawProducts, setRawProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [priceRange, setPriceRange] = useState([0, 100]);
   const [minQuantity, setMinQuantity] = useState("");
@@ -29,6 +26,7 @@ const Marketplace = () => {
   const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Map major categories to the subcategory keys they contain
   const CATEGORY_SUBCATEGORY_MAP: Record<string, string[]> = {
@@ -39,6 +37,44 @@ const Marketplace = () => {
     "farm-services": ["ploughing", "spraying", "consulting", "veterinary", "soil-testing"],
     "transport-logistics": ["cold-chain", "bulk-transport", "last-mile", "warehousing", "packaging"],
   };
+
+  const { data: rawProducts = [], isLoading: loading } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`*, profiles ( name, business_name )`);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Distance is derived synchronously from the raw products + userLocation, so it
+  // fills in once geolocation resolves without a separate fetch/effect.
+  const products: Product[] = useMemo(() => {
+    return rawProducts.map((product: any) => {
+      const sellerLocation = getSellerLocationFromProduct(product);
+      const distance = userLocation
+        ? haversineDistanceKm(userLocation.lat, userLocation.lng, sellerLocation.lat, sellerLocation.lng)
+        : null;
+      return {
+        id: product.id,
+        name: product.name,
+        price: Number(product.price),
+        unit: product.unit,
+        farmer: product.profiles?.business_name || product.profiles?.name || 'Unknown Farmer',
+        location: product.location || 'Unknown Location',
+        rating: Number(product.rating) || 0,
+        image: product.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop',
+        category: product.category,
+        organic: product.organic,
+        description: product.description || '',
+        distance,
+        stock_quantity: product.stock_quantity || 0,
+        kycStatus: 'none' as const
+      };
+    });
+  }, [rawProducts, userLocation]);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,14 +108,8 @@ const Marketplace = () => {
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
 
   useEffect(() => {
-    fetchProducts();
     getUserLocation();
-    if (user) {
-      fetchCartCount();
-    } else {
-      setCartCount(0);
-    }
-  }, [user]);
+  }, []);
 
   const getUserLocation = () => {
     if (navigator.geolocation) {
@@ -96,81 +126,25 @@ const Marketplace = () => {
     }
   };
 
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`*, profiles ( name, business_name )`);
-      if (error) throw error;
-      setRawProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setRawProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Re-formats products (including distance) whenever the raw list or the
-  // user's location changes, so distance fills in once geolocation resolves
-  // without needing to re-fetch from the database.
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      const formattedProducts = await Promise.all(
-        rawProducts.map(async (product: any) => {
-          const sellerLocation = getSellerLocationFromProduct(product);
-          const distance = userLocation ? await calculateDistance(userLocation, sellerLocation) : null;
-          return {
-            id: product.id,
-            name: product.name,
-            price: Number(product.price),
-            unit: product.unit,
-            farmer: product.profiles?.business_name || product.profiles?.name || 'Unknown Farmer',
-            location: product.location || 'Unknown Location',
-            rating: Number(product.rating) || 0,
-            image: product.image || 'https://images.unsplash.com/photo-1546470427-227e09b17322?w=400&h=300&fit=crop',
-            category: product.category,
-            organic: product.organic,
-            description: product.description || '',
-            distance,
-            stock_quantity: product.stock_quantity || 0,
-            kycStatus: 'none' as const
-          };
-        })
-      );
-      if (!cancelled) setProducts(formattedProducts);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [rawProducts, userLocation]);
-
-  const fetchCartCount = async () => {
-    try {
+  const { data: cartCount = 0 } = useQuery({
+    queryKey: ['cartCount', user?.id],
+    queryFn: async () => {
       const { count, error } = await supabase
         .from('cart_items')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user?.id);
+        .eq('user_id', user!.id);
       if (error) throw error;
-      setCartCount(count || 0);
-    } catch (error) {
-      console.error('Error fetching cart count:', error);
-    }
-  };
+      return count || 0;
+    },
+    enabled: !!user,
+  });
 
-  const addToCart = async (productId: string) => {
-    if (!user) {
-      toast({ title: "Please Sign In", description: "You need to sign in to add items to your cart.", variant: "destructive" });
-      return;
-    }
-    try {
+  const addToCartMutation = useMutation({
+    mutationFn: async (productId: string) => {
       const { data: existingItem, error: checkError } = await supabase
         .from('cart_items')
         .select('id, quantity')
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .eq('product_id', productId)
         .single();
       if (checkError && checkError.code !== 'PGRST116') throw checkError;
@@ -183,15 +157,26 @@ const Marketplace = () => {
       } else {
         const { error: insertError } = await supabase
           .from('cart_items')
-          .insert([{ user_id: user.id, product_id: productId, quantity: 1 }]);
+          .insert([{ user_id: user!.id, product_id: productId, quantity: 1 }]);
         if (insertError) throw insertError;
       }
-      await fetchCartCount();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cartCount', user?.id] });
       toast({ title: "Added to Cart", description: "Product added successfully!" });
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       console.error('Error adding to cart:', error);
       toast({ title: "Error", description: error.message || "Failed to add product to cart.", variant: "destructive" });
+    },
+  });
+
+  const addToCart = (productId: string) => {
+    if (!user) {
+      toast({ title: "Please Sign In", description: "You need to sign in to add items to your cart.", variant: "destructive" });
+      return;
     }
+    addToCartMutation.mutate(productId);
   };
 
   return (

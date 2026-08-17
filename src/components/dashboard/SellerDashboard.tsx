@@ -10,11 +10,13 @@ import { Link, useNavigate } from "react-router-dom";
 import NotchHeader from "@/components/layout/NotchHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import LocationMap from "@/components/checkout/LocationMap";
 import { OrderManagement } from "@/components/orders/OrderManagement";
 import { KycVerification } from "./KycVerification";
+import { formatCurrency } from "@/lib/pricing";
 
 interface User {
   id: string;
@@ -50,19 +52,188 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [showEditForm, setShowEditForm] = useState(false);
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(true);
-  const [stats, setStats] = useState({
-    monthlyRevenue: 0,
-    productsListed: 0,
-    totalCustomers: 0,
-    ordersThisMonth: 0
+  const queryClient = useQueryClient();
+
+  const productsQueryKey = ['sellerProducts', user.id];
+  const invalidateProducts = () => queryClient.invalidateQueries({ queryKey: productsQueryKey });
+
+  const { data: products = [], isLoading: loading } = useQuery({
+    queryKey: productsQueryKey,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('seller_id', user.id);
+      if (error) throw error;
+      return data || [];
+    },
   });
-  const [statsLoading, setStatsLoading] = useState(true);
+
+  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ['sellerRecentOrders', user.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          *,
+          orders!inner (
+            id,
+            user_id,
+            total,
+            status,
+            created_at,
+            profiles!inner (
+              name,
+              email
+            )
+          ),
+          products!inner (
+            name,
+            seller_id
+          )
+        `)
+        .eq('products.seller_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+
+      return data?.map(item => ({
+        id: item.id,
+        product: item.products.name,
+        buyer: item.orders.profiles.name,
+        quantity: item.quantity,
+        total: item.price * item.quantity,
+        status: item.orders.status === 'pending' ? 'Processing' :
+          item.orders.status === 'completed' ? 'Delivered' :
+            item.orders.status === 'shipped' ? 'Shipped' : 'Processing',
+        order_id: item.orders.id,
+        created_at: item.orders.created_at
+      })) || [];
+    },
+  });
+
+  const { data: stats = { monthlyRevenue: 0, productsListed: 0, totalCustomers: 0, ordersThisMonth: 0 }, isLoading: statsLoading } = useQuery({
+    queryKey: ['sellerStats', user.id],
+    queryFn: async () => {
+      const currentDate = new Date();
+      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const firstDayOfMonthISO = firstDayOfMonth.toISOString();
+
+      const [
+        { data: monthlyOrdersData, error: monthlyError },
+        { count: productsCount, error: productsError },
+        { data: customerData, error: customerError },
+      ] = await Promise.all([
+        // Monthly revenue from this month's orders
+        supabase
+          .from('order_items')
+          .select(`
+            price,
+            quantity,
+            orders!inner (
+              created_at
+            ),
+            products!inner (
+              seller_id
+            )
+          `)
+          .eq('products.seller_id', user.id)
+          .gte('orders.created_at', firstDayOfMonthISO),
+
+        // Products listed by this seller
+        supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('seller_id', user.id),
+
+        // Unique customers (users who bought from this seller)
+        supabase
+          .from('order_items')
+          .select(`
+            orders!inner (
+              user_id
+            ),
+            products!inner (
+              seller_id
+            )
+          `)
+          .eq('products.seller_id', user.id),
+      ]);
+
+      if (monthlyError) throw monthlyError;
+      if (productsError) throw productsError;
+      if (customerError) throw customerError;
+
+      const monthlyRevenue = monthlyOrdersData?.reduce((sum, item) =>
+        sum + (Number(item.price) * item.quantity), 0) || 0;
+
+      const uniqueCustomers = new Set(customerData?.map(item => item.orders.user_id)).size;
+
+      // Count orders this month
+      const ordersThisMonth = monthlyOrdersData?.length || 0;
+
+      return {
+        monthlyRevenue,
+        productsListed: productsCount || 0,
+        totalCustomers: uniqueCustomers,
+        ordersThisMonth
+      };
+    },
+  });
+
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
+    queryKey: ['sellerCustomers', user.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          orders!inner (
+            user_id,
+            profiles!inner (
+              name,
+              email
+            )
+          ),
+          price,
+          quantity,
+          products!inner (
+            seller_id
+          )
+        `)
+        .eq('products.seller_id', user.id);
+
+      if (error) throw error;
+
+      // Group by customer and calculate totals
+      const customerMap = new Map();
+      data?.forEach(item => {
+        const userId = item.orders.user_id;
+        const customer = item.orders.profiles;
+        const orderValue = Number(item.price) * item.quantity;
+
+        if (customerMap.has(userId)) {
+          const existing = customerMap.get(userId);
+          existing.totalOrders += 1;
+          existing.totalSpent += orderValue;
+        } else {
+          customerMap.set(userId, {
+            id: userId,
+            name: customer.name,
+            email: customer.email,
+            totalOrders: 1,
+            totalSpent: orderValue
+          });
+        }
+      });
+
+      return Array.from(customerMap.values())
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 10); // Show top 10 customers
+    },
+  });
 
   const handleLogout = () => {
     logout();
@@ -203,7 +374,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         });
         setSelectedFile(null);
         setShowAddProductForm(false);
-        fetchProducts(); // Refresh the products list
+        invalidateProducts(); // Refresh the products list
       } catch (error: any) {
         console.error('Error adding product:', error);
         toast({
@@ -315,7 +486,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
         setSelectedFile(null);
         setShowEditForm(false);
         setEditingProduct(null);
-        fetchProducts(); // Refresh the products list
+        invalidateProducts(); // Refresh the products list
       } catch (error: any) {
         console.error('Error updating product:', error);
         toast({
@@ -351,7 +522,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
           description: `${product.name} has been removed from your inventory.`,
         });
 
-        fetchProducts(); // Refresh the products list
+        invalidateProducts(); // Refresh the products list
       } catch (error) {
         console.error('Error deleting product:', error);
         toast({
@@ -368,225 +539,6 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
       title: "View Product",
       description: `Viewing product details for ID: ${productId}`,
     });
-  };
-
-  useEffect(() => {
-    fetchProducts();
-    fetchRecentOrders();
-    fetchStats();
-    fetchCustomers();
-  }, [user.id]);
-
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('seller_id', user.id);
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error: any) {
-      console.error('Error fetching products:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load products.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRecentOrders = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('order_items')
-        .select(`
-          *,
-          orders!inner (
-            id,
-            user_id,
-            total,
-            status,
-            created_at,
-            profiles!inner (
-              name,
-              email
-            )
-          ),
-          products!inner (
-            name,
-            seller_id
-          )
-        `)
-        .eq('products.seller_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-
-      const formattedOrders = data?.map(item => ({
-        id: item.id,
-        product: item.products.name,
-        buyer: item.orders.profiles.name,
-        quantity: item.quantity,
-        total: item.price * item.quantity,
-        status: item.orders.status === 'pending' ? 'Processing' :
-          item.orders.status === 'completed' ? 'Delivered' :
-            item.orders.status === 'shipped' ? 'Shipped' : 'Processing',
-        order_id: item.orders.id,
-        created_at: item.orders.created_at
-      })) || [];
-
-      setRecentOrders(formattedOrders);
-    } catch (error) {
-      console.error('Error fetching recent orders:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load recent orders.",
-        variant: "destructive"
-      });
-    } finally {
-      setOrdersLoading(false);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const currentDate = new Date();
-      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const firstDayOfMonthISO = firstDayOfMonth.toISOString();
-
-      // Fetch monthly revenue from this month's orders
-      const { data: monthlyOrdersData, error: monthlyError } = await supabase
-        .from('order_items')
-        .select(`
-          price,
-          quantity,
-          orders!inner (
-            created_at
-          ),
-          products!inner (
-            seller_id
-          )
-        `)
-        .eq('products.seller_id', user.id)
-        .gte('orders.created_at', firstDayOfMonthISO);
-
-      if (monthlyError) throw monthlyError;
-
-      const monthlyRevenue = monthlyOrdersData?.reduce((sum, item) =>
-        sum + (Number(item.price) * item.quantity), 0) || 0;
-
-      // Count products listed by this seller
-      const { count: productsCount, error: productsError } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('seller_id', user.id);
-
-      if (productsError) throw productsError;
-
-      // Count unique customers (users who bought from this seller)
-      const { data: customerData, error: customerError } = await supabase
-        .from('order_items')
-        .select(`
-          orders!inner (
-            user_id
-          ),
-          products!inner (
-            seller_id
-          )
-        `)
-        .eq('products.seller_id', user.id);
-
-      if (customerError) throw customerError;
-
-      const uniqueCustomers = new Set(customerData?.map(item => item.orders.user_id)).size;
-
-      // Count orders this month
-      const ordersThisMonth = monthlyOrdersData?.length || 0;
-
-      setStats({
-        monthlyRevenue,
-        productsListed: productsCount || 0,
-        totalCustomers: uniqueCustomers,
-        ordersThisMonth
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load dashboard statistics.",
-        variant: "destructive"
-      });
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [customersLoading, setCustomersLoading] = useState(true);
-
-  const fetchCustomers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('order_items')
-        .select(`
-          orders!inner (
-            user_id,
-            profiles!inner (
-              name,
-              email
-            )
-          ),
-          price,
-          quantity,
-          products!inner (
-            seller_id
-          )
-        `)
-        .eq('products.seller_id', user.id);
-
-      if (error) throw error;
-
-      // Group by customer and calculate totals
-      const customerMap = new Map();
-      data?.forEach(item => {
-        const userId = item.orders.user_id;
-        const customer = item.orders.profiles;
-        const orderValue = Number(item.price) * item.quantity;
-
-        if (customerMap.has(userId)) {
-          const existing = customerMap.get(userId);
-          existing.totalOrders += 1;
-          existing.totalSpent += orderValue;
-        } else {
-          customerMap.set(userId, {
-            id: userId,
-            name: customer.name,
-            email: customer.email,
-            totalOrders: 1,
-            totalSpent: orderValue
-          });
-        }
-      });
-
-      const customersArray = Array.from(customerMap.values())
-        .sort((a, b) => b.totalSpent - a.totalSpent)
-        .slice(0, 10); // Show top 10 customers
-
-      setCustomers(customersArray);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load customer data.",
-        variant: "destructive"
-      });
-    } finally {
-      setCustomersLoading(false);
-    }
   };
 
   const renderAnalytics = () => {
@@ -607,7 +559,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Monthly Revenue</p>
-                      <p className="text-2xl font-bold">${stats.monthlyRevenue.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">{formatCurrency(stats.monthlyRevenue)}</p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-green-600" />
                   </div>
@@ -629,7 +581,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Avg. Order Value</p>
-                      <p className="text-2xl font-bold">${avgOrderValue.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">{formatCurrency(avgOrderValue)}</p>
                     </div>
                     <DollarSign className="h-8 w-8 text-purple-600" />
                   </div>
@@ -661,7 +613,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Monthly Revenue</span>
-                    <span className="font-medium text-green-600">${stats.monthlyRevenue.toFixed(2)}</span>
+                    <span className="font-medium text-green-600">{formatCurrency(stats.monthlyRevenue)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Customer Base</span>
@@ -684,7 +636,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span>Revenue Progress</span>
-                        <span>${stats.monthlyRevenue.toFixed(2)}</span>
+                        <span>{formatCurrency(stats.monthlyRevenue)}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
@@ -743,7 +695,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                     <p className="text-sm text-gray-600">{customer.email}</p>
                   </div>
                   <div className="text-right mr-4">
-                    <p className="font-medium">${customer.totalSpent.toFixed(2)}</p>
+                    <p className="font-medium">{formatCurrency(customer.totalSpent)}</p>
                     <p className="text-sm text-gray-600">{customer.totalOrders} orders</p>
                   </div>
                   <div className="flex space-x-2">
@@ -788,7 +740,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                   <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium">{product.name}</h4>
-                      <p className="text-sm text-gray-600">Price: ${Number(product.price).toFixed(2)} per {product.unit}</p>
+                      <p className="text-sm text-gray-600">Price: {formatCurrency(Number(product.price))} per {product.unit}</p>
                       <p className="text-sm text-gray-500">{product.category}</p>
                       {product.organic && <Badge variant="secondary" className="mt-1">Organic</Badge>}
                     </div>
@@ -1277,7 +1229,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                         </div>
                       ) : (
                         <>
-                          <p className="text-2xl font-bold">${stats.monthlyRevenue.toFixed(2)}</p>
+                          <p className="text-2xl font-bold">{formatCurrency(stats.monthlyRevenue)}</p>
                           <p className="text-gray-600 text-sm">Monthly Revenue</p>
                         </>
                       )}
@@ -1374,7 +1326,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                         <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div>
                             <h4 className="font-medium">{product.name}</h4>
-                            <p className="text-sm text-gray-600">${Number(product.price).toFixed(2)} per {product.unit}</p>
+                            <p className="text-sm text-gray-600">{formatCurrency(Number(product.price))} per {product.unit}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-medium">Stock: {product.stock_quantity}</p>
@@ -1422,7 +1374,7 @@ export const SellerDashboard = ({ user }: SellerDashboardProps) => {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">${Number(order.total).toFixed(2)}</p>
+                            <p className="font-medium">{formatCurrency(Number(order.total))}</p>
                             <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>
                               {order.status}
                             </Badge>

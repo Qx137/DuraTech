@@ -13,7 +13,7 @@ import {
 import { XCircle } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 interface OrderCancellationProps {
   orderId: string;
@@ -23,6 +23,7 @@ interface OrderCancellationProps {
 
 export const OrderCancellation = ({ orderId, currentStatus, onCancelled }: OrderCancellationProps) => {
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const canCancel = ['pending', 'processing'].includes(currentStatus);
 
@@ -48,11 +49,11 @@ export const OrderCancellation = ({ orderId, currentStatus, onCancelled }: Order
         console.error('Failed to send cancellation email:', emailError);
       }
 
-      toast.success("Order cancelled successfully. Refund will be processed within 5-7 business days.");
+      toast({ title: "Order cancelled successfully. Refund will be processed within 5-7 business days." });
       onCancelled();
     } catch (error) {
       console.error('Error cancelling order:', error);
-      toast.error("Failed to cancel order. Please contact support.");
+      toast({ title: "Failed to cancel order. Please contact support.", variant: "destructive" });
     } finally {
       setLoading(false);
     }

@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Package, Clock, Truck, CheckCircle, XCircle, RefreshCw } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/pricing";
 
 // Must match the orders.status CHECK constraint in the database.
 const STATUS_LABELS: Record<string, string> = {
@@ -51,19 +53,16 @@ interface OrderManagementProps {
 }
 
 export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchOrders();
-  }, [sellerId, statusFilter]);
+  const ordersQueryKey = ['sellerOrders', sellerId, statusFilter];
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      
+  const { data: orders = [], isLoading: loading } = useQuery({
+    queryKey: ordersQueryKey,
+    queryFn: async () => {
       let query = supabase
         .from('order_items')
         .select(`
@@ -104,7 +103,7 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
 
       // Group by order
       const ordersMap = new Map<string, Order>();
-      
+
       data?.forEach((item: any) => {
         const orderId = item.orders.id;
         if (!ordersMap.has(orderId)) {
@@ -123,7 +122,7 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
             items: []
           });
         }
-        
+
         ordersMap.get(orderId)?.items.push({
           id: item.id,
           product_name: item.products.name,
@@ -133,38 +132,38 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
         });
       });
 
-      setOrders(Array.from(ordersMap.values()));
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      toast.error("Failed to load orders");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.from(ordersMap.values());
+    },
+  });
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    setUpdatingOrders(prev => new Set(prev).add(orderId));
-    
-    try {
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ orderId, newStatus }: { orderId: string; newStatus: string }) => {
       const { error } = await supabase
         .from('orders')
         .update({ status: newStatus })
         .eq('id', orderId);
-
       if (error) throw error;
-
-      toast.success(`Order status updated to ${newStatus}`);
-      fetchOrders();
-    } catch (error) {
+    },
+    onSuccess: (_data, { newStatus }) => {
+      toast({ title: `Order status updated to ${newStatus}` });
+      queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+    },
+    onError: (error) => {
       console.error('Error updating order status:', error);
-      toast.error("Failed to update order status");
-    } finally {
+      toast({ title: "Failed to update order status", variant: "destructive" });
+    },
+    onSettled: (_data, _error, { orderId }) => {
       setUpdatingOrders(prev => {
         const newSet = new Set(prev);
         newSet.delete(orderId);
         return newSet;
       });
-    }
+    },
+  });
+
+  const updateOrderStatus = (orderId: string, newStatus: string) => {
+    setUpdatingOrders(prev => new Set(prev).add(orderId));
+    updateStatusMutation.mutate({ orderId, newStatus });
   };
 
   const getStatusIcon = (status: string) => {
@@ -298,13 +297,13 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
                           <span className="font-medium">{item.product_name}</span>
                           <span className="text-muted-foreground"> x {item.quantity}</span>
                         </div>
-                        <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                        <span className="font-medium">{formatCurrency(item.price * item.quantity)}</span>
                       </div>
                     ))}
                   </div>
                   <div className="flex items-center justify-between pt-3 border-t font-semibold">
                     <span>Total:</span>
-                    <span className="text-lg">${order.total.toFixed(2)}</span>
+                    <span className="text-lg">{formatCurrency(order.total)}</span>
                   </div>
                 </div>
 

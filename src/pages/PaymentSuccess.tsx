@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Leaf, Package, Truck, Star, Phone, Users, ArrowLeft } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/pricing";
 
 interface Driver {
   id: string;
@@ -50,6 +51,7 @@ const PaymentSuccess = () => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [delivery, setDelivery] = useState<any>(null);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
+  const { toast } = useToast();
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [isScanning, setIsScanning] = useState(true);
   const [showDriverSelection, setShowDriverSelection] = useState(false);
@@ -121,7 +123,7 @@ const PaymentSuccess = () => {
 
     } catch (error) {
       console.error('Error fetching order data:', error);
-      toast.error("Error loading order details");
+      toast({ title: "Error loading order details", variant: "destructive" });
     }
   };
 
@@ -138,7 +140,7 @@ const PaymentSuccess = () => {
 
       if (error) {
         console.error('Error fetching drivers:', error);
-        toast.error("Error finding drivers. Please try again.");
+        toast({ title: "Error finding drivers. Please try again.", variant: "destructive" });
         return;
       }
 
@@ -147,14 +149,14 @@ const PaymentSuccess = () => {
       setShowDriverSelection(true);
     } catch (error) {
       console.error('Error:', error);
-      toast.error("Error finding drivers. Please try again.");
+      toast({ title: "Error finding drivers. Please try again.", variant: "destructive" });
       setIsScanning(false);
     }
   };
 
   const handleDriverSelection = (driver: Driver) => {
     setSelectedDriver(driver);
-    toast.success(`${driver.profiles?.name || 'Driver'} selected for your delivery!`);
+    toast({ title: `${driver.profiles?.name || 'Driver'} selected for your delivery!` });
 
     // Navigate to delivery tracking after selection
     setTimeout(() => {
@@ -232,7 +234,7 @@ const PaymentSuccess = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Total Amount:</span>
-                <span className="font-semibold">${order?.total?.toFixed(2) || '0.00'}</span>
+                <span className="font-semibold">{formatCurrency(order?.total || 0)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Status:</span>

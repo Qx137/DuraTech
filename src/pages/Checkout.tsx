@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import { calculateTotalShipping, type Location as UtilsLocation } from "@/utils/
 import { DuraGoHeader } from "@/components/delivery/DuraGoHeader";
 import { LocationPicker } from "@/components/delivery/LocationPicker";
 import { TransportTypeSelector, type TransportType } from "@/components/delivery/TransportTypeSelector";
-import { calculateDistance, calculateMinPrice } from "@/lib/pricing";
+import { calculateDistance, calculateMinPrice, formatCurrency } from "@/lib/pricing";
 import { z } from "zod";
 import {
   AlertDialog,
@@ -72,7 +73,6 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('contipay');
@@ -141,14 +141,9 @@ const Checkout = () => {
     }
   };
 
-  useEffect(() => {
-    fetchCartItems();
-  }, [user]);
-
-  const fetchCartItems = async () => {
-    if (!user) return;
-
-    try {
+  const { data: cartItems = [] } = useQuery({
+    queryKey: ['cartItemsForCheckout', user?.id],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('cart_items')
         .select(`
@@ -162,14 +157,13 @@ const Checkout = () => {
             pickup_longitude
           )
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', user!.id);
 
       if (error) throw error;
-      setCartItems(data || []);
-    } catch (error) {
-      console.error('Error fetching cart items:', error);
-    }
-  };
+      return data || [];
+    },
+    enabled: !!user,
+  });
 
   const calculateTotal = () => {
     const subtotal = cartItems.reduce((sum, item) => sum + (item.products.price * item.quantity), 0);
@@ -569,7 +563,7 @@ const Checkout = () => {
                         />
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-                        Min. recommended: <span className="font-semibold">${minPrice.toFixed(2)}</span>
+                        Min. recommended: <span className="font-semibold">{formatCurrency(minPrice)}</span>
                       </p>
                       <div className="bg-primary/5 p-2 rounded-md border border-primary/10">
                         <p className="text-[10px] leading-tight text-primary font-medium">
@@ -605,13 +599,13 @@ const Checkout = () => {
                       {shippingDetails.details.map((detail, index) => (
                         <div key={detail.sellerId} className="flex justify-between text-sm p-2 rounded bg-muted">
                           <span>Seller {index + 1} ({detail.distance.toFixed(1)} km)</span>
-                          <span>${detail.price.toFixed(2)}</span>
+                          <span>{formatCurrency(detail.price)}</span>
                         </div>
                       ))}
                       <div className="border-t pt-2">
                         <div className="flex justify-between font-medium">
                           <span>Estimated Shipping:</span>
-                          <span>${shippingDetails.totalShipping.toFixed(2)}</span>
+                          <span>{formatCurrency(shippingDetails.totalShipping)}</span>
                         </div>
                       </div>
 
@@ -699,7 +693,7 @@ const Checkout = () => {
                     {cartItems.map((item) => (
                       <div key={item.id} className="flex justify-between text-sm">
                         <span>{item.products.name} ({item.quantity}x)</span>
-                        <span>${(item.products.price * item.quantity).toFixed(2)}</span>
+                        <span>{formatCurrency(item.products.price * item.quantity)}</span>
                       </div>
                     ))}
                     {cartItems.length === 0 && (
@@ -709,20 +703,20 @@ const Checkout = () => {
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>{formatCurrency(subtotal)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping:</span>
-                      <span>${shipping.toFixed(2)}</span>
+                      <span>{formatCurrency(shipping)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Tax:</span>
-                      <span>${tax.toFixed(2)}</span>
+                      <span>{formatCurrency(tax)}</span>
                     </div>
                     <div className="border-t pt-2">
                       <div className="flex justify-between font-semibold text-lg">
                         <span>Total:</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>{formatCurrency(total)}</span>
                       </div>
                     </div>
                   </div>
@@ -755,15 +749,15 @@ const Checkout = () => {
               <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-2 text-sm">
                 <div className="flex justify-between text-amber-800">
                   <span>Cart Items:</span>
-                  <span className="font-semibold">${calculateTotal().subtotal.toFixed(2)}</span>
+                  <span className="font-semibold">{formatCurrency(calculateTotal().subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-amber-800">
                   <span>Delivery & Tax:</span>
-                  <span className="font-semibold">${(calculateTotal().shipping + calculateTotal().tax).toFixed(2)}</span>
+                  <span className="font-semibold">{formatCurrency(calculateTotal().shipping + calculateTotal().tax)}</span>
                 </div>
                 <div className="border-t border-amber-200 pt-2 flex justify-between font-bold text-amber-900">
                   <span>Total Cost:</span>
-                  <span>${calculateTotal().total.toFixed(2)}</span>
+                  <span>{formatCurrency(calculateTotal().total)}</span>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground italic">

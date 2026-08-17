@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,36 +9,17 @@ import NotchHeader from "@/components/layout/NotchHeader";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface CartItem {
-  id: string;
-  product_id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  farmer: string;
-  image: string;
-  organic: boolean;
-}
+import { formatCurrency } from "@/lib/pricing";
 
 const Cart = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      fetchCartItems();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchCartItems = async () => {
-    try {
+  const { data: cartItems = [], isLoading: loading } = useQuery({
+    queryKey: ['cart', user?.id],
+    queryFn: async () => {
       const { data: cartData, error } = await supabase
         .from('cart_items')
         .select(`
@@ -51,39 +32,78 @@ const Cart = () => {
             image,
             organic,
             profiles (
+              name,
               business_name
             )
           )
         `)
-        .eq('user_id', user?.id);
+        .eq('user_id', user!.id);
 
       if (error) throw error;
 
-      const formattedItems = cartData?.map(item => ({
+      return cartData?.map(item => ({
         id: item.id,
         product_id: item.product_id,
         name: item.products?.name || '',
         price: Number(item.products?.price) || 0,
         quantity: item.quantity,
-        farmer: item.products?.profiles?.business_name || 'Unknown Farmer',
+        farmer: item.products?.profiles?.business_name || item.products?.profiles?.name || 'Unknown Farmer',
         image: item.products?.image || '',
         organic: item.products?.organic || false,
       })) || [];
+    },
+    enabled: !!user,
+  });
 
-      setCartItems(formattedItems);
-    } catch (error) {
-      console.error('Error fetching cart items:', error);
+  const invalidateCart = () => queryClient.invalidateQueries({ queryKey: ['cart', user?.id] });
+
+  const updateQuantityMutation = useMutation({
+    mutationFn: async ({ id, newQuantity }: { id: string; newQuantity: number }) => {
+      const { error } = await supabase
+        .from('cart_items')
+        .update({ quantity: newQuantity })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: invalidateCart,
+    onError: (error) => {
+      console.error('Error updating quantity:', error);
       toast({
         title: "Error",
-        description: "Failed to load cart items.",
+        description: "Failed to update item quantity.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const updateQuantity = async (id: string, change: number) => {
+  const removeItemMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateCart();
+      toast({
+        title: "Item Removed",
+        description: "Item has been removed from your cart.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error removing item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove item from cart.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeItem = (id: string) => removeItemMutation.mutate(id);
+
+  const updateQuantity = (id: string, change: number) => {
     const item = cartItems.find(item => item.id === id);
     if (!item) return;
 
@@ -94,51 +114,7 @@ const Cart = () => {
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('cart_items')
-        .update({ quantity: newQuantity })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setCartItems(items =>
-        items.map(item =>
-          item.id === id ? { ...item, quantity: newQuantity } : item
-        )
-      );
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update item quantity.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const removeItem = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setCartItems(items => items.filter(item => item.id !== id));
-      toast({
-        title: "Item Removed",
-        description: "Item has been removed from your cart.",
-      });
-    } catch (error) {
-      console.error('Error removing item:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove item from cart.",
-        variant: "destructive",
-      });
-    }
+    updateQuantityMutation.mutate({ id, newQuantity });
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -262,8 +238,8 @@ const Cart = () => {
                           </Button>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-lg">${(item.price * item.quantity).toFixed(2)}</p>
-                          <p className="text-sm text-gray-500">${item.price.toFixed(2)} each</p>
+                          <p className="font-semibold text-lg">{formatCurrency(item.price * item.quantity)}</p>
+                          <p className="text-sm text-gray-500">{formatCurrency(item.price)} each</p>
                         </div>
                       </div>
                     </div>
@@ -281,16 +257,16 @@ const Cart = () => {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tax:</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>{formatCurrency(tax)}</span>
                   </div>
                   <div className="border-t pt-4">
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Total:</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>{formatCurrency(total)}</span>
                     </div>
                   </div>
                   <Button

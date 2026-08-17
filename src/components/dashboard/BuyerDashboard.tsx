@@ -9,8 +9,9 @@ import NotchHeader from "@/components/layout/NotchHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { OrderCancellation } from "@/components/orders/OrderCancellation";
+import { formatCurrency } from "@/lib/pricing";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,95 +39,72 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [stats, setStats] = useState({
-    totalOrders: 0,
-    activeOrders: 0,
-    favorites: 0,
-    followedFarms: 0
-  });
-  const [recentPurchases, setRecentPurchases] = useState<any[]>([]);
-  const [allOrders, setAllOrders] = useState<any[]>([]);
-  const [favoriteProducts, setFavoriteProducts] = useState<any[]>([]);
-  const [cartCount, setCartCount] = useState(0);
+  const dashboardQueryKey = ['buyerDashboard', user.id];
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [user.id]);
+  // Favorites/followed farms are placeholders - no backing table exists yet.
+  const favoriteProducts: any[] = [];
 
-  const fetchDashboardData = async () => {
-    try {
-      // Fetch total orders
-      const { data: totalOrdersData } = await supabase
-        .from('orders')
-        .select('id', { count: 'exact' })
-        .eq('user_id', user.id);
+  const { data: dashboardData } = useQuery({
+    queryKey: dashboardQueryKey,
+    queryFn: async () => {
+      const [
+        { data: totalOrdersData },
+        { data: activeOrdersData },
+        { data: cartData },
+        { data: allOrdersData },
+      ] = await Promise.all([
+        // Total orders
+        supabase
+          .from('orders')
+          .select('id', { count: 'exact' })
+          .eq('user_id', user.id),
 
-      // Fetch active orders (orders that are not delivered)
-      const { data: activeOrdersData } = await supabase
-        .from('orders')
-        .select('id', { count: 'exact' })
-        .eq('user_id', user.id)
-        .neq('status', 'delivered');
+        // Active orders (orders that are neither delivered nor cancelled)
+        supabase
+          .from('orders')
+          .select('id', { count: 'exact' })
+          .eq('user_id', user.id)
+          .not('status', 'in', '(delivered,cancelled)'),
 
-      // Fetch cart items count
-      const { data: cartData } = await supabase
-        .from('cart_items')
-        .select('quantity')
-        .eq('user_id', user.id);
+        // Cart items count
+        supabase
+          .from('cart_items')
+          .select('quantity')
+          .eq('user_id', user.id),
+
+        // All orders for the orders tab (recent purchases below are derived from this)
+        supabase
+          .from('orders')
+          .select(`
+            id,
+            total,
+            status,
+            created_at,
+            payment_method,
+            payment_status,
+            order_items (
+              quantity,
+              price,
+              products (
+                name,
+                seller_id,
+                profiles!products_seller_id_fkey (
+                  business_name,
+                  name
+                )
+              )
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+      ]);
 
       const totalCartItems = cartData?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
-      // Fetch recent orders with product details
-      const { data: recentOrdersData } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          total,
-          status,
-          created_at,
-          order_items (
-            quantity,
-            price,
-            products (
-              name,
-              seller_id,
-              profiles!products_seller_id_fkey (
-                business_name,
-                name
-              )
-            )
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      // Fetch all orders for the orders tab
-      const { data: allOrdersData } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          total,
-          status,
-          created_at,
-          payment_method,
-          payment_status,
-          order_items (
-            quantity,
-            price,
-            products (
-              name,
-              seller_id,
-              profiles!products_seller_id_fkey (
-                business_name,
-                name
-              )
-            )
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      // The 3 most recent orders are just the head of allOrdersData - no need for a second query.
+      const recentOrdersData = allOrdersData?.slice(0, 3);
 
       // Transform recent orders data
       const transformedRecentPurchases = recentOrdersData?.map(order => ({
@@ -155,26 +133,26 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
         createdAt: new Date(order.created_at).toLocaleDateString()
       })) || [];
 
-      // For favorites and followed farms, we'll use placeholder data for now
-      // since these features would require additional tables
-      setStats({
-        totalOrders: totalOrdersData?.length || 0,
-        activeOrders: activeOrdersData?.length || 0,
-        favorites: 0, // Placeholder
-        followedFarms: 0 // Placeholder
-      });
+      return {
+        // Favorites and followed farms are placeholders for now, since those
+        // features would require additional tables.
+        stats: {
+          totalOrders: totalOrdersData?.length || 0,
+          activeOrders: activeOrdersData?.length || 0,
+          favorites: 0,
+          followedFarms: 0,
+        },
+        recentPurchases: transformedRecentPurchases,
+        allOrders: transformedAllOrders,
+        cartCount: totalCartItems,
+      };
+    },
+  });
 
-      setRecentPurchases(transformedRecentPurchases);
-      setAllOrders(transformedAllOrders);
-      setCartCount(totalCartItems);
-
-      // Set placeholder favorite products for now
-      setFavoriteProducts([]);
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    }
-  };
+  const stats = dashboardData?.stats ?? { totalOrders: 0, activeOrders: 0, favorites: 0, followedFarms: 0 };
+  const recentPurchases = dashboardData?.recentPurchases ?? [];
+  const allOrders = dashboardData?.allOrders ?? [];
+  const cartCount = dashboardData?.cartCount ?? 0;
 
   const handleLogout = () => {
     logout();
@@ -192,8 +170,8 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
     });
   };
 
-  const handleEraseOrderHistory = async () => {
-    try {
+  const eraseOrderHistoryMutation = useMutation({
+    mutationFn: async () => {
       // Delete all order items first (foreign key constraint)
       const { error: orderItemsError } = await supabase
         .from('order_items')
@@ -209,23 +187,25 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
         .eq('user_id', user.id);
 
       if (ordersError) throw ordersError;
-
+    },
+    onSuccess: () => {
       toast({
         title: "Order history cleared",
         description: "All your orders have been permanently deleted.",
       });
-
-      // Refresh dashboard data
-      fetchDashboardData();
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey });
+    },
+    onError: (error) => {
       console.error('Error deleting order history:', error);
       toast({
         title: "Error",
         description: "Failed to delete order history. Please try again.",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
+
+  const handleEraseOrderHistory = () => eraseOrderHistoryMutation.mutate();
 
   return (
     <>
@@ -336,7 +316,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                             <p className="text-sm text-gray-600">{purchase.farmer}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">${Number(purchase.price).toFixed(2)}</p>
+                            <p className="font-medium">{formatCurrency(Number(purchase.price))}</p>
                             <Badge variant={purchase.status === 'Delivered' ? 'default' : 'secondary'}>
                               {purchase.status}
                             </Badge>
@@ -426,7 +406,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                           </div>
                           <div className="text-right flex items-center gap-2">
                             <div>
-                              <p className="font-medium">${Number(order.total).toFixed(2)}</p>
+                              <p className="font-medium">{formatCurrency(Number(order.total))}</p>
                               <div className="flex gap-2">
                                 <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>
                                   {order.status}
@@ -448,7 +428,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                               <OrderCancellation
                                 orderId={order.id}
                                 currentStatus={order.status.toLowerCase()}
-                                onCancelled={fetchDashboardData}
+                                onCancelled={() => queryClient.invalidateQueries({ queryKey: dashboardQueryKey })}
                               />
                             </div>
                           </div>
@@ -460,7 +440,7 @@ export const BuyerDashboard = ({ user }: BuyerDashboardProps) => {
                             <p className="text-sm font-medium">Items:</p>
                             {order.products.map((product, index) => (
                               <p key={index} className="text-sm text-gray-600">
-                                {product.quantity}x {product.name} - ${Number(product.price).toFixed(2)}
+                                {product.quantity}x {product.name} - {formatCurrency(Number(product.price))}
                               </p>
                             ))}
                           </div>

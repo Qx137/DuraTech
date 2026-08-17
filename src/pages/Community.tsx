@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Heart, Share2, Search, Plus, User, LogOut, TrendingUp, Users, Award, Clock, MessageSquare, UserPlus } from "lucide-react";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
@@ -45,21 +46,103 @@ interface Member {
   business_name?: string;
 }
 
+const communityPostsQueryKey = ["communityPosts"];
+const forumTopicsQueryKey = ["forumTopics"];
+const communityMembersQueryKey = ["communityMembers"];
+
 const Community = () => {
   const [newPost, setNewPost] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [topics, setTopics] = useState<ForumTopic[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: posts = [] } = useQuery({
+    queryKey: communityPostsQueryKey,
+    queryFn: async (): Promise<Post[]> => {
+      const { data, error } = await supabase
+        .from("community_posts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching posts:", error);
+        return [];
+      }
+
+      // Fetch profile names separately
+      if (data) {
+        const userIds = [...new Set(data.map(p => p.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, name")
+          .in("id", userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const postsWithProfiles = data.map(post => ({
+          ...post,
+          profiles: profileMap.get(post.user_id),
+        }));
+        return postsWithProfiles;
+      }
+
+      return [];
+    },
+  });
+
+  const { data: topics = [] } = useQuery({
+    queryKey: forumTopicsQueryKey,
+    queryFn: async (): Promise<ForumTopic[]> => {
+      const { data, error } = await supabase
+        .from("forum_topics")
+        .select("*")
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching topics:", error);
+        return [];
+      }
+
+      // Fetch profile names separately
+      if (data) {
+        const userIds = [...new Set(data.map(t => t.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, name")
+          .in("id", userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const topicsWithProfiles = data.map(topic => ({
+          ...topic,
+          profiles: profileMap.get(topic.user_id),
+        }));
+        return topicsWithProfiles;
+      }
+
+      return [];
+    },
+  });
+
+  const { data: members = [] } = useQuery({
+    queryKey: communityMembersQueryKey,
+    queryFn: async (): Promise<Member[]> => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, name, user_type, business_name")
+        .limit(30);
+
+      if (error) {
+        console.error("Error fetching members:", error);
+        return [];
+      }
+      return data || [];
+    },
+  });
 
   useEffect(() => {
     checkUser();
-    fetchPosts();
-    fetchTopics();
-    fetchMembers();
     subscribeToChanges();
   }, []);
 
@@ -68,82 +151,13 @@ const Community = () => {
     setUser(user);
   };
 
-  const fetchPosts = async () => {
-    const { data, error } = await supabase
-      .from("community_posts")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching posts:", error);
-      return;
-    }
-
-    // Fetch profile names separately
-    if (data) {
-      const userIds = [...new Set(data.map(p => p.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, name")
-        .in("id", userIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-      const postsWithProfiles = data.map(post => ({
-        ...post,
-        profiles: profileMap.get(post.user_id),
-      }));
-      setPosts(postsWithProfiles);
-    }
-  };
-
-  const fetchTopics = async () => {
-    const { data, error } = await supabase
-      .from("forum_topics")
-      .select("*")
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching topics:", error);
-      return;
-    }
-
-    // Fetch profile names separately
-    if (data) {
-      const userIds = [...new Set(data.map(t => t.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, name")
-        .in("id", userIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-      const topicsWithProfiles = data.map(topic => ({
-        ...topic,
-        profiles: profileMap.get(topic.user_id),
-      }));
-      setTopics(topicsWithProfiles);
-    }
-  };
-
-  const fetchMembers = async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, name, user_type, business_name")
-      .limit(30);
-
-    if (error) {
-      console.error("Error fetching members:", error);
-      return;
-    }
-    setMembers(data || []);
-  };
-
   const subscribeToChanges = () => {
     const postsChannel = supabase
       .channel("posts-changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "community_posts" },
-        () => fetchPosts()
+        () => queryClient.invalidateQueries({ queryKey: communityPostsQueryKey })
       )
       .subscribe();
 
@@ -152,7 +166,7 @@ const Community = () => {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "forum_topics" },
-        () => fetchTopics()
+        () => queryClient.invalidateQueries({ queryKey: forumTopicsQueryKey })
       )
       .subscribe();
 
@@ -165,12 +179,12 @@ const Community = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
-    toast.success("Logged out successfully");
+    toast({ title: "Logged out successfully" });
   };
 
   const handleCreatePost = async () => {
     if (!newPost.trim() || !user) {
-      toast.error("Please log in to create a post");
+      toast({ title: "Please log in to create a post", variant: "destructive" });
       return;
     }
 
@@ -182,17 +196,17 @@ const Community = () => {
 
     if (error) {
       console.error("Error creating post:", error);
-      toast.error("Failed to create post");
+      toast({ title: "Failed to create post", variant: "destructive" });
       return;
     }
 
     setNewPost("");
-    toast.success("Post created successfully!");
+    toast({ title: "Post created successfully!" });
   };
 
   const handleLike = async (postId: string) => {
     if (!user) {
-      toast.error("Please log in to like posts");
+      toast({ title: "Please log in to like posts", variant: "destructive" });
       return;
     }
 
@@ -208,34 +222,34 @@ const Community = () => {
           .delete()
           .eq("post_id", postId)
           .eq("user_id", user.id);
-        toast.success("Post unliked");
+        toast({ title: "Post unliked" });
       } else {
         console.error("Error liking post:", error);
       }
     } else {
-      toast.success("Post liked");
+      toast({ title: "Post liked" });
     }
   };
 
   const handleComment = (postId: string) => {
-    toast.info("Comment feature coming soon!");
+    toast({ title: "Comment feature coming soon!" });
   };
 
   const handleShare = (postId: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/community/post/${postId}`);
-    toast.success("Post link copied to clipboard");
+    toast({ title: "Post link copied to clipboard" });
   };
 
   const handleJoinForum = (forumId: string) => {
-    toast.success("You've joined this discussion");
+    toast({ title: "You've joined this discussion" });
   };
 
   const handleCreateTopic = () => {
-    toast.info("New topic creation form coming soon!");
+    toast({ title: "New topic creation form coming soon!" });
   };
 
   const handleConnect = (userId: string) => {
-    toast.success("Connection request sent");
+    toast({ title: "Connection request sent" });
   };
 
   const filteredTopics = topics.filter(topic =>

@@ -3,66 +3,56 @@ import { BuyerDashboard } from "@/components/dashboard/BuyerDashboard";
 import { SellerDashboard } from "@/components/dashboard/SellerDashboard";
 import { DriverDashboard } from "@/components/dashboard/DriverDashboard";
 import { CompanyDashboard } from "@/components/dashboard/CompanyDashboard";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 type UserRole = 'driver' | 'company' | 'seller' | 'buyer';
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
-      return;
     }
+  }, [isAuthenticated, navigate]);
 
-    const checkUserRole = async () => {
-      if (!user?.id) return;
-
+  const { data: userRole, isLoading: loading } = useQuery({
+    queryKey: ['userRole', user?.id, user?.userType],
+    queryFn: async (): Promise<UserRole> => {
       try {
-        // Check if user owns a delivery company
-        const { data: companyData } = await supabase
-          .from('delivery_companies')
-          .select('id')
-          .eq('owner_id', user.id)
-          .maybeSingle();
+        // Neither check depends on the other's result - run them together.
+        const [{ data: companyData }, { data: driverData }] = await Promise.all([
+          supabase
+            .from('delivery_companies')
+            .select('id')
+            .eq('owner_id', user!.id)
+            .maybeSingle(),
+          supabase
+            .from('drivers')
+            .select('id')
+            .eq('user_id', user!.id)
+            .maybeSingle(),
+        ]);
 
         if (companyData) {
-          setUserRole('company');
-          setLoading(false);
-          return;
+          return 'company';
+        } else if (driverData) {
+          return 'driver';
+        } else {
+          // Default to user type
+          return user!.userType === 'seller' ? 'seller' : 'buyer';
         }
-
-        // Check if user is a driver
-        const { data: driverData } = await supabase
-          .from('drivers')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (driverData) {
-          setUserRole('driver');
-          setLoading(false);
-          return;
-        }
-
-        // Default to user type
-        setUserRole(user.userType === 'seller' ? 'seller' : 'buyer');
       } catch (error) {
         console.error('Error checking user role:', error);
-        setUserRole('buyer');
-      } finally {
-        setLoading(false);
+        return 'buyer';
       }
-    };
-
-    checkUserRole();
-  }, [isAuthenticated, navigate, user?.id, user?.userType]);
+    },
+    enabled: !!user?.id,
+  });
 
   if (!user || loading) {
     return (

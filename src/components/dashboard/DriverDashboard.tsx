@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,12 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { CreateBidForm } from '@/components/delivery/CreateBidForm';
 import { MapPin, Package, Clock, DollarSign, CheckCircle, Navigation, Gavel, Building2, Shield } from 'lucide-react';
-import { toast } from 'sonner';
 import { KycVerification } from './KycVerification';
 import NotchHeader from '../layout/NotchHeader';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { formatCurrency } from '@/lib/pricing';
+import { useToast } from '@/hooks/use-toast';
 
 interface Driver {
   id: string;
@@ -40,25 +42,18 @@ interface Delivery {
 }
 
 export const DriverDashboard = ({ userId }: { userId: string }) => {
-  const [driver, setDriver] = useState<Driver | null>(null);
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [availableDeliveries, setAvailableDeliveries] = useState<Delivery[]>([]);
-  const [biddableDeliveries, setBiddableDeliveries] = useState<Delivery[]>([]);
-  const [myBids, setMyBids] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedDeliveryForBid, setSelectedDeliveryForBid] = useState<string | null>(null);
-  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const locationWatchIdRef = useRef<number | null>(null);
-  const { location, updateLocation } = useDriverLocation(driver?.id || null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchDriverData();
-  }, [userId]);
+  const driverQueryKey = ['driverDashboard', userId];
 
-  const fetchDriverData = async () => {
-    try {
+  const { data: driverData, isLoading: loading } = useQuery({
+    queryKey: driverQueryKey,
+    queryFn: async () => {
       // Fetch driver profile
-      const { data: driverData, error: driverError } = await supabase
+      const { data: driverRow, error: driverError } = await supabase
         .from('drivers')
         .select('*')
         .eq('user_id', userId)
@@ -66,9 +61,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
 
       if (driverError && driverError.code !== 'PGRST116') throw driverError;
 
-      if (driverData) {
-        setDriver(driverData);
-      } else {
+      if (!driverRow) {
         // If no driver profile, check for pending application
         const { data: applicationData } = await supabase
           .from('driver_applications')
@@ -76,11 +69,14 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
           .eq('user_id', userId)
           .maybeSingle();
 
-        if (applicationData) {
-          setApplicationStatus(applicationData.status);
-        }
-        setLoading(false);
-        return;
+        return {
+          driver: null as Driver | null,
+          applicationStatus: applicationData?.status ?? null,
+          deliveries: [] as Delivery[],
+          availableDeliveries: [] as Delivery[],
+          biddableDeliveries: [] as Delivery[],
+          myBids: [] as any[],
+        };
       }
 
       // Fetch assigned deliveries
@@ -90,40 +86,38 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
           *,
           orders(total, user_id)
         `)
-        .eq('driver_id', driverData.id)
+        .eq('driver_id', driverRow.id)
         .in('status', ['assigned', 'pickup', 'delivery']);
 
       if (deliveriesError) throw deliveriesError;
-      setDeliveries(assignedDeliveries || []);
 
-      // Fetch available deliveries (non-bidding) if driver is available
-      if (driverData.status === 'available') {
-        const { data: available, error: availableError } = await supabase
-          .from('deliveries')
-          .select(`
-            *,
-            orders(total, user_id)
-          `)
-          .eq('status', 'pending')
-          .eq('bidding_enabled', false)
-          .limit(10);
+      let availableDeliveries: Delivery[] = [];
+      let biddableDeliveries: Delivery[] = [];
+
+      // Available/biddable deliveries only matter if the driver is available.
+      if (driverRow.status === 'available') {
+        const [
+          { data: available, error: availableError },
+          { data: biddable, error: biddableError },
+        ] = await Promise.all([
+          supabase
+            .from('deliveries')
+            .select(`*, orders(total, user_id)`)
+            .eq('status', 'pending')
+            .eq('bidding_enabled', false)
+            .limit(10),
+          supabase
+            .from('deliveries')
+            .select(`*, orders(total, user_id)`)
+            .eq('status', 'pending')
+            .eq('bidding_enabled', true)
+            .limit(10),
+        ]);
 
         if (availableError) throw availableError;
-        setAvailableDeliveries(available || []);
-
-        // Fetch biddable deliveries
-        const { data: biddable, error: biddableError } = await supabase
-          .from('deliveries')
-          .select(`
-            *,
-            orders(total, user_id)
-          `)
-          .eq('status', 'pending')
-          .eq('bidding_enabled', true)
-          .limit(10);
-
         if (biddableError) throw biddableError;
-        setBiddableDeliveries(biddable || []);
+        availableDeliveries = available || [];
+        biddableDeliveries = biddable || [];
       }
 
       // Fetch my bids
@@ -139,18 +133,30 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
             order_id
           )
         `)
-        .eq('driver_id', driverData.id)
+        .eq('driver_id', driverRow.id)
         .order('created_at', { ascending: false });
 
       if (bidsError) throw bidsError;
-      setMyBids(bidsData || []);
-    } catch (error) {
-      console.error('Error fetching driver data:', error);
-      toast.error('Failed to load driver data');
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      return {
+        driver: driverRow as Driver,
+        applicationStatus: null as string | null,
+        deliveries: (assignedDeliveries || []) as Delivery[],
+        availableDeliveries,
+        biddableDeliveries,
+        myBids: bidsData || [],
+      };
+    },
+  });
+
+  const driver = driverData?.driver ?? null;
+  const applicationStatus = driverData?.applicationStatus ?? null;
+  const deliveries = driverData?.deliveries ?? [];
+  const availableDeliveries = driverData?.availableDeliveries ?? [];
+  const biddableDeliveries = driverData?.biddableDeliveries ?? [];
+  const myBids = driverData?.myBids ?? [];
+
+  const { location, updateLocation } = useDriverLocation(driver?.id || null);
 
   const toggleDriverStatus = async () => {
     if (!driver) return;
@@ -164,15 +170,11 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
         .eq('id', driver.id);
 
       if (error) throw error;
-      setDriver({ ...driver, status: newStatus });
-      toast.success(`Status changed to ${newStatus}`);
-
-      if (newStatus === 'available') {
-        fetchDriverData();
-      }
+      toast({ title: `Status changed to ${newStatus}` });
+      queryClient.invalidateQueries({ queryKey: driverQueryKey });
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error('Failed to update status');
+      toast({ title: 'Failed to update status', variant: 'destructive' });
     }
   };
 
@@ -190,11 +192,11 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
 
       if (error) throw error;
 
-      toast.success('Delivery accepted!');
-      fetchDriverData();
+      toast({ title: 'Delivery accepted!' });
+      queryClient.invalidateQueries({ queryKey: driverQueryKey });
     } catch (error) {
       console.error('Error accepting delivery:', error);
-      toast.error('Failed to accept delivery');
+      toast({ title: 'Failed to accept delivery', variant: 'destructive' });
     }
   };
 
@@ -213,17 +215,17 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
 
       if (error) throw error;
 
-      toast.success(`Delivery status updated to ${newStatus}`);
-      fetchDriverData();
+      toast({ title: `Delivery status updated to ${newStatus}` });
+      queryClient.invalidateQueries({ queryKey: driverQueryKey });
     } catch (error) {
       console.error('Error updating delivery status:', error);
-      toast.error('Failed to update delivery status');
+      toast({ title: 'Failed to update delivery status', variant: 'destructive' });
     }
   };
 
   const startLocationTracking = () => {
     if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser');
+      toast({ title: 'Geolocation is not supported by your browser', variant: 'destructive' });
       return;
     }
 
@@ -240,12 +242,12 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
       },
       (error) => {
         console.error('Error getting location:', error);
-        toast.error('Failed to get location');
+        toast({ title: 'Failed to get location', variant: 'destructive' });
       },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
     );
 
-    toast.success('Location tracking started');
+    toast({ title: 'Location tracking started' });
   };
 
   useEffect(() => {
@@ -360,7 +362,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
   const handleLogout = () => {
     logout();
     navigate('/');
-    toast.success("Logged out successfully");
+    toast({ title: "Logged out successfully" });
   };
 
   return (
@@ -449,7 +451,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
                               {delivery.estimated_price && (
                                 <span className="flex items-center gap-1">
                                   <DollarSign className="h-4 w-4" />
-                                  ${delivery.estimated_price.toFixed(2)}
+                                  {formatCurrency(delivery.estimated_price)}
                                 </span>
                               )}
                             </div>
@@ -528,7 +530,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
                                     {delivery.estimated_price && (
                                       <span className="flex items-center gap-1 font-medium text-primary">
                                         <DollarSign className="h-4 w-4" />
-                                        ${delivery.estimated_price.toFixed(2)}
+                                        {formatCurrency(delivery.estimated_price)}
                                       </span>
                                     )}
                                   </div>
@@ -595,7 +597,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
                                   {delivery.estimated_price && (
                                     <span className="flex items-center gap-1 text-primary font-medium">
                                       <DollarSign className="h-4 w-4" />
-                                      Est. ${delivery.estimated_price.toFixed(2)}
+                                      Est. {formatCurrency(delivery.estimated_price)}
                                     </span>
                                   )}
                                 </div>
@@ -611,13 +613,14 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
                 <div>
                   {selectedDeliveryForBid ? (
                     <CreateBidForm
+                      key={selectedDeliveryForBid}
                       deliveryId={selectedDeliveryForBid}
                       driverId={driver.id}
                       suggestedPrice={
                         biddableDeliveries.find(d => d.id === selectedDeliveryForBid)?.estimated_price || undefined
                       }
                       onBidCreated={() => {
-                        fetchDriverData();
+                        queryClient.invalidateQueries({ queryKey: driverQueryKey });
                         setSelectedDeliveryForBid(null);
                       }}
                     />
@@ -658,7 +661,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
                                 <div className="flex items-center gap-4 text-sm">
                                   <span className="flex items-center gap-1 font-semibold text-primary">
                                     <DollarSign className="h-4 w-4" />
-                                    ${bid.bid_amount.toFixed(2)}
+                                    {formatCurrency(bid.bid_amount)}
                                   </span>
                                   <span className="flex items-center gap-1 text-muted-foreground">
                                     <Clock className="h-4 w-4" />

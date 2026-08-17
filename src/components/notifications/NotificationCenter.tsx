@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +10,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 interface Notification {
@@ -22,36 +23,42 @@ interface Notification {
   data: any;
 }
 
+const notificationsQueryKey = ["notifications"];
+
 export function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: notificationsQueryKey,
+    queryFn: async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+          .from("notifications")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+
+        return (data || []) as Notification[];
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+        return [];
+      }
+    },
+  });
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
-    fetchNotifications();
     return subscribeToNotifications();
   }, []);
-
-  const fetchNotifications = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-
-      setNotifications(data || []);
-      setUnreadCount(data?.filter((n) => !n.read).length || 0);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
 
   const subscribeToNotifications = () => {
     const channel = supabase
@@ -64,9 +71,10 @@ export function NotificationCenter() {
           table: "notifications",
         },
         (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-          toast.info(payload.new.title);
+          queryClient.setQueryData<Notification[]>(notificationsQueryKey, (old) =>
+            old ? [payload.new as Notification, ...old] : [payload.new as Notification]
+          );
+          toast({ title: payload.new.title });
         }
       )
       .subscribe();
@@ -76,8 +84,8 @@ export function NotificationCenter() {
     };
   };
 
-  const markAsRead = async (notificationId: string) => {
-    try {
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
       const { error } = await supabase
         .from("notifications")
         .update({ read: true })
@@ -85,19 +93,26 @@ export function NotificationCenter() {
 
       if (error) throw error;
 
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+      return notificationId;
+    },
+    onSuccess: (notificationId) => {
+      queryClient.setQueryData<Notification[]>(notificationsQueryKey, (old) =>
+        old ? old.map((n) => (n.id === notificationId ? { ...n, read: true } : n)) : old
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("Error marking notification as read:", error);
-    }
+    },
+  });
+
+  const markAsRead = (notificationId: string) => {
+    markAsReadMutation.mutate(notificationId);
   };
 
-  const markAllAsRead = async () => {
-    try {
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return false;
 
       const { error } = await supabase
         .from("notifications")
@@ -107,16 +122,27 @@ export function NotificationCenter() {
 
       if (error) throw error;
 
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      setUnreadCount(0);
-      toast.success("All notifications marked as read");
-    } catch (error) {
+      return true;
+    },
+    onSuccess: (proceeded) => {
+      if (!proceeded) return;
+
+      queryClient.setQueryData<Notification[]>(notificationsQueryKey, (old) =>
+        old ? old.map((n) => ({ ...n, read: true })) : old
+      );
+      toast({ title: "All notifications marked as read" });
+    },
+    onError: (error) => {
       console.error("Error marking all as read:", error);
-    }
+    },
+  });
+
+  const markAllAsRead = () => {
+    markAllAsReadMutation.mutate();
   };
 
-  const deleteNotification = async (notificationId: string) => {
-    try {
+  const deleteNotificationMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
       const { error } = await supabase
         .from("notifications")
         .delete()
@@ -124,12 +150,20 @@ export function NotificationCenter() {
 
       if (error) throw error;
 
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-      const wasUnread = notifications.find((n) => n.id === notificationId)?.read === false;
-      if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
+      return notificationId;
+    },
+    onSuccess: (notificationId) => {
+      queryClient.setQueryData<Notification[]>(notificationsQueryKey, (old) =>
+        old ? old.filter((n) => n.id !== notificationId) : old
+      );
+    },
+    onError: (error) => {
       console.error("Error deleting notification:", error);
-    }
+    },
+  });
+
+  const deleteNotification = (notificationId: string) => {
+    deleteNotificationMutation.mutate(notificationId);
   };
 
   return (
