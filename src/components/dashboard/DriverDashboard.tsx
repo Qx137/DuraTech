@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,7 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
   const [loading, setLoading] = useState(true);
   const [selectedDeliveryForBid, setSelectedDeliveryForBid] = useState<string | null>(null);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const locationWatchIdRef = useRef<number | null>(null);
   const { location, updateLocation } = useDriverLocation(driver?.id || null);
 
   useEffect(() => {
@@ -226,7 +227,11 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
       return;
     }
 
-    navigator.geolocation.watchPosition(
+    if (locationWatchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(locationWatchIdRef.current);
+    }
+
+    locationWatchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         updateLocation({
           latitude: position.coords.latitude,
@@ -242,6 +247,14 @@ export const DriverDashboard = ({ userId }: { userId: string }) => {
 
     toast.success('Location tracking started');
   };
+
+  useEffect(() => {
+    return () => {
+      if (locationWatchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(locationWatchIdRef.current);
+      }
+    };
+  }, []);
 
   if (loading) {
     return (

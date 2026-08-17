@@ -7,16 +7,33 @@ import { Label } from "@/components/ui/label";
 import { Store, Mail, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    // Simulate password reset
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Couldn't send reset link",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "Reset Link Sent!",
       description: "Check your email for password reset instructions.",
@@ -66,8 +83,8 @@ const ForgotPassword = () => {
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-lg py-3">
-                  Send Reset Link
+                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-lg py-3" disabled={isLoading}>
+                  {isLoading ? "Sending..." : "Send Reset Link"}
                 </Button>
               </form>
             ) : (

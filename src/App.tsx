@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
 import AITools from "./pages/AITools";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/ai-tools" element={<AITools />} />

@@ -261,7 +261,7 @@ const AITools = () => {
                         <CalendarDays className="inline h-4 w-4 mr-1" />
                         Season
                       </Label>
-                      <Select>
+                      <Select value={season} onValueChange={setSeason}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select season" />
                         </SelectTrigger>
@@ -278,7 +278,7 @@ const AITools = () => {
                         <Layers className="inline h-4 w-4 mr-1" />
                         Soil Type
                       </Label>
-                      <Select>
+                      <Select value={soilType} onValueChange={setSoilType}>
                         <SelectTrigger>
                           <SelectValue placeholder="Soil type" />
                         </SelectTrigger>

@@ -153,13 +153,57 @@ serve(async (req: Request) => {
 
     console.log('Email prepared successfully');
 
-    // Note: To actually send emails, integrate with a service like Resend
-    // For now, we just log the email content
+    const recipientEmail = order.profiles?.email;
+    if (!recipientEmail) {
+      console.error('No recipient email on file for order:', orderId);
+      return new Response(
+        JSON.stringify({ success: false, error: 'No recipient email on file' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const resendApiKey = (globalThis as any).Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY is not configured; email not sent');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Email service not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    // Using Resend's shared sandbox sender - it can only deliver to the email
+    // address on the Resend account itself. Once a sending domain is verified
+    // in the Resend dashboard, switch this to a real address (e.g.
+    // orders@yourdomain.com) so it can reach actual customers.
+    const emailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Durahub <onboarding@resend.dev>',
+        to: [recipientEmail],
+        subject,
+        html: htmlContent,
+      }),
+    });
+
+    if (!emailResponse.ok) {
+      const errorText = await emailResponse.text();
+      console.error('Resend API error:', emailResponse.status, errorText);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to send email' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
+      );
+    }
+
+    console.log('Email sent successfully via Resend for order:', orderId);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Email notification prepared'
+        message: 'Email sent'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

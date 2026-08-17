@@ -29,7 +29,7 @@ export function NotificationCenter() {
 
   useEffect(() => {
     fetchNotifications();
-    subscribeToNotifications();
+    return subscribeToNotifications();
   }, []);
 
   const fetchNotifications = async () => {

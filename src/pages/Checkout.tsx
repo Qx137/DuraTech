@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -104,6 +104,7 @@ const Checkout = () => {
   
   const [showShippingWarning, setShowShippingWarning] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const shippingWarningConfirmedRef = useRef(false);
 
   // Countdown timer for shipping warning
   useEffect(() => {
@@ -271,11 +272,12 @@ const Checkout = () => {
     const { subtotal, total: orderTotal, shipping: shippingTotal } = calculateTotal();
     
     // Intercept if shipping is higher than 50% of order value
-    if (orderTotal > subtotal * 1.5 && !showShippingWarning) {
+    if (orderTotal > subtotal * 1.5 && !shippingWarningConfirmedRef.current) {
       setCountdown(3);
       setShowShippingWarning(true);
       return;
     }
+    shippingWarningConfirmedRef.current = false;
 
     setLoading(true);
 
@@ -579,8 +581,9 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Original Delivery Options (Hidden or secondary now) */}
-              <div className="opacity-50 grayscale pointer-events-none scale-95 origin-top hidden">
+              {/* Original Delivery Options - only needed when competitive bidding is off,
+                  since that's the only other way to set selectedDeliveryOption. */}
+              <div className={biddingEnabled ? "hidden" : ""}>
                 <DeliveryOptions
                   onDeliverySelect={setSelectedDeliveryOption}
                   selectedOption={selectedDeliveryOption?.id}
@@ -773,10 +776,8 @@ const Checkout = () => {
             <AlertDialogAction
               onClick={() => {
                 setShowShippingWarning(false);
-                // We use a timeout to let the dialog close before starting the submission
-                // but since handleSubmit is already bound to the form, we need to call it manually
-                // or just let the "confirmed" state handle it.
-                // In this case, we'll manually trigger the next step.
+                shippingWarningConfirmedRef.current = true;
+                // We use a timeout to let the dialog close before re-submitting.
                 setTimeout(() => {
                   const form = document.querySelector('form');
                   if (form) form.requestSubmit();

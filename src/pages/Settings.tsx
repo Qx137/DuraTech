@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +34,13 @@ const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<'buyer' | 'seller' | 'driver'>(user?.userType || 'buyer');
+
+  // user is still null on first render while auth is loading, so re-sync once it resolves.
+  useEffect(() => {
+    if (user?.userType) {
+      setSelectedRole(user.userType);
+    }
+  }, [user?.userType]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showSellerFormDialog, setShowSellerFormDialog] = useState(false);

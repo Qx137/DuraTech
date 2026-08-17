@@ -7,6 +7,24 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Must match the orders.status CHECK constraint in the database.
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  preparing: "Preparing",
+  ready_for_delivery: "Ready for Delivery",
+  out_for_delivery: "Out for Delivery",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+
+// Statuses a seller is allowed to move an order into (mirrors the
+// "Sellers can update order status for their products" RLS policy).
+const SELLER_STATUS_OPTIONS = ["preparing", "ready_for_delivery", "out_for_delivery", "delivered", "cancelled"];
+
+// Source statuses a seller is allowed to edit from (mirrors the same policy's USING clause).
+const SELLER_EDITABLE_STATUSES = ["confirmed", "preparing", "ready_for_delivery", "out_for_delivery"];
+
 interface Order {
   id: string;
   user_id: string;
@@ -153,9 +171,11 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
     switch (status) {
       case 'pending':
         return <Clock className="h-4 w-4" />;
-      case 'processing':
+      case 'confirmed':
+      case 'preparing':
         return <RefreshCw className="h-4 w-4" />;
-      case 'shipped':
+      case 'ready_for_delivery':
+      case 'out_for_delivery':
         return <Truck className="h-4 w-4" />;
       case 'delivered':
         return <CheckCircle className="h-4 w-4" />;
@@ -170,7 +190,10 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
     switch (status) {
       case 'pending':
         return 'outline';
-      case 'processing':
+      case 'confirmed':
+      case 'preparing':
+      case 'ready_for_delivery':
+      case 'out_for_delivery':
         return 'secondary';
       case 'delivered':
         return 'default';
@@ -211,11 +234,9 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Orders</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="processing">Processing</SelectItem>
-              <SelectItem value="shipped">Shipped</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -242,7 +263,7 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
                   </div>
                   <Badge variant={getStatusVariant(order.status)} className="gap-1">
                     {getStatusIcon(order.status)}
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    {STATUS_LABELS[order.status] || order.status}
                   </Badge>
                 </div>
               </CardHeader>
@@ -289,24 +310,31 @@ export const OrderManagement = ({ sellerId }: OrderManagementProps) => {
 
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Update Status:</span>
-                  <Select
-                    value={order.status}
-                    onValueChange={(value) => updateOrderStatus(order.id, value)}
-                    disabled={updatingOrders.has(order.id)}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {updatingOrders.has(order.id) && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  {SELLER_EDITABLE_STATUSES.includes(order.status) ? (
+                    <>
+                      <Select
+                        value={order.status}
+                        onValueChange={(value) => updateOrderStatus(order.id, value)}
+                        disabled={updatingOrders.has(order.id)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={order.status}>{STATUS_LABELS[order.status]}</SelectItem>
+                          {SELLER_STATUS_OPTIONS.filter((value) => value !== order.status).map((value) => (
+                            <SelectItem key={value} value={value}>{STATUS_LABELS[value]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {updatingOrders.has(order.id) && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      {order.status === 'pending' ? 'Awaiting payment' : 'No further action needed'}
+                    </span>
                   )}
                 </div>
               </CardContent>

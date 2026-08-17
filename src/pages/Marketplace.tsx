@@ -20,6 +20,7 @@ const Marketplace = () => {
   const [organicOnly, setOrganicOnly] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
+  const [rawProducts, setRawProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [priceRange, setPriceRange] = useState([0, 100]);
@@ -101,8 +102,24 @@ const Marketplace = () => {
         .from('products')
         .select(`*, profiles ( name, business_name )`);
       if (error) throw error;
+      setRawProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setRawProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Re-formats products (including distance) whenever the raw list or the
+  // user's location changes, so distance fills in once geolocation resolves
+  // without needing to re-fetch from the database.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
       const formattedProducts = await Promise.all(
-        (data || []).map(async (product: any) => {
+        rawProducts.map(async (product: any) => {
           const sellerLocation = getSellerLocationFromProduct(product);
           const distance = userLocation ? await calculateDistance(userLocation, sellerLocation) : null;
           return {
@@ -123,14 +140,13 @@ const Marketplace = () => {
           };
         })
       );
-      setProducts(formattedProducts);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (!cancelled) setProducts(formattedProducts);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rawProducts, userLocation]);
 
   const fetchCartCount = async () => {
     try {
