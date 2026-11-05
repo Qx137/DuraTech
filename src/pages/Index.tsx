@@ -23,17 +23,17 @@ const Index = () => {
       try {
         const { count: sellersCount } = await supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .select('id', { count: 'exact', head: true })
           .eq('user_type', 'seller');
 
         const { count: buyersCount } = await supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .select('id', { count: 'exact', head: true })
           .eq('user_type', 'buyer');
 
         const { count: productsCount } = await supabase
           .from('products')
-          .select('*', { count: 'exact', head: true });
+          .select('id', { count: 'exact', head: true });
 
         setStats({
           farmersCount: sellersCount || 0,

@@ -9,6 +9,7 @@ import CategoryNav from "@/components/marketplace/CategoryNav";
 
 import ProductCard from "@/components/marketplace/ProductCard";
 import NoProductsFound from "@/components/marketplace/NoProductsFound";
+import ProductsLoadError from "@/components/marketplace/ProductsLoadError";
 import TrustBar from "@/components/marketplace/TrustBar";
 import MarketplaceFooter from "@/components/marketplace/MarketplaceFooter";
 import { Product } from "@/data/sampleProducts";
@@ -38,7 +39,14 @@ const Marketplace = () => {
     "transport-logistics": ["cold-chain", "bulk-transport", "last-mile", "warehousing", "packaging"],
   };
 
-  const { data: rawProducts = [], isLoading: loading } = useQuery({
+  const {
+    data: rawProducts = [],
+    isLoading: loading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+  } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -226,6 +234,12 @@ const Marketplace = () => {
               </div>
             ))}
           </div>
+        ) : isError && products.length === 0 ? (
+          <ProductsLoadError
+            message={(error as Error)?.message}
+            onRetry={() => refetch()}
+            isRetrying={isRefetching}
+          />
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
